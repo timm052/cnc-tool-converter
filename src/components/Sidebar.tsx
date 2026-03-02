@@ -23,7 +23,6 @@ const NAV_ITEMS: NavItem[] = [
     id:    'tools',
     label: 'Tool Manager',
     icon:  Library,
-    badge: 'Soon',
   },
   {
     id:    'settings',

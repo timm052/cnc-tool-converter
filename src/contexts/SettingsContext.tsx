@@ -35,6 +35,20 @@ export interface Settings {
   // File Handling
   mergeBehavior:  'merge' | 'separate';
   warnOnDataLoss: boolean;
+
+  // Tool Library — New Tool Defaults
+  libraryDefaultMachineGroup: string;
+  libraryDefaultToolNumber:   number;
+  libraryDefaultType:         string;
+
+  // Tool Library — Import Defaults
+  libraryImportDefaultMachineGroup: string;
+  libraryImportOverwrite:           boolean;
+
+  // Tool Library — Display
+  librarySortKey: 'toolNumber' | 'description' | 'type' | 'diameter' | 'addedAt';
+  librarySortDir: 'asc' | 'desc';
+  libraryMaxTagsShown: number;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -65,6 +79,15 @@ export const DEFAULT_SETTINGS: Settings = {
 
   mergeBehavior:  'merge',
   warnOnDataLoss: true,
+
+  libraryDefaultMachineGroup:       '',
+  libraryDefaultToolNumber:         1,
+  libraryDefaultType:               'flat end mill',
+  libraryImportDefaultMachineGroup: '',
+  libraryImportOverwrite:           false,
+  librarySortKey:                   'addedAt',
+  librarySortDir:                   'desc',
+  libraryMaxTagsShown:              3,
 };
 
 const STORAGE_KEY     = 'cnc-tool-converter:settings';

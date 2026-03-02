@@ -218,6 +218,100 @@ export default function SettingsPage() {
           </Row>
         </Section>
 
+        {/* Tool Library */}
+        <Section title="Tool Library">
+          {/* New Tool Defaults */}
+          <div className="px-4 pt-3 pb-1 bg-slate-800/50">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">New Tool Defaults</p>
+          </div>
+          <Row label="Default machine group" description="Pre-filled when opening the New Tool editor.">
+            <TextInput
+              value={settings.libraryDefaultMachineGroup}
+              placeholder="e.g. VF-2"
+              onChange={(v) => set('libraryDefaultMachineGroup', v)}
+            />
+          </Row>
+          <Row label="Default tool number" description="Starting T# for newly created tools.">
+            <NumInput
+              value={settings.libraryDefaultToolNumber}
+              min={1}
+              max={9999}
+              onChange={(v) => set('libraryDefaultToolNumber', Math.max(1, v))}
+            />
+          </Row>
+          <Row label="Default tool type" description="Tool type selected when opening the New Tool editor.">
+            <Sel
+              value={settings.libraryDefaultType}
+              options={[
+                { value: 'flat end mill',       label: 'Flat end mill' },
+                { value: 'ball end mill',        label: 'Ball end mill' },
+                { value: 'bull nose end mill',   label: 'Bull nose end mill' },
+                { value: 'chamfer mill',         label: 'Chamfer mill' },
+                { value: 'face mill',            label: 'Face mill' },
+                { value: 'spot drill',           label: 'Spot drill' },
+                { value: 'drill',                label: 'Drill' },
+                { value: 'tapered mill',         label: 'Tapered mill' },
+                { value: 'boring bar',           label: 'Boring bar' },
+                { value: 'thread mill',          label: 'Thread mill' },
+                { value: 'engraving',            label: 'Engraving' },
+                { value: 'custom',               label: 'Custom' },
+              ]}
+              onChange={(v) => set('libraryDefaultType', v)}
+            />
+          </Row>
+
+          {/* Import Defaults */}
+          <div className="px-4 pt-3 pb-1 bg-slate-800/50">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Import Defaults</p>
+          </div>
+          <Row label="Auto-assign machine group" description="Applied to all tools when importing. Leave blank to keep the source value.">
+            <TextInput
+              value={settings.libraryImportDefaultMachineGroup}
+              placeholder="e.g. Lathe"
+              onChange={(v) => set('libraryImportDefaultMachineGroup', v)}
+            />
+          </Row>
+          <Row label="Overwrite duplicates by default" description="Pre-checks the overwrite option in the Import panel.">
+            <Toggle value={settings.libraryImportOverwrite} onChange={(v) => set('libraryImportOverwrite', v)} />
+          </Row>
+
+          {/* Display */}
+          <div className="px-4 pt-3 pb-1 bg-slate-800/50">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Display</p>
+          </div>
+          <Row label="Default sort column" description="Column the library table is sorted by when first loaded.">
+            <Sel
+              value={settings.librarySortKey}
+              options={[
+                { value: 'addedAt',     label: 'Date added' },
+                { value: 'toolNumber',  label: 'Tool number' },
+                { value: 'description', label: 'Description' },
+                { value: 'type',        label: 'Type' },
+                { value: 'diameter',    label: 'Diameter' },
+              ]}
+              onChange={(v) => set('librarySortKey', v)}
+            />
+          </Row>
+          <Row label="Default sort direction">
+            <Sel
+              value={settings.librarySortDir}
+              options={[
+                { value: 'desc', label: 'Descending' },
+                { value: 'asc',  label: 'Ascending' },
+              ]}
+              onChange={(v) => set('librarySortDir', v)}
+            />
+          </Row>
+          <Row label="Max tags per row" description="Number of tag chips shown before a +N overflow indicator.">
+            <NumInput
+              value={settings.libraryMaxTagsShown}
+              min={1}
+              max={10}
+              onChange={(v) => set('libraryMaxTagsShown', Math.max(1, Math.min(10, v)))}
+            />
+          </Row>
+        </Section>
+
         {/* LinuxCNC Writer */}
         <Section title="LinuxCNC Writer">
           <Row label="Starting tool number offset" description="Added to every T number on export. 0 = no offset.">

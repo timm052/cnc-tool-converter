@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { SettingsProvider } from './contexts/SettingsContext';
+import { LibraryProvider } from './contexts/LibraryContext';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import ConverterPage from './components/pages/ConverterPage';
@@ -13,17 +14,19 @@ export default function App() {
 
   return (
     <SettingsProvider>
-      <div className="flex flex-col h-screen bg-slate-950 text-slate-100 overflow-hidden">
-        <Header />
-        <div className="flex flex-1 overflow-hidden">
-          <Sidebar activePage={activePage} onNavigate={setActivePage} />
-          <main className="flex-1 overflow-hidden">
-            {activePage === 'converter' && <ConverterPage />}
-            {activePage === 'tools'     && <ToolManagerPage />}
-            {activePage === 'settings'  && <SettingsPage />}
-          </main>
+      <LibraryProvider>
+        <div className="flex flex-col h-screen bg-slate-950 text-slate-100 overflow-hidden">
+          <Header />
+          <div className="flex flex-1 overflow-hidden">
+            <Sidebar activePage={activePage} onNavigate={setActivePage} />
+            <main className="flex-1 overflow-hidden">
+              {activePage === 'converter' && <ConverterPage />}
+              {activePage === 'tools'     && <ToolManagerPage />}
+              {activePage === 'settings'  && <SettingsPage />}
+            </main>
+          </div>
         </div>
-      </div>
+      </LibraryProvider>
     </SettingsProvider>
   );
 }
