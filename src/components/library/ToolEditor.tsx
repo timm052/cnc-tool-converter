@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, type ChangeEvent } from 'react';
-import { X, Trash2, Save, AlertCircle, ZoomIn, ZoomOut } from 'lucide-react';
+import { X, Trash2, Save, AlertCircle, ZoomIn, ZoomOut, Wand2 } from 'lucide-react';
 import type { LibraryTool } from '../../types/libraryTool';
 import type { ToolType, ToolUnit, CoolantMode, FeedMode, ToolMaterial } from '../../types/tool';
 import { useSettings, type Settings } from '../../contexts/SettingsContext';
@@ -34,6 +34,81 @@ const SHOWS_TAPER_ANGLE   = new Set<ToolType>(['drill', 'spot drill', 'chamfer m
 const SHOWS_TIP_DIAMETER  = new Set<ToolType>(['drill', 'spot drill', 'chamfer mill', 'tapered mill', 'engraving', 'thread mill', 'custom']);
 const SHOWS_THREAD_FIELDS = new Set<ToolType>(['thread mill']);
 const SHOWS_NUM_TEETH     = new Set<ToolType>(['thread mill', 'face mill']);
+
+// ── Description suggestion ────────────────────────────────────────────────────
+
+function suggestDescription(draft: Pick<LibraryTool, 'type' | 'unit' | 'geometry'>): string {
+  const { type, unit, geometry: geo } = draft;
+  const d  = geo.diameter || 0;
+  const nf = geo.numberOfFlutes;
+
+  // Compact number: strip trailing zeros after rounding
+  const n = (v: number, dp = 4) => parseFloat(v.toFixed(dp)).toString();
+
+  const parts: string[] = [`${n(d)}${unit}`];
+
+  switch (type) {
+    case 'flat end mill':
+    case 'ball end mill':
+    case 'boring bar':
+      if (nf) parts.push(`${nf}-flute`);
+      parts.push(type);
+      break;
+
+    case 'bull nose end mill':
+      if (nf) parts.push(`${nf}-flute`);
+      if (geo.cornerRadius) parts.push(`R${n(geo.cornerRadius)}${unit}`);
+      parts.push('bull nose end mill');
+      break;
+
+    case 'chamfer mill':
+      if (nf) parts.push(`${nf}-flute`);
+      if (geo.taperAngle !== undefined) parts.push(`${n(geo.taperAngle, 1)}°`);
+      parts.push('chamfer mill');
+      break;
+
+    case 'drill':
+      if (geo.taperAngle !== undefined) parts.push(`${n(geo.taperAngle, 1)}°`);
+      parts.push('drill');
+      break;
+
+    case 'spot drill':
+      if (geo.taperAngle !== undefined) parts.push(`${n(geo.taperAngle, 1)}°`);
+      parts.push('spot drill');
+      break;
+
+    case 'thread mill':
+      if (geo.threadPitch) parts.push(`× ${n(geo.threadPitch)}${unit}`);
+      parts.push('thread mill');
+      break;
+
+    case 'face mill':
+      if (geo.numberOfTeeth) parts.push(`${geo.numberOfTeeth}-insert`);
+      parts.push('face mill');
+      break;
+
+    case 'engraving':
+      if (geo.taperAngle !== undefined) parts.push(`${n(geo.taperAngle, 1)}°`);
+      parts.push('engraving');
+      break;
+
+    case 'tapered mill':
+      if (nf) parts.push(`${nf}-flute`);
+      if (geo.taperAngle !== undefined) parts.push(`${n(geo.taperAngle, 1)}°`);
+      parts.push('tapered mill');
+      break;
+
+    case 'custom':
+      if (nf) parts.push(`${nf}-flute`);
+      parts.push('custom tool');
+      break;
+
+    default:
+      parts.push(type);
+  }
+
+  return parts.join(' ');
+}
 
 // ── Blank tool factory ────────────────────────────────────────────────────────
 
@@ -561,14 +636,26 @@ export default function ToolEditor({
                 />
               </Row2>
 
-              <Row2 label="Description *">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-medium text-slate-400">Description *</label>
+                  <button
+                    type="button"
+                    onClick={() => patchDraft({ description: suggestDescription(draft) })}
+                    title="Fill with suggested name"
+                    className="flex items-center gap-1 text-xs text-slate-500 hover:text-blue-400 transition-colors"
+                  >
+                    <Wand2 size={11} />
+                    <span>Suggest</span>
+                  </button>
+                </div>
                 <TextF
                   value={draft.description}
                   onChange={(v) => patchDraft({ description: v })}
-                  placeholder="e.g. 6mm 2-flute flat end mill"
+                  placeholder={suggestDescription(draft)}
                   error={errors.description}
                 />
-              </Row2>
+              </div>
 
               <Row2 label="Manufacturer">
                 <TextF
