@@ -435,8 +435,20 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
     ?? (showBody ? rawBodyLen! - resolved.fluteLength : undefined);
   const shLabel = rawShoulderLen !== undefined ? `Shldr ${fmt(rawShoulderLen)} ${unit}` : '';
 
-  const extX    = CX + maxRpx + 4;
+  const extX     = CX + maxRpx + 4;
   const leftExtX = CX - maxRpx - 4;
+
+  // Dim lines sit close to the tool — offset from the profile edge, not the SVG edge.
+  // When two annotations share a side they're spaced 28 px apart; the shorter span
+  // goes in the inner slot (closer to the tool) and the longer span in the outer slot.
+  const DIM_STEP = 28;
+  // Right side: BL inner, OAL outer (OAL pushed out only when BL is also visible)
+  const oalAnnX  = r1(extX + (showBody ? DIM_STEP * 2 : DIM_STEP));
+  const blAnnX   = r1(extX + DIM_STEP);
+  // Left side: shoulder inner, FL outer (FL pushed out only when shoulder is also visible)
+  const showShoulder = showBody && rawShoulderLen !== undefined;
+  const flAnnX   = r1(leftExtX - (showShoulder ? DIM_STEP * 2 : DIM_STEP));
+  const shAnnX   = r1(leftExtX - DIM_STEP);
 
   // Diameter line sits in the annotation zone below the profile
   const diamY     = 148;
@@ -548,19 +560,19 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
         tickFromY={TIP_Y}
       />
 
-      {/* Overall length annotation — rightmost (x=452) */}
+      {/* Overall length annotation — right side outer slot */}
       <VertDimLine
-        x={452}
+        x={oalAnnX}
         y1={oalY1}
         y2={TIP_Y}
         label={oalLabel}
         extLeft={extX}
       />
 
-      {/* Body length annotation — 28 px inside OAL (x=424) */}
+      {/* Body length annotation — right side inner slot */}
       {showBody && (TIP_Y - blY1!) >= 18 && (
         <VertDimLine
-          x={424}
+          x={blAnnX}
           y1={blY1!}
           y2={TIP_Y}
           label={blLabel}
@@ -568,10 +580,10 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
         />
       )}
 
-      {/* Flute length annotation — left side (x=48) */}
+      {/* Flute length annotation — left side outer slot */}
       {showFL && flArrH >= 18 && (
         <VertDimLine
-          x={48}
+          x={flAnnX}
           y1={flY1}
           y2={TIP_Y}
           label={flLabel}
@@ -579,11 +591,10 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
         />
       )}
 
-      {/* Shoulder annotation — left side; shift inward to x=28 when FL is also shown
-          (both share the same junction point at flzTop so they must be at different x) */}
-      {showBody && rawShoulderLen !== undefined && (flzTop - blY1!) >= 18 && (
+      {/* Shoulder annotation — left side inner slot */}
+      {showShoulder && (flzTop - blY1!) >= 18 && (
         <VertDimLine
-          x={showFL && flArrH >= 18 ? 28 : 48}
+          x={shAnnX}
           y1={blY1!}
           y2={flzTop}
           label={shLabel}
