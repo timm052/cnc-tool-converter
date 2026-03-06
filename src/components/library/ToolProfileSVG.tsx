@@ -286,14 +286,14 @@ function FluteLines({ numberOfFlutes, fRpx, flzTop, flzBot }: FluteLinesProps) {
           <g key={i}>
             {/* Back side — occluded by tool body, very faint dashed */}
             {back && (
-              <path d={back}  fill="none" stroke="#93c5fd"
+              <path d={back}  fill="none" stroke="#f59e0b"
                 strokeWidth="0.7" strokeOpacity="0.12"
                 strokeDasharray="2,3" strokeLinecap="round" />
             )}
             {/* Front side — visible, solid */}
             {front && (
-              <path d={front} fill="none" stroke="#93c5fd"
-                strokeWidth="1.1" strokeOpacity="0.5" strokeLinecap="round" />
+              <path d={front} fill="none" stroke="#fbbf24"
+                strokeWidth="1.1" strokeOpacity="0.58" strokeLinecap="round" />
             )}
           </g>
         );
@@ -483,16 +483,16 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
       <line x1="240" y1="10" x2="240" y2="130"
             stroke="#1e293b" strokeWidth="0.8" strokeDasharray="3,3" />
 
-      {/* Profile fill */}
-      <path d={profileD} fill="#1e3a5f" />
+      {/* Profile fill — dark gunmetal steel */}
+      <path d={profileD} fill="#1c2e3e" />
 
-      {/* Shoulder zone — lighter fill between flute top and body/shank boundary */}
+      {/* Shoulder zone — violet tint between flute top and body/shank boundary */}
       {showBody && (
         <g clipPath="url(#toolProfileClip)">
           <rect
             x={r1(CX - maxRpx - 2)} y={blY1!}
             width={r1((maxRpx + 2) * 2)} height={r1(flzTop - blY1!)}
-            fill="#2563eb" fillOpacity="0.15"
+            fill="#7c3aed" fillOpacity="0.18"
           />
         </g>
       )}
@@ -513,29 +513,29 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
       {resolved.coolantSupport && (
         <circle
           cx={CX} cy={coolantCY} r={coolantR}
-          fill="none" stroke="#38bdf8"
+          fill="none" stroke="#22d3ee"
           strokeWidth="0.9" strokeDasharray="1.5,1.5"
         />
       )}
 
-      {/* Profile stroke (drawn on top of hatch marks) */}
-      <path d={profileD} fill="none" stroke="#60a5fa" strokeWidth="1.5" strokeLinejoin="round" />
+      {/* Profile stroke — muted steel edge */}
+      <path d={profileD} fill="none" stroke="#7bafc8" strokeWidth="1.5" strokeLinejoin="round" />
 
-      {/* Flute boundary line — horizontal rule at flute top */}
+      {/* Flute boundary line — amber, top of cutting zone */}
       {Math.abs(flzTop - oalY1) > 6 && (
         <line
           x1={r1(CX - maxRpx)} y1={flzTop}
           x2={r1(CX + maxRpx)} y2={flzTop}
-          stroke="#3b82f6" strokeWidth="0.6" strokeOpacity="0.5" strokeDasharray="4,3"
+          stroke="#f59e0b" strokeWidth="0.7" strokeOpacity="0.45" strokeDasharray="4,3"
         />
       )}
 
-      {/* Body boundary line — horizontal rule at body/shank boundary */}
+      {/* Body boundary line — violet, top of shoulder zone */}
       {showBody && Math.abs(blY1! - oalY1) > 4 && (
         <line
           x1={r1(CX - maxRpx)} y1={blY1!}
           x2={r1(CX + maxRpx)} y2={blY1!}
-          stroke="#60a5fa" strokeWidth="0.7" strokeOpacity="0.6" strokeDasharray="4,3"
+          stroke="#a78bfa" strokeWidth="0.7" strokeOpacity="0.55" strokeDasharray="4,3"
         />
       )}
 
