@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, type ChangeEvent } from 'react';
-import { X, Trash2, Save, AlertCircle } from 'lucide-react';
+import { X, Trash2, Save, AlertCircle, ZoomIn, ZoomOut } from 'lucide-react';
 import type { LibraryTool } from '../../types/libraryTool';
 import type { ToolType, ToolUnit, CoolantMode, FeedMode, ToolMaterial } from '../../types/tool';
 import { useSettings, type Settings } from '../../contexts/SettingsContext';
@@ -353,9 +353,11 @@ export default function ToolEditor({
     initialSnapshotRef.current = JSON.stringify(init);
     return init;
   });
-  const [activeTab,   setActiveTab]   = useState<Tab>('library');
-  const [isSaving,    setIsSaving]    = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
+  const [activeTab,    setActiveTab]   = useState<Tab>('library');
+  const [isSaving,     setIsSaving]    = useState(false);
+  const [showConfirm,  setShowConfirm] = useState(false);
+  const PREVIEW_HEIGHTS = [90, 145, 185, 250] as const;
+  const [previewIdx,   setPreviewIdx]  = useState(2); // default = 185 px
 
   const errors    = validate(draft);
   const hasErrors = Object.keys(errors).length > 0;
@@ -478,8 +480,26 @@ export default function ToolEditor({
         </div>
 
         {/* SVG profile */}
-        <div className="shrink-0 border-b border-slate-700">
-          <ToolProfileSVG draft={draft} />
+        <div className="shrink-0 border-b border-slate-700 relative">
+          <div className="absolute bottom-2 right-2 flex gap-0.5 z-10">
+            <button
+              onClick={() => setPreviewIdx((i) => Math.max(0, i - 1))}
+              disabled={previewIdx === 0}
+              title="Shrink preview"
+              className="p-1 rounded text-slate-600 hover:text-slate-300 hover:bg-slate-700/60 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+            >
+              <ZoomOut size={13} />
+            </button>
+            <button
+              onClick={() => setPreviewIdx((i) => Math.min(PREVIEW_HEIGHTS.length - 1, i + 1))}
+              disabled={previewIdx === PREVIEW_HEIGHTS.length - 1}
+              title="Grow preview"
+              className="p-1 rounded text-slate-600 hover:text-slate-300 hover:bg-slate-700/60 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+            >
+              <ZoomIn size={13} />
+            </button>
+          </div>
+          <ToolProfileSVG draft={draft} height={PREVIEW_HEIGHTS[previewIdx]} />
         </div>
 
         {/* Tab content */}

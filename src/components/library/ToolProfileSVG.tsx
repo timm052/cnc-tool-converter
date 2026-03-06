@@ -381,7 +381,7 @@ function HorizDimLine({
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
+export function ToolProfileSVG({ draft, height = 185 }: { draft: LibraryTool; height?: number }) {
   const { settings } = useSettings();
   const dec  = settings.tableDecimalPrecision;
   const unit = draft.unit;
@@ -395,7 +395,7 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
 
   if (!isFinite(scale) || resolved.diameter * scale < 3) {
     return (
-      <svg viewBox="0 0 480 185" width="100%" height="185" className="block">
+      <svg viewBox="0 0 480 185" width="100%" height={height} className="block">
         <rect width="480" height="185" fill="#0f172a" />
         <text x="240" y="85" textAnchor="middle" fontSize="11" fill="#475569" fontFamily="sans-serif">
           No preview
@@ -465,7 +465,7 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
     <svg
       viewBox="0 0 480 185"
       width="100%"
-      height="185"
+      height={height}
       className="block"
       aria-label={`${draft.type} profile`}
     >
