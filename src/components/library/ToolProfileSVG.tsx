@@ -568,21 +568,22 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
         />
       )}
 
-      {/* Flute length annotation — 28 px inside BL, or at x=424 if BL absent */}
+      {/* Flute length annotation — left side (x=48) */}
       {showFL && flArrH >= 18 && (
         <VertDimLine
-          x={showBody ? 396 : 424}
+          x={48}
           y1={flY1}
           y2={TIP_Y}
           label={flLabel}
-          extLeft={extX}
+          extLeft={leftExtX}
         />
       )}
 
-      {/* Shoulder annotation — span of shoulder zone, on the left side (x=48) */}
+      {/* Shoulder annotation — left side; shift inward to x=28 when FL is also shown
+          (both share the same junction point at flzTop so they must be at different x) */}
       {showBody && rawShoulderLen !== undefined && (flzTop - blY1!) >= 18 && (
         <VertDimLine
-          x={48}
+          x={showFL && flArrH >= 18 ? 28 : 48}
           y1={blY1!}
           y2={flzTop}
           label={shLabel}
