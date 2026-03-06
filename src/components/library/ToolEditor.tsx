@@ -356,8 +356,8 @@ export default function ToolEditor({
   const [activeTab,    setActiveTab]   = useState<Tab>('library');
   const [isSaving,     setIsSaving]    = useState(false);
   const [showConfirm,  setShowConfirm] = useState(false);
-  const PREVIEW_HEIGHTS = [90, 145, 185, 250] as const;
-  const [previewIdx,   setPreviewIdx]  = useState(2); // default = 185 px
+  const ZOOM_LEVELS = [0.6, 1.0, 1.5, 2.1] as const;
+  const [zoomIdx,  setZoomIdx]  = useState(1); // default = 1.0×
 
   const errors    = validate(draft);
   const hasErrors = Object.keys(errors).length > 0;
@@ -483,23 +483,23 @@ export default function ToolEditor({
         <div className="shrink-0 border-b border-slate-700 relative">
           <div className="absolute bottom-2 right-2 flex gap-0.5 z-10">
             <button
-              onClick={() => setPreviewIdx((i) => Math.max(0, i - 1))}
-              disabled={previewIdx === 0}
-              title="Shrink preview"
+              onClick={() => setZoomIdx((i) => Math.max(0, i - 1))}
+              disabled={zoomIdx === 0}
+              title="Zoom out"
               className="p-1 rounded text-slate-600 hover:text-slate-300 hover:bg-slate-700/60 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
             >
               <ZoomOut size={13} />
             </button>
             <button
-              onClick={() => setPreviewIdx((i) => Math.min(PREVIEW_HEIGHTS.length - 1, i + 1))}
-              disabled={previewIdx === PREVIEW_HEIGHTS.length - 1}
-              title="Grow preview"
+              onClick={() => setZoomIdx((i) => Math.min(ZOOM_LEVELS.length - 1, i + 1))}
+              disabled={zoomIdx === ZOOM_LEVELS.length - 1}
+              title="Zoom in"
               className="p-1 rounded text-slate-600 hover:text-slate-300 hover:bg-slate-700/60 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
             >
               <ZoomIn size={13} />
             </button>
           </div>
-          <ToolProfileSVG draft={draft} height={PREVIEW_HEIGHTS[previewIdx]} />
+          <ToolProfileSVG draft={draft} zoom={ZOOM_LEVELS[zoomIdx]} />
         </div>
 
         {/* Tab content */}

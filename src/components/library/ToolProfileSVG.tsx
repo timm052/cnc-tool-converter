@@ -381,7 +381,7 @@ function HorizDimLine({
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function ToolProfileSVG({ draft, height = 185 }: { draft: LibraryTool; height?: number }) {
+export function ToolProfileSVG({ draft, zoom = 1 }: { draft: LibraryTool; zoom?: number }) {
   const { settings } = useSettings();
   const dec  = settings.tableDecimalPrecision;
   const unit = draft.unit;
@@ -390,13 +390,22 @@ export function ToolProfileSVG({ draft, height = 185 }: { draft: LibraryTool; he
   // result matches what the user typed in the editor (e.g. 6 → "6", not "6.000")
   const fmt = (n: number) => parseFloat(n.toFixed(dec)).toString();
 
+  // Zoom is achieved by:
+  //   - Keeping viewBox height fixed at 185 (so the full tool stays visible vertically)
+  //   - Narrowing viewBox width by 1/zoom, centred on CX=240 (content scales up by zoom)
+  //   - Growing the SVG height attribute proportionally so layout space matches
+  const svgH   = Math.round(185 * zoom);
+  const vbW    = r1(480 / zoom);
+  const vbX    = r1(CX - vbW / 2);
+  const viewBoxAttr = `${vbX} 0 ${vbW} 185`;
+
   const resolved = resolveGeometry(draft.type, draft.geometry);
   const scale    = computeScale(resolved);
 
   if (!isFinite(scale) || resolved.diameter * scale < 3) {
     return (
-      <svg viewBox="0 0 480 185" width="100%" height={height} className="block">
-        <rect width="480" height="185" fill="#0f172a" />
+      <svg viewBox={viewBoxAttr} width="100%" height={svgH} className="block">
+        <rect x={vbX} y="0" width={vbW} height="185" fill="#0f172a" />
         <text x="240" y="85" textAnchor="middle" fontSize="11" fill="#475569" fontFamily="sans-serif">
           No preview
         </text>
@@ -463,9 +472,9 @@ export function ToolProfileSVG({ draft, height = 185 }: { draft: LibraryTool; he
 
   return (
     <svg
-      viewBox="0 0 480 185"
+      viewBox={viewBoxAttr}
       width="100%"
-      height={height}
+      height={svgH}
       className="block"
       aria-label={`${draft.type} profile`}
     >
