@@ -312,7 +312,7 @@ function Arrowhead({ x, y, dir }: { x: number; y: number; dir: 'up' | 'down' | '
     case 'left':  pts = `${x},${y} ${x+9},${y-4} ${x+9},${y+4}`; break;
     case 'right': pts = `${x},${y} ${x-9},${y-4} ${x-9},${y+4}`; break;
   }
-  return <polygon points={pts} fill="#64748b" />;
+  return <polygon points={pts} fill="#94a3b8" />;
 }
 
 function VertDimLine({
@@ -325,19 +325,20 @@ function VertDimLine({
 
   return (
     <g>
-      <line x1={extLeft} y1={y1} x2={x - 3} y2={y1} stroke="#475569" strokeWidth="0.7" strokeDasharray="3,2" />
-      <line x1={extLeft} y1={y2} x2={x - 3} y2={y2} stroke="#475569" strokeWidth="0.7" strokeDasharray="3,2" />
-      <line x1={x} y1={r1(y1 + 9)} x2={x} y2={r1(y2 - 9)} stroke="#64748b" strokeWidth="1" />
+      <line x1={extLeft} y1={y1} x2={x - 3} y2={y1} stroke="#64748b" strokeWidth="0.8" strokeDasharray="3,2" />
+      <line x1={extLeft} y1={y2} x2={x - 3} y2={y2} stroke="#64748b" strokeWidth="0.8" strokeDasharray="3,2" />
+      <line x1={x} y1={r1(y1 + 9)} x2={x} y2={r1(y2 - 9)} stroke="#94a3b8" strokeWidth="1.2" />
       <Arrowhead x={x} y={y1} dir="up" />
       <Arrowhead x={x} y={y2} dir="down" />
       <text
-        x={r1(x - 14)}
+        x={r1(x - 15)}
         y={midY}
-        fontSize="12"
-        fill="#94a3b8"
+        fontSize="13"
+        fontWeight="bold"
+        fill="#cbd5e1"
         textAnchor="middle"
         fontFamily="ui-monospace, monospace"
-        transform={`rotate(-90 ${r1(x - 14)} ${midY})`}
+        transform={`rotate(-90 ${r1(x - 15)} ${midY})`}
         dominantBaseline="central"
       >
         {label}
@@ -353,21 +354,22 @@ function HorizDimLine({
 }) {
   const midX = r1((x1 + x2) / 2);
   // If tool is very narrow, extend the line to give room for the label
-  const lineX1 = Math.min(x1, midX - 45);
-  const lineX2 = Math.max(x2, midX + 45);
+  const lineX1 = Math.min(x1, midX - 50);
+  const lineX2 = Math.max(x2, midX + 50);
 
   return (
     <g>
-      <line x1={x1} y1={tickFromY} x2={x1} y2={r1(y - 3)} stroke="#475569" strokeWidth="0.7" strokeDasharray="3,2" />
-      <line x1={x2} y1={tickFromY} x2={x2} y2={r1(y - 3)} stroke="#475569" strokeWidth="0.7" strokeDasharray="3,2" />
-      <line x1={r1(lineX1 + 9)} y1={y} x2={r1(lineX2 - 9)} y2={y} stroke="#64748b" strokeWidth="1" />
+      <line x1={x1} y1={tickFromY} x2={x1} y2={r1(y - 3)} stroke="#64748b" strokeWidth="0.8" strokeDasharray="3,2" />
+      <line x1={x2} y1={tickFromY} x2={x2} y2={r1(y - 3)} stroke="#64748b" strokeWidth="0.8" strokeDasharray="3,2" />
+      <line x1={r1(lineX1 + 9)} y1={y} x2={r1(lineX2 - 9)} y2={y} stroke="#94a3b8" strokeWidth="1.2" />
       <Arrowhead x={x1} y={y} dir="right" />
       <Arrowhead x={x2} y={y} dir="left" />
       <text
         x={midX}
-        y={r1(y + 14)}
-        fontSize="12"
-        fill="#94a3b8"
+        y={r1(y + 15)}
+        fontSize="13"
+        fontWeight="bold"
+        fill="#cbd5e1"
         textAnchor="middle"
         fontFamily="ui-monospace, monospace"
       >
@@ -407,12 +409,12 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
   const maxRpx = Math.max(fRpx, sRpx);
 
   const oalY1    = ty(resolved.overallLength, scale);
-  const oalLabel = `${resolved.overallLength.toFixed(dec)} ${unit}`;
+  const oalLabel = `OAL ${resolved.overallLength.toFixed(dec)} ${unit}`;
 
   const showFL  = draft.geometry.fluteLength !== undefined;
   const flY1    = ty(resolved.fluteLength, scale);
   const flArrH  = TIP_Y - flY1;
-  const flLabel = `FL ${resolved.fluteLength.toFixed(dec)}`;
+  const flLabel = `Flute ${resolved.fluteLength.toFixed(dec)}`;
 
   // Body / shoulder zone — body length measured from tip, shoulder is the non-fluted band above flutes
   // Body line y (body/shank boundary): prefer bodyLength; fall back to fluteLength+shoulderLength
@@ -422,12 +424,12 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
           : undefined);
   const showBody  = rawBodyLen !== undefined && rawBodyLen > resolved.fluteLength;
   const blY1      = showBody ? ty(rawBodyLen!, scale) : null;
-  const blLabel   = showBody ? `BL ${rawBodyLen!.toFixed(dec)}` : '';
+  const blLabel   = showBody ? `Body ${rawBodyLen!.toFixed(dec)}` : '';
 
   // Shoulder span shown if the zone is tall enough to annotate
   const rawShoulderLen = resolved.shoulderLength
     ?? (showBody ? rawBodyLen! - resolved.fluteLength : undefined);
-  const shLabel = rawShoulderLen !== undefined ? `SH ${rawShoulderLen.toFixed(dec)}` : '';
+  const shLabel = rawShoulderLen !== undefined ? `Shldr ${rawShoulderLen.toFixed(dec)}` : '';
 
   const extX    = CX + maxRpx + 4;
   const leftExtX = CX - maxRpx - 4;
@@ -585,9 +587,9 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
       )}
 
       {/* Tool type label */}
-      <text x="6" y="178" fontSize="10" fill="#475569" fontFamily="sans-serif">
+      <text x="6" y="178" fontSize="11" fontWeight="600" fill="#64748b" fontFamily="ui-sans-serif, sans-serif">
         {draft.type}
-        {resolved.numberOfFlutes ? `  ·  ${resolved.numberOfFlutes}F` : ''}
+        {resolved.numberOfFlutes ? `  ·  ${resolved.numberOfFlutes} flutes` : ''}
       </text>
     </svg>
   );
