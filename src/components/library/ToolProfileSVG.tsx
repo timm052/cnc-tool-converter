@@ -240,32 +240,62 @@ function FluteLines({ numberOfFlutes, fRpx, flzTop, flzBot }: FluteLinesProps) {
   // Number of helix cycles visible in the flute zone (more = tighter helix)
   const cycles = Math.max(1, Math.min(3, fzH / 40));
 
-  function buildHelixPath(phaseOffset: number): string {
-    const steps = 60;
-    const pts: string[] = [];
+  /**
+   * Split one helix into a front (cos ≥ 0) and back (cos < 0) SVG path.
+   * Front flutes are on the near side of the cylinder (visible).
+   * Back flutes are occluded by the tool body (shown faintly).
+   */
+  function buildHelixSegments(phaseOffset: number): { front: string; back: string } {
+    const steps = 120;
+    const frontSegs: string[] = [];
+    const backSegs:  string[] = [];
+    let curPts:   string[]      = [];
+    let curFront: boolean | null = null;
+
     for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      const x = r1(CX + fRpx * Math.sin(2 * Math.PI * cycles * t + phaseOffset));
+      const t     = i / steps;
+      const angle = 2 * Math.PI * cycles * t + phaseOffset;
+      const isFront = Math.cos(angle) >= 0;
+      const x = r1(CX + fRpx * Math.sin(angle));
       const y = r1(flzTop + t * fzH);
-      pts.push(`${i === 0 ? 'M' : 'L'}${x},${y}`);
+
+      if (curFront === null) {
+        curPts   = [`M${x},${y}`];
+        curFront = isFront;
+      } else if (isFront !== curFront) {
+        // Visibility flipped — close segment at the crossover point then start new
+        curPts.push(`L${x},${y}`);
+        (curFront ? frontSegs : backSegs).push(curPts.join(' '));
+        curPts   = [`M${x},${y}`];
+        curFront = isFront;
+      } else {
+        curPts.push(`L${x},${y}`);
+      }
     }
-    return pts.join(' ');
+    if (curPts.length > 1) (curFront! ? frontSegs : backSegs).push(curPts.join(' '));
+
+    return { front: frontSegs.join(' '), back: backSegs.join(' ') };
   }
 
   return (
     <>
       {Array.from({ length: numberOfFlutes }, (_, i) => {
         const phase = (2 * Math.PI * i) / numberOfFlutes;
+        const { front, back } = buildHelixSegments(phase);
         return (
-          <path
-            key={i}
-            d={buildHelixPath(phase)}
-            fill="none"
-            stroke="#93c5fd"
-            strokeWidth="0.9"
-            strokeOpacity="0.4"
-            strokeLinecap="round"
-          />
+          <g key={i}>
+            {/* Back side — occluded by tool body, very faint dashed */}
+            {back && (
+              <path d={back}  fill="none" stroke="#93c5fd"
+                strokeWidth="0.7" strokeOpacity="0.12"
+                strokeDasharray="2,3" strokeLinecap="round" />
+            )}
+            {/* Front side — visible, solid */}
+            {front && (
+              <path d={front} fill="none" stroke="#93c5fd"
+                strokeWidth="1.1" strokeOpacity="0.5" strokeLinecap="round" />
+            )}
+          </g>
         );
       })}
     </>
@@ -512,19 +542,19 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
         tickFromY={TIP_Y}
       />
 
-      {/* Overall length annotation — rightmost */}
+      {/* Overall length annotation — rightmost (x=452) */}
       <VertDimLine
-        x={432}
+        x={452}
         y1={oalY1}
         y2={TIP_Y}
         label={oalLabel}
         extLeft={extX}
       />
 
-      {/* Body length annotation — from tip to body/shank boundary */}
+      {/* Body length annotation — 28 px inside OAL (x=424) */}
       {showBody && (TIP_Y - blY1!) >= 18 && (
         <VertDimLine
-          x={415}
+          x={424}
           y1={blY1!}
           y2={TIP_Y}
           label={blLabel}
@@ -532,10 +562,10 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
         />
       )}
 
-      {/* Flute length annotation — from tip to flute top */}
+      {/* Flute length annotation — 28 px inside BL, or at x=424 if BL absent */}
       {showFL && flArrH >= 18 && (
         <VertDimLine
-          x={showBody ? 398 : 415}
+          x={showBody ? 396 : 424}
           y1={flY1}
           y2={TIP_Y}
           label={flLabel}
@@ -543,7 +573,7 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
         />
       )}
 
-      {/* Shoulder annotation — span of shoulder zone, on the left side */}
+      {/* Shoulder annotation — span of shoulder zone, on the left side (x=48) */}
       {showBody && rawShoulderLen !== undefined && (flzTop - blY1!) >= 18 && (
         <VertDimLine
           x={48}
