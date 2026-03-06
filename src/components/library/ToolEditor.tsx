@@ -417,10 +417,12 @@ export default function ToolEditor({
     onClose();
   }
 
-  const geo  = draft.geometry;
-  const cut  = draft.cutting ?? {};
-  const nc   = draft.nc ?? {};
-  const type = draft.type;
+  const geo      = draft.geometry;
+  const cut      = draft.cutting ?? {};
+  const nc       = draft.nc ?? {};
+  const type     = draft.type;
+  const distUnit = draft.unit === 'mm' ? 'mm' : 'in';
+  const feedUnit = `${distUnit}/${(cut.feedMode ?? 'per-minute') === 'per-minute' ? 'min' : 'rev'}`;
 
   return (
     <>
@@ -593,7 +595,7 @@ export default function ToolEditor({
           {activeTab === 'geometry' && (
             <>
               <div className="grid grid-cols-2 gap-3">
-                <Row2 label="Diameter *">
+                <Row2 label={`Diameter * (${draft.unit})`}>
                   <NumF
                     value={geo.diameter}
                     min={0}
@@ -601,19 +603,19 @@ export default function ToolEditor({
                     onChange={(v) => patchGeo({ diameter: v ?? 0 })}
                   />
                 </Row2>
-                <Row2 label="Shaft diameter">
+                <Row2 label={`Shaft diameter (${draft.unit})`}>
                   <NumF value={geo.shaftDiameter} onChange={(v) => patchGeo({ shaftDiameter: v })} min={0} />
                 </Row2>
-                <Row2 label="Overall length">
+                <Row2 label={`Overall length (${draft.unit})`}>
                   <NumF value={geo.overallLength} onChange={(v) => patchGeo({ overallLength: v })} min={0} error={errors.overallLength} />
                 </Row2>
-                <Row2 label="Body length">
+                <Row2 label={`Body length (${draft.unit})`}>
                   <NumF value={geo.bodyLength} onChange={(v) => patchGeo({ bodyLength: v })} min={0} error={errors.bodyLength} />
                 </Row2>
-                <Row2 label="Flute length">
+                <Row2 label={`Flute length (${draft.unit})`}>
                   <NumF value={geo.fluteLength} onChange={(v) => patchGeo({ fluteLength: v })} min={0} />
                 </Row2>
-                <Row2 label="Shoulder length">
+                <Row2 label={`Shoulder length (${draft.unit})`}>
                   <NumF value={geo.shoulderLength} onChange={(v) => patchGeo({ shoulderLength: v })} min={0} />
                 </Row2>
                 <Row2 label="Number of flutes">
@@ -622,7 +624,7 @@ export default function ToolEditor({
 
                 {/* Conditional fields */}
                 {SHOWS_CORNER_RADIUS.has(type) && (
-                  <Row2 label="Corner radius">
+                  <Row2 label={`Corner radius (${draft.unit})`}>
                     <NumF value={geo.cornerRadius} onChange={(v) => patchGeo({ cornerRadius: v })} min={0} />
                   </Row2>
                 )}
@@ -632,7 +634,7 @@ export default function ToolEditor({
                   </Row2>
                 )}
                 {SHOWS_TIP_DIAMETER.has(type) && (
-                  <Row2 label="Tip diameter">
+                  <Row2 label={`Tip diameter (${draft.unit})`}>
                     <NumF value={geo.tipDiameter} onChange={(v) => patchGeo({ tipDiameter: v })} min={0} />
                   </Row2>
                 )}
@@ -650,7 +652,7 @@ export default function ToolEditor({
                     Thread geometry
                   </p>
                   <div className="grid grid-cols-2 gap-3">
-                    <Row2 label="Thread pitch">
+                    <Row2 label={`Thread pitch (${draft.unit})`}>
                       <NumF value={geo.threadPitch} onChange={(v) => patchGeo({ threadPitch: v })} min={0} />
                     </Row2>
                     <Row2 label="Profile angle (°)">
@@ -674,14 +676,17 @@ export default function ToolEditor({
                 Tool offset values along machine axes. Leave blank if not applicable.
               </p>
               <div className="grid grid-cols-3 gap-3">
-                {(['x', 'y', 'z', 'a', 'b', 'c', 'u', 'v', 'w'] as const).map((axis) => (
-                  <Row2 key={axis} label={`${axis.toUpperCase()} offset`}>
-                    <NumF
-                      value={(draft.offsets ?? {})[axis]}
-                      onChange={(v) => patchOffsets({ [axis]: v })}
-                    />
-                  </Row2>
-                ))}
+                {(['x', 'y', 'z', 'a', 'b', 'c', 'u', 'v', 'w'] as const).map((axis) => {
+                  const isAngular = ['a', 'b', 'c'].includes(axis);
+                  return (
+                    <Row2 key={axis} label={`${axis.toUpperCase()} offset (${isAngular ? '°' : draft.unit})`}>
+                      <NumF
+                        value={(draft.offsets ?? {})[axis]}
+                        onChange={(v) => patchOffsets({ [axis]: v })}
+                      />
+                    </Row2>
+                  );
+                })}
               </div>
             </>
           )}
@@ -690,28 +695,28 @@ export default function ToolEditor({
           {activeTab === 'cutting' && (
             <>
               <div className="grid grid-cols-2 gap-3">
-                <Row2 label="Spindle RPM">
+                <Row2 label="Spindle (rpm)">
                   <NumF value={cut.spindleRpm} onChange={(v) => patchCut({ spindleRpm: v })} min={0} step={1} />
                 </Row2>
-                <Row2 label="Ramp spindle RPM">
+                <Row2 label="Ramp spindle (rpm)">
                   <NumF value={cut.rampSpindleRpm} onChange={(v) => patchCut({ rampSpindleRpm: v })} min={0} step={1} />
                 </Row2>
-                <Row2 label="Cutting feed">
+                <Row2 label={`Cutting feed (${feedUnit})`}>
                   <NumF value={cut.feedCutting} onChange={(v) => patchCut({ feedCutting: v })} min={0} />
                 </Row2>
-                <Row2 label="Plunge feed">
+                <Row2 label={`Plunge feed (${feedUnit})`}>
                   <NumF value={cut.feedPlunge} onChange={(v) => patchCut({ feedPlunge: v })} min={0} />
                 </Row2>
-                <Row2 label="Ramp feed">
+                <Row2 label={`Ramp feed (${feedUnit})`}>
                   <NumF value={cut.feedRamp} onChange={(v) => patchCut({ feedRamp: v })} min={0} />
                 </Row2>
-                <Row2 label="Entry feed">
+                <Row2 label={`Entry feed (${feedUnit})`}>
                   <NumF value={cut.feedEntry} onChange={(v) => patchCut({ feedEntry: v })} min={0} />
                 </Row2>
-                <Row2 label="Exit feed">
+                <Row2 label={`Exit feed (${feedUnit})`}>
                   <NumF value={cut.feedExit} onChange={(v) => patchCut({ feedExit: v })} min={0} />
                 </Row2>
-                <Row2 label="Retract feed">
+                <Row2 label={`Retract feed (${feedUnit})`}>
                   <NumF value={cut.feedRetract} onChange={(v) => patchCut({ feedRetract: v })} min={0} />
                 </Row2>
               </div>
