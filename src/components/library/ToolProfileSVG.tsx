@@ -414,7 +414,7 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
   const showFL  = draft.geometry.fluteLength !== undefined;
   const flY1    = ty(resolved.fluteLength, scale);
   const flArrH  = TIP_Y - flY1;
-  const flLabel = `Flute ${resolved.fluteLength.toFixed(dec)}`;
+  const flLabel = `Flute ${resolved.fluteLength.toFixed(dec)} ${unit}`;
 
   // Body / shoulder zone — body length measured from tip, shoulder is the non-fluted band above flutes
   // Body line y (body/shank boundary): prefer bodyLength; fall back to fluteLength+shoulderLength
@@ -424,12 +424,12 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
           : undefined);
   const showBody  = rawBodyLen !== undefined && rawBodyLen > resolved.fluteLength;
   const blY1      = showBody ? ty(rawBodyLen!, scale) : null;
-  const blLabel   = showBody ? `Body ${rawBodyLen!.toFixed(dec)}` : '';
+  const blLabel   = showBody ? `Body ${rawBodyLen!.toFixed(dec)} ${unit}` : '';
 
   // Shoulder span shown if the zone is tall enough to annotate
   const rawShoulderLen = resolved.shoulderLength
     ?? (showBody ? rawBodyLen! - resolved.fluteLength : undefined);
-  const shLabel = rawShoulderLen !== undefined ? `Shldr ${rawShoulderLen.toFixed(dec)}` : '';
+  const shLabel = rawShoulderLen !== undefined ? `Shldr ${rawShoulderLen.toFixed(dec)} ${unit}` : '';
 
   const extX    = CX + maxRpx + 4;
   const leftExtX = CX - maxRpx - 4;
