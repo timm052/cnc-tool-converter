@@ -51,14 +51,15 @@ export default function ConverterPage() {
   }, [sourceFormatId, targetFormatId, settings.rememberLastFormatPair]);
 
   // ── Core state ────────────────────────────────────────────────────────────
-  const [loadedFiles,    setLoadedFiles]    = useState<LoadedFile[]>([]);
-  const [tools,          setTools]          = useState<Tool[]>([]);
-  const [parseWarnings,  setParseWarnings]  = useState<string[]>([]);
-  const [parseErrors,    setParseErrors]    = useState<string[]>([]);
-  const [writeResults,   setWriteResults]   = useState<WriteResult[]>([]);
-  const [selectedResult, setSelectedResult] = useState(0);
-  const [isConverting,   setIsConverting]   = useState(false);
-  const [stage,          setStage]          = useState<Stage>('idle');
+  const [loadedFiles,      setLoadedFiles]      = useState<LoadedFile[]>([]);
+  const [tools,            setTools]            = useState<Tool[]>([]);
+  const [parseWarnings,    setParseWarnings]    = useState<string[]>([]);
+  const [parseErrors,      setParseErrors]      = useState<string[]>([]);
+  const [writeResults,     setWriteResults]     = useState<WriteResult[]>([]);
+  const [selectedResult,   setSelectedResult]   = useState(0);
+  const [isConverting,     setIsConverting]     = useState(false);
+  const [stage,            setStage]            = useState<Stage>('idle');
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const importableFormats = registry.getImportableFormats();
   const exportableFormats = registry.getExportableFormats();
@@ -159,6 +160,7 @@ export default function ConverterPage() {
     setParseErrors([]);
     setWriteResults([]);
     setStage('idle');
+    setShowClearConfirm(false);
   }
 
   function handleSourceChange(id: string) {
@@ -344,12 +346,30 @@ export default function ConverterPage() {
                   from {loadedFiles.length} file{loadedFiles.length !== 1 ? 's' : ''}
                 </span>
               </h2>
-              <button
-                onClick={handleClear}
-                className="text-xs text-slate-500 hover:text-red-400 transition-colors"
-              >
-                Clear &amp; reset
-              </button>
+              {showClearConfirm ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-400">Clear all?</span>
+                  <button
+                    onClick={handleClear}
+                    className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                  >
+                    Yes, clear
+                  </button>
+                  <button
+                    onClick={() => setShowClearConfirm(false)}
+                    className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowClearConfirm(true)}
+                  className="text-xs text-slate-500 hover:text-red-400 transition-colors"
+                >
+                  Clear &amp; reset
+                </button>
+              )}
             </div>
             <div
               className="overflow-auto rounded-xl border border-slate-700"

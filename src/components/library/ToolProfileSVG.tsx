@@ -109,20 +109,19 @@ function buildProfilePath(type: ToolType, geo: ResolvedGeometry, s: number): str
 
   const shoulderTS = FL;   // tool-space Y where shank meets flute zone
 
-  // Shared preamble: top-centre → down right shank → shoulder step (either direction)
+  // Shared preamble: top-left shank → top-right shank → down right shank → shoulder step
   const preamble = [
-    `M${tx(0, s)},${ty(OL, s)}`,            // top centre
-    `L${tx(sR, s)},${ty(OL, s)}`,           // top-right shank
-    `L${tx(sR, s)},${ty(shoulderTS, s)}`,   // down right shank
+    `M${tx(-sR, s)},${ty(OL, s)}`,           // top-left shank
+    `L${tx(sR, s)},${ty(OL, s)}`,            // top-right shank
+    `L${tx(sR, s)},${ty(shoulderTS, s)}`,    // down right shank
     // Step to flute radius regardless of direction (in OR out)
     ...(sR !== fR ? [`L${tx(fR, s)},${ty(shoulderTS, s)}`] : []),
   ].join(' ');
 
-  // Shared close: left flute top → step back to shank → up left shank → top-centre
+  // Shared close: left flute top → step back to shank → Z closes to top-left
   const close = [
     `L${tx(-fR, s)},${ty(shoulderTS, s)}`,   // left flute top
     ...(sR !== fR ? [`L${tx(-sR, s)},${ty(shoulderTS, s)}`] : []),
-    `L${tx(-sR, s)},${ty(OL, s)}`,           // up left shank
     'Z',
   ].join(' ');
 
@@ -221,7 +220,7 @@ function buildProfilePath(type: ToolType, geo: ResolvedGeometry, s: number): str
   return `${preamble} ${tip} ${close}`;
 }
 
-// ── Flute hatch marks (diagonal lines clipped to profile) ─────────────────────
+// ── Flute helical curves (one sinusoidal path per flute) ──────────────────────
 
 interface FluteLinesProps {
   numberOfFlutes: number;
@@ -234,33 +233,39 @@ function FluteLines({ numberOfFlutes, fRpx, flzTop, flzBot }: FluteLinesProps) {
   const fzH = flzBot - flzTop;
   if (fzH < 8 || numberOfFlutes < 1) return null;
 
-  // Helix diagonal: lines go bottom-left → top-right (right-hand helix)
-  // diagOffset: horizontal extent of the angle over the tool diameter
-  const diagOffset = r1(Math.min(fRpx * 0.7, 20));
-  // Pitch between parallel lines, scaled by flute count
-  const pitch = Math.max(4, Math.min(16, (fRpx * 2.2) / numberOfFlutes));
+  // Number of helix cycles visible in the flute zone (more = tighter helix)
+  const cycles = Math.max(1, Math.min(3, fzH / 40));
 
-  const lines: JSX.Element[] = [];
-  // Start above flzTop so lines fill the zone from edge to edge
-  const startY = flzTop - diagOffset;
-  const endY   = flzBot + pitch;
-
-  for (let y = startY; y <= endY; y += pitch) {
-    const y1 = r1(y);
-    const y2 = r1(y - diagOffset);
-    lines.push(
-      <line
-        key={y1}
-        x1={r1(CX - fRpx - 4)} y1={y1}
-        x2={r1(CX + fRpx + 4)} y2={y2}
-        stroke="#93c5fd"
-        strokeWidth="0.7"
-        strokeOpacity="0.25"
-      />
-    );
+  function buildHelixPath(phaseOffset: number): string {
+    const steps = 60;
+    const pts: string[] = [];
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const x = r1(CX + fRpx * Math.sin(2 * Math.PI * cycles * t + phaseOffset));
+      const y = r1(flzTop + t * fzH);
+      pts.push(`${i === 0 ? 'M' : 'L'}${x},${y}`);
+    }
+    return pts.join(' ');
   }
 
-  return <>{lines}</>;
+  return (
+    <>
+      {Array.from({ length: numberOfFlutes }, (_, i) => {
+        const phase = (2 * Math.PI * i) / numberOfFlutes;
+        return (
+          <path
+            key={i}
+            d={buildHelixPath(phase)}
+            fill="none"
+            stroke="#93c5fd"
+            strokeWidth="0.9"
+            strokeOpacity="0.4"
+            strokeLinecap="round"
+          />
+        );
+      })}
+    </>
+  );
 }
 
 // ── Dimension annotation helpers ──────────────────────────────────────────────
@@ -292,13 +297,13 @@ function VertDimLine({
       <Arrowhead x={x} y={y1} dir="up" />
       <Arrowhead x={x} y={y2} dir="down" />
       <text
-        x={x}
+        x={r1(x - 14)}
         y={midY}
-        fontSize="10"
+        fontSize="12"
         fill="#94a3b8"
         textAnchor="middle"
         fontFamily="ui-monospace, monospace"
-        transform={`rotate(-90 ${x} ${midY})`}
+        transform={`rotate(-90 ${r1(x - 14)} ${midY})`}
         dominantBaseline="central"
       >
         {label}
@@ -322,12 +327,12 @@ function HorizDimLine({
       <line x1={x1} y1={tickFromY} x2={x1} y2={r1(y - 3)} stroke="#475569" strokeWidth="0.7" strokeDasharray="3,2" />
       <line x1={x2} y1={tickFromY} x2={x2} y2={r1(y - 3)} stroke="#475569" strokeWidth="0.7" strokeDasharray="3,2" />
       <line x1={r1(lineX1 + 9)} y1={y} x2={r1(lineX2 - 9)} y2={y} stroke="#64748b" strokeWidth="1" />
-      <Arrowhead x={x1} y={y} dir="left" />
-      <Arrowhead x={x2} y={y} dir="right" />
+      <Arrowhead x={x1} y={y} dir="right" />
+      <Arrowhead x={x2} y={y} dir="left" />
       <text
         x={midX}
-        y={r1(y + 13)}
-        fontSize="10"
+        y={r1(y + 14)}
+        fontSize="12"
         fill="#94a3b8"
         textAnchor="middle"
         fontFamily="ui-monospace, monospace"
@@ -350,8 +355,8 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
 
   if (!isFinite(scale) || resolved.diameter * scale < 3) {
     return (
-      <svg viewBox="0 0 480 170" width="100%" height="170" className="block">
-        <rect width="480" height="170" fill="#0f172a" />
+      <svg viewBox="0 0 480 185" width="100%" height="185" className="block">
+        <rect width="480" height="185" fill="#0f172a" />
         <text x="240" y="85" textAnchor="middle" fontSize="11" fill="#475569" fontFamily="sans-serif">
           No preview
         </text>
@@ -378,7 +383,7 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
   const extX = CX + maxRpx + 4;
 
   // Diameter line sits in the annotation zone below the profile
-  const diamY     = 143;
+  const diamY     = 148;
   const diamLabel = `Ø ${resolved.diameter.toFixed(dec)} ${unit}`;
 
   // Flute zone bounds for hatch marks
@@ -390,9 +395,9 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
 
   return (
     <svg
-      viewBox="0 0 480 170"
+      viewBox="0 0 480 185"
       width="100%"
-      height="170"
+      height="185"
       className="block"
       aria-label={`${draft.type} profile`}
     >
@@ -404,7 +409,19 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
       </defs>
 
       {/* Background */}
-      <rect width="480" height="170" fill="#0f172a" />
+      <rect width="480" height="185" fill="#0f172a" />
+
+      {/* Unit badge */}
+      <text
+        x="474" y="10"
+        fontSize="10"
+        fill="#475569"
+        fontFamily="ui-monospace, monospace"
+        textAnchor="end"
+        dominantBaseline="hanging"
+      >
+        {unit}
+      </text>
 
       {/* Centre axis guide */}
       <line x1="240" y1="10" x2="240" y2="130"
@@ -495,7 +512,7 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
       )}
 
       {/* Tool type label */}
-      <text x="6" y="165" fontSize="9" fill="#475569" fontFamily="sans-serif">
+      <text x="6" y="178" fontSize="10" fill="#475569" fontFamily="sans-serif">
         {draft.type}
         {resolved.numberOfFlutes ? `  ·  ${resolved.numberOfFlutes}F` : ''}
       </text>

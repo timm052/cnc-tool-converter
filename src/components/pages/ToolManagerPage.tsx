@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import {
   Library, Plus, Upload, Download, Search, Star, X,
-  ChevronDown, Layers, Tag,
+  ChevronDown, Layers, Tag, RotateCcw,
 } from 'lucide-react';
 import { useLibrary } from '../../contexts/LibraryContext';
 import type { LibraryTool } from '../../types/libraryTool';
@@ -114,6 +114,8 @@ export default function ToolManagerPage() {
     addTool, addTools, updateTool, deleteTool,
   } = useLibrary();
 
+  const restoreInputRef = useRef<HTMLInputElement>(null);
+
   // ── Panel / editor state ──────────────────────────────────────────────────
   const [activePanel, setActivePanel] = useState<Panel>(null);
   const [editingTool, setEditingTool] = useState<LibraryTool | null>(null);
@@ -198,6 +200,31 @@ export default function ToolManagerPage() {
     setEditingTool(null);
   }
 
+  function handleBackup() {
+    const payload = JSON.stringify({ version: 1, exportedAt: Date.now(), tools }, null, 2);
+    const blob = new Blob([payload], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tool-library-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleRestore(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text) as { tools?: LibraryTool[] } | LibraryTool[];
+      const incoming: LibraryTool[] = Array.isArray(data) ? data : (data.tools ?? []);
+      await addTools(incoming, false);
+    } catch (err) {
+      console.error('Restore failed:', err);
+    }
+    e.target.value = '';
+  }
+
   function clearFilters() {
     setSearchQuery('');
     setStarredOnly(false);
@@ -244,6 +271,31 @@ export default function ToolManagerPage() {
               Export {selectedIds.size} tool{selectedIds.size !== 1 ? 's' : ''}
             </button>
           )}
+          {tools.length > 0 && (
+            <button
+              onClick={handleBackup}
+              title="Download all tools as JSON backup"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
+            >
+              <Download size={14} />
+              Backup
+            </button>
+          )}
+          <button
+            onClick={() => restoreInputRef.current?.click()}
+            title="Restore tools from a JSON backup"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
+          >
+            <RotateCcw size={14} />
+            Restore
+          </button>
+          <input
+            ref={restoreInputRef}
+            type="file"
+            accept=".json"
+            onChange={handleRestore}
+            className="hidden"
+          />
           <button
             onClick={() => setActivePanel('import')}
             className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"

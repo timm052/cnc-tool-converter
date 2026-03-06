@@ -303,10 +303,11 @@ function TagInput({
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 
-type Tab = 'library' | 'geometry' | 'cutting' | 'nc';
+type Tab = 'library' | 'geometry' | 'offsets' | 'cutting' | 'nc';
 const TABS: { id: Tab; label: string }[] = [
   { id: 'library',  label: 'Library'  },
   { id: 'geometry', label: 'Geometry' },
+  { id: 'offsets',  label: 'Offsets'  },
   { id: 'cutting',  label: 'Cutting'  },
   { id: 'nc',       label: 'NC'       },
 ];
@@ -364,6 +365,9 @@ export default function ToolEditor({
   }
   function patchGeo(patch: Partial<LibraryTool['geometry']>) {
     setDraft((prev) => ({ ...prev, geometry: { ...prev.geometry, ...patch } }));
+  }
+  function patchOffsets(patch: Partial<NonNullable<LibraryTool['offsets']>>) {
+    setDraft((prev) => ({ ...prev, offsets: { ...(prev.offsets ?? {}), ...patch } }));
   }
   function patchCut(patch: Partial<NonNullable<LibraryTool['cutting']>>) {
     setDraft((prev) => ({ ...prev, cutting: { ...(prev.cutting ?? {}), ...patch } }));
@@ -634,6 +638,25 @@ export default function ToolEditor({
               <div className="flex items-center justify-between pt-1">
                 <span className="text-sm text-slate-300">Internal coolant channels</span>
                 <Toggle value={geo.coolantSupport ?? false} onChange={(v) => patchGeo({ coolantSupport: v })} />
+              </div>
+            </>
+          )}
+
+          {/* ── Offsets tab ──────────────────────────────────────────────── */}
+          {activeTab === 'offsets' && (
+            <>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Tool offset values along machine axes. Leave blank if not applicable.
+              </p>
+              <div className="grid grid-cols-3 gap-3">
+                {(['x', 'y', 'z', 'a', 'b', 'c', 'u', 'v', 'w'] as const).map((axis) => (
+                  <Row2 key={axis} label={`${axis.toUpperCase()} offset`}>
+                    <NumF
+                      value={(draft.offsets ?? {})[axis]}
+                      onChange={(v) => patchOffsets({ [axis]: v })}
+                    />
+                  </Row2>
+                ))}
               </div>
             </>
           )}

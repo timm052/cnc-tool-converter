@@ -32,7 +32,7 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
     const now = Date.now();
     return {
       ...tool,
-      machineGroup: settings.libraryImportDefaultMachineGroup || tool.machineGroup || undefined,
+      machineGroup: settings.libraryImportDefaultMachineGroup || undefined,
       tags:         [],
       starred:      false,
       addedAt:      now,
