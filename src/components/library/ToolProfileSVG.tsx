@@ -386,6 +386,10 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
   const dec  = settings.tableDecimalPrecision;
   const unit = draft.unit;
 
+  // Format a number: round to `dec` places but strip trailing zeros so the
+  // result matches what the user typed in the editor (e.g. 6 → "6", not "6.000")
+  const fmt = (n: number) => parseFloat(n.toFixed(dec)).toString();
+
   const resolved = resolveGeometry(draft.type, draft.geometry);
   const scale    = computeScale(resolved);
 
@@ -409,12 +413,12 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
   const maxRpx = Math.max(fRpx, sRpx);
 
   const oalY1    = ty(resolved.overallLength, scale);
-  const oalLabel = `OAL ${resolved.overallLength.toFixed(dec)} ${unit}`;
+  const oalLabel = `OAL ${fmt(resolved.overallLength)} ${unit}`;
 
   const showFL  = draft.geometry.fluteLength !== undefined;
   const flY1    = ty(resolved.fluteLength, scale);
   const flArrH  = TIP_Y - flY1;
-  const flLabel = `Flute ${resolved.fluteLength.toFixed(dec)} ${unit}`;
+  const flLabel = `Flute ${fmt(resolved.fluteLength)} ${unit}`;
 
   // Body / shoulder zone — body length measured from tip, shoulder is the non-fluted band above flutes
   // Body line y (body/shank boundary): prefer bodyLength; fall back to fluteLength+shoulderLength
@@ -424,19 +428,19 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
           : undefined);
   const showBody  = rawBodyLen !== undefined && rawBodyLen > resolved.fluteLength;
   const blY1      = showBody ? ty(rawBodyLen!, scale) : null;
-  const blLabel   = showBody ? `Body ${rawBodyLen!.toFixed(dec)} ${unit}` : '';
+  const blLabel   = showBody ? `Body ${fmt(rawBodyLen!)} ${unit}` : '';
 
   // Shoulder span shown if the zone is tall enough to annotate
   const rawShoulderLen = resolved.shoulderLength
     ?? (showBody ? rawBodyLen! - resolved.fluteLength : undefined);
-  const shLabel = rawShoulderLen !== undefined ? `Shldr ${rawShoulderLen.toFixed(dec)} ${unit}` : '';
+  const shLabel = rawShoulderLen !== undefined ? `Shldr ${fmt(rawShoulderLen)} ${unit}` : '';
 
   const extX    = CX + maxRpx + 4;
   const leftExtX = CX - maxRpx - 4;
 
   // Diameter line sits in the annotation zone below the profile
   const diamY     = 148;
-  const diamLabel = `Ø ${resolved.diameter.toFixed(dec)} ${unit}`;
+  const diamLabel = `Ø ${fmt(resolved.diameter)} ${unit}`;
 
   // Flute zone bounds for hatch marks
   const flzTop = ty(resolved.fluteLength, scale);
