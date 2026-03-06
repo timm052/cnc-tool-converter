@@ -1,8 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
-    'C:/Users/timmo/Documents/Coding/Tool Table/cnc-tool-converter/index.html',
-    'C:/Users/timmo/Documents/Coding/Tool Table/cnc-tool-converter/src/**/*.{js,ts,jsx,tsx}',
+    './index.html',
+    './src/**/*.{js,ts,jsx,tsx}',
   ],
   darkMode: 'class',
   theme: {
