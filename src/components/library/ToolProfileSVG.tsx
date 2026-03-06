@@ -19,6 +19,8 @@ interface ResolvedGeometry {
   shaftDiameter:   number;
   overallLength:   number;
   fluteLength:     number;
+  bodyLength?:     number;   // undefined = not set
+  shoulderLength?: number;   // undefined = not set
   cornerRadius:    number;
   taperAngle:      number;   // half-angle from axis, degrees
   tipDiameter:     number;
@@ -57,12 +59,14 @@ function resolveGeometry(type: ToolType, geo: ToolGeometry): ResolvedGeometry {
     shaftDiameter:   sd,
     overallLength:   ol,
     fluteLength:     fl,
+    bodyLength:      geo.bodyLength,      // pass through; undefined = not set
+    shoulderLength:  geo.shoulderLength,  // pass through; undefined = not set
     cornerRadius:    cr,
     taperAngle:      ta,
     tipDiameter:     td,
     threadPitch:     tp,
     numberOfTeeth:   nt,
-    numberOfFlutes:  geo.numberOfFlutes,   // pass through; undefined = no marks
+    numberOfFlutes:  geo.numberOfFlutes,  // pass through; undefined = no marks
     coolantSupport:  geo.coolantSupport ?? false,
   };
 }
@@ -380,7 +384,23 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
   const flArrH  = TIP_Y - flY1;
   const flLabel = `FL ${resolved.fluteLength.toFixed(dec)}`;
 
-  const extX = CX + maxRpx + 4;
+  // Body / shoulder zone — body length measured from tip, shoulder is the non-fluted band above flutes
+  // Body line y (body/shank boundary): prefer bodyLength; fall back to fluteLength+shoulderLength
+  const rawBodyLen = resolved.bodyLength
+    ?? (resolved.shoulderLength !== undefined
+          ? resolved.fluteLength + resolved.shoulderLength
+          : undefined);
+  const showBody  = rawBodyLen !== undefined && rawBodyLen > resolved.fluteLength;
+  const blY1      = showBody ? ty(rawBodyLen!, scale) : null;
+  const blLabel   = showBody ? `BL ${rawBodyLen!.toFixed(dec)}` : '';
+
+  // Shoulder span shown if the zone is tall enough to annotate
+  const rawShoulderLen = resolved.shoulderLength
+    ?? (showBody ? rawBodyLen! - resolved.fluteLength : undefined);
+  const shLabel = rawShoulderLen !== undefined ? `SH ${rawShoulderLen.toFixed(dec)}` : '';
+
+  const extX    = CX + maxRpx + 4;
+  const leftExtX = CX - maxRpx - 4;
 
   // Diameter line sits in the annotation zone below the profile
   const diamY     = 148;
@@ -430,34 +450,26 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
       {/* Profile fill */}
       <path d={profileD} fill="#1e3a5f" />
 
+      {/* Shoulder zone — lighter fill between flute top and body/shank boundary */}
+      {showBody && (
+        <g clipPath="url(#toolProfileClip)">
+          <rect
+            x={r1(CX - maxRpx - 2)} y={blY1!}
+            width={r1((maxRpx + 2) * 2)} height={r1(flzTop - blY1!)}
+            fill="#2563eb" fillOpacity="0.15"
+          />
+        </g>
+      )}
+
       {/* Flute hatch marks — clipped to profile, only in flute zone */}
       {resolved.numberOfFlutes !== undefined && (
         <g clipPath="url(#toolProfileClip)">
-          {/* Restrict lines to flute zone by masking above via a rect */}
           <FluteLines
             numberOfFlutes={resolved.numberOfFlutes}
             fRpx={fRpx}
             flzTop={flzTop}
             flzBot={TIP_Y}
           />
-        </g>
-      )}
-
-      {/* Shank hatching (cross-hatch to visually distinguish shank from flute zone) */}
-      {sRpx > 4 && (
-        <g clipPath="url(#toolProfileClip)">
-          {/* Light cross-hatch in shank zone only */}
-          {Array.from({ length: Math.ceil((TIP_Y - oalY1) / 8) }, (_, i) => {
-            const y = r1(oalY1 + i * 8);
-            if (y >= flzTop) return null;  // stop at flute zone boundary
-            return (
-              <line key={i}
-                x1={r1(CX - sRpx - 4)} y1={y}
-                x2={r1(CX + sRpx + 4)} y2={r1(y + 6)}
-                stroke="#93c5fd" strokeWidth="0.5" strokeOpacity="0.12"
-              />
-            );
-          })}
         </g>
       )}
 
@@ -473,12 +485,21 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
       {/* Profile stroke (drawn on top of hatch marks) */}
       <path d={profileD} fill="none" stroke="#60a5fa" strokeWidth="1.5" strokeLinejoin="round" />
 
-      {/* Shoulder line — horizontal rule at flute/shank boundary */}
+      {/* Flute boundary line — horizontal rule at flute top */}
       {Math.abs(flzTop - oalY1) > 6 && (
         <line
-          x1={r1(CX - Math.max(fRpx, sRpx))} y1={flzTop}
-          x2={r1(CX + Math.max(fRpx, sRpx))} y2={flzTop}
+          x1={r1(CX - maxRpx)} y1={flzTop}
+          x2={r1(CX + maxRpx)} y2={flzTop}
           stroke="#3b82f6" strokeWidth="0.6" strokeOpacity="0.5" strokeDasharray="4,3"
+        />
+      )}
+
+      {/* Body boundary line — horizontal rule at body/shank boundary */}
+      {showBody && Math.abs(blY1! - oalY1) > 4 && (
+        <line
+          x1={r1(CX - maxRpx)} y1={blY1!}
+          x2={r1(CX + maxRpx)} y2={blY1!}
+          stroke="#60a5fa" strokeWidth="0.7" strokeOpacity="0.6" strokeDasharray="4,3"
         />
       )}
 
@@ -491,7 +512,7 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
         tickFromY={TIP_Y}
       />
 
-      {/* Overall length annotation */}
+      {/* Overall length annotation — rightmost */}
       <VertDimLine
         x={432}
         y1={oalY1}
@@ -500,14 +521,36 @@ export function ToolProfileSVG({ draft }: { draft: LibraryTool }) {
         extLeft={extX}
       />
 
-      {/* Flute length annotation */}
-      {showFL && flArrH >= 18 && (
+      {/* Body length annotation — from tip to body/shank boundary */}
+      {showBody && (TIP_Y - blY1!) >= 18 && (
         <VertDimLine
           x={415}
+          y1={blY1!}
+          y2={TIP_Y}
+          label={blLabel}
+          extLeft={extX}
+        />
+      )}
+
+      {/* Flute length annotation — from tip to flute top */}
+      {showFL && flArrH >= 18 && (
+        <VertDimLine
+          x={showBody ? 398 : 415}
           y1={flY1}
           y2={TIP_Y}
           label={flLabel}
           extLeft={extX}
+        />
+      )}
+
+      {/* Shoulder annotation — span of shoulder zone, on the left side */}
+      {showBody && rawShoulderLen !== undefined && (flzTop - blY1!) >= 18 && (
+        <VertDimLine
+          x={48}
+          y1={blY1!}
+          y2={flzTop}
+          label={shLabel}
+          extLeft={leftExtX}
         />
       )}
 

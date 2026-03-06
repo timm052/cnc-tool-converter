@@ -67,6 +67,31 @@ function validate(draft: LibraryTool): Errors {
     e.pocketNumber = 'Must be a non-negative integer.';
   if (!draft.geometry.diameter || draft.geometry.diameter <= 0)
     e.diameter = 'Must be greater than 0.';
+
+  // Length hierarchy: fluteLength ≤ bodyLength ≤ overallLength
+  const { overallLength: ol, bodyLength: bl, fluteLength: fl, shoulderLength: sl } = draft.geometry;
+  const fmt = (n: number) => parseFloat(n.toPrecision(6)).toString();
+
+  // bodyLength must be ≥ fluteLength
+  if (bl !== undefined && fl !== undefined && bl < fl)
+    e.bodyLength = `Must be ≥ flute length (${fmt(fl)}).`;
+
+  // bodyLength must be ≥ fluteLength + shoulderLength
+  if (bl !== undefined && fl !== undefined && sl !== undefined && bl < fl + sl)
+    e.bodyLength = `Must be ≥ flute + shoulder (${fmt(fl + sl)}).`;
+
+  // overallLength must be ≥ bodyLength
+  if (ol !== undefined && bl !== undefined && ol < bl)
+    e.overallLength = `Must be ≥ body length (${fmt(bl)}).`;
+
+  // overallLength must be ≥ fluteLength (when no bodyLength)
+  if (ol !== undefined && fl !== undefined && bl === undefined && ol < fl)
+    e.overallLength = `Must be ≥ flute length (${fmt(fl)}).`;
+
+  // overallLength must be ≥ fluteLength + shoulderLength (when no bodyLength)
+  if (ol !== undefined && fl !== undefined && sl !== undefined && bl === undefined && ol < fl + sl)
+    e.overallLength = `Must be ≥ flute + shoulder (${fmt(fl + sl)}).`;
+
   return e;
 }
 
@@ -580,10 +605,10 @@ export default function ToolEditor({
                   <NumF value={geo.shaftDiameter} onChange={(v) => patchGeo({ shaftDiameter: v })} min={0} />
                 </Row2>
                 <Row2 label="Overall length">
-                  <NumF value={geo.overallLength} onChange={(v) => patchGeo({ overallLength: v })} min={0} />
+                  <NumF value={geo.overallLength} onChange={(v) => patchGeo({ overallLength: v })} min={0} error={errors.overallLength} />
                 </Row2>
                 <Row2 label="Body length">
-                  <NumF value={geo.bodyLength} onChange={(v) => patchGeo({ bodyLength: v })} min={0} />
+                  <NumF value={geo.bodyLength} onChange={(v) => patchGeo({ bodyLength: v })} min={0} error={errors.bodyLength} />
                 </Row2>
                 <Row2 label="Flute length">
                   <NumF value={geo.fluteLength} onChange={(v) => patchGeo({ fluteLength: v })} min={0} />
