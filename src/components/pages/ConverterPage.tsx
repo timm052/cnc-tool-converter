@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react';
-import { ArrowRight, RefreshCw, AlertCircle, ArrowLeftRight, CheckCircle, AlertTriangle, ChevronDown } from 'lucide-react';
+import { ArrowRight, RefreshCw, AlertCircle, ArrowLeftRight, CheckCircle, AlertTriangle, ChevronDown, Clock, X, Map, FolderOpen, FileText } from 'lucide-react';
 import { registry } from '../../converters';
 import type { Tool } from '../../types/tool';
 import type { ParseResult, WriteResult } from '../../types/converter';
 import FileDropZone from '../FileDropZone';
+import BatchFolderDropZone from '../converter/BatchFolderDropZone';
 import FormatSelector from '../FormatSelector';
 import ToolTable from '../ToolTable';
 import ConversionOutput from '../ConversionOutput';
+import FieldMappingEditor from '../converter/FieldMappingEditor';
 import { useSettings, loadLastFormatPair, saveLastFormatPair } from '../../contexts/SettingsContext';
+import { useRecentFiles } from '../../hooks/useRecentFiles';
+import { loadMapping, applyFieldMapping } from '../../lib/fieldMapping';
 
 interface LoadedFile {
   name:    string;
@@ -24,8 +28,17 @@ const HSMLIB_TO_LINUXCNC_LOST = [
   'Comments, product IDs, and manufacturer info',
 ];
 
+function relativeTime(ts: number): string {
+  const diff = Math.floor((Date.now() - ts) / 1000);
+  if (diff < 60)    return 'just now';
+  if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
 export default function ConverterPage() {
   const { settings } = useSettings();
+  const { recentFiles, addRecent, removeRecent, clearRecent } = useRecentFiles();
 
   // ── Format state (with optional localStorage memory) ─────────────────────
   const [sourceFormatId, setSourceFormatId] = useState<string>(() => {
@@ -60,6 +73,23 @@ export default function ConverterPage() {
   const [isConverting,     setIsConverting]     = useState(false);
   const [stage,            setStage]            = useState<Stage>('idle');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showFieldMapping, setShowFieldMapping] = useState(false);
+  const [batchMode,        setBatchMode]        = useState(false);
+
+  // Ctrl+Enter → Convert
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        if (tools.length > 0 && !isConverting) {
+          void doConvert(tools, targetFormatId, loadedFiles, sourceFormatId, loadedFiles[0]?.name);
+        }
+      }
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tools, isConverting, targetFormatId, loadedFiles, sourceFormatId]);
 
   const importableFormats = registry.getImportableFormats();
   const exportableFormats = registry.getExportableFormats();
@@ -90,6 +120,8 @@ export default function ConverterPage() {
     const targetConverter = registry.getConverter(tgtFmtId);
     if (!targetConverter || toolsToConvert.length === 0) return;
 
+    const mapping = loadMapping(srcFmtId, tgtFmtId);
+
     setIsConverting(true);
     try {
       if (settings.mergeBehavior === 'separate' && files.length > 1) {
@@ -100,18 +132,27 @@ export default function ConverterPage() {
         const results: WriteResult[] = [];
         for (const file of files) {
           const parsed: ParseResult = await srcConverter.parse(file.content, file.name);
-          const r = await targetConverter.write(parsed.tools, writerOptions(file.name));
+          const mapped = applyFieldMapping(parsed.tools, mapping);
+          const r = await targetConverter.write(mapped, writerOptions(file.name));
           results.push(r);
         }
         setWriteResults(results);
         setSelectedResult(0);
       } else {
         // Merge: convert all tools together
-        const r = await targetConverter.write(toolsToConvert, writerOptions(sourceFilename));
+        const mapped = applyFieldMapping(toolsToConvert, mapping);
+        const r = await targetConverter.write(mapped, writerOptions(sourceFilename));
         setWriteResults([r]);
         setSelectedResult(0);
       }
       setStage('converted');
+      addRecent({
+        name:         files[0]?.name ?? 'unknown',
+        sourceFormat: srcFmtId,
+        targetFormat: tgtFmtId,
+        toolCount:    toolsToConvert.length,
+        convertedAt:  Date.now(),
+      });
     } catch (err) {
       setParseErrors((prev) => [...prev, `Conversion error: ${err}`]);
     }
@@ -266,6 +307,30 @@ export default function ConverterPage() {
           Convert
         </button>
 
+        {/* Map fields button — shows active dot when rules exist */}
+        {(() => {
+          const activeRules = loadMapping(sourceFormatId, targetFormatId).rules.length;
+          return (
+            <button
+              onClick={() => setShowFieldMapping(true)}
+              title="Customize field mapping"
+              className={[
+                'mb-1 relative p-2 rounded-lg border transition-colors',
+                activeRules > 0
+                  ? 'bg-blue-500/10 border-blue-500/40 text-blue-400 hover:bg-blue-500/20'
+                  : 'bg-slate-700 border-slate-600 hover:bg-slate-600 text-slate-300 hover:text-white',
+              ].join(' ')}
+            >
+              <Map size={16} />
+              {activeRules > 0 && (
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-blue-500 text-white text-[9px] font-bold flex items-center justify-center">
+                  {activeRules}
+                </span>
+              )}
+            </button>
+          );
+        })()}
+
         <StatusBadge />
       </div>
 
@@ -313,7 +378,7 @@ export default function ConverterPage() {
       {stage === 'idle' ? (
         <div className="flex flex-col items-center justify-center flex-1 gap-6">
           <div className="w-full max-w-md">
-            <p className="text-center text-slate-400 text-sm mb-4">
+            <p className="text-center text-slate-400 text-sm mb-3">
               Load{' '}
               <span className="text-slate-200 font-medium">
                 {sourceFormat?.name ?? 'source'}
@@ -323,13 +388,78 @@ export default function ConverterPage() {
                 ? 'Multiple files are merged into a single output.'
                 : 'Multiple files are converted separately.'}
             </p>
-            <FileDropZone
-              format={sourceFormat}
-              onFilesLoaded={handleFilesLoaded}
-              loadedFileNames={loadedFiles.map((f) => f.name)}
-              onClear={handleClear}
-            />
+
+            {/* File / Folder mode toggle */}
+            <div className="flex items-center gap-1 mb-3 p-1 rounded-lg bg-slate-800 border border-slate-700 w-fit mx-auto">
+              <button
+                onClick={() => setBatchMode(false)}
+                className={[
+                  'flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium transition-colors',
+                  !batchMode ? 'bg-slate-600 text-slate-100' : 'text-slate-400 hover:text-slate-200',
+                ].join(' ')}
+              >
+                <FileText size={12} /> Files
+              </button>
+              <button
+                onClick={() => setBatchMode(true)}
+                className={[
+                  'flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium transition-colors',
+                  batchMode ? 'bg-slate-600 text-slate-100' : 'text-slate-400 hover:text-slate-200',
+                ].join(' ')}
+              >
+                <FolderOpen size={12} /> Folder
+              </button>
+            </div>
+
+            {batchMode ? (
+              <BatchFolderDropZone
+                format={sourceFormat}
+                onFilesLoaded={handleFilesLoaded}
+                loadedFileNames={loadedFiles.map((f) => f.name)}
+                onClear={handleClear}
+              />
+            ) : (
+              <FileDropZone
+                format={sourceFormat}
+                onFilesLoaded={handleFilesLoaded}
+                loadedFileNames={loadedFiles.map((f) => f.name)}
+                onClear={handleClear}
+              />
+            )}
           </div>
+
+          {/* Recent conversions */}
+          {recentFiles.length > 0 && (
+            <div className="w-full max-w-md">
+              <div className="flex items-center justify-between mb-2">
+                <span className="flex items-center gap-1.5 text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  <Clock size={11} />
+                  Recent
+                </span>
+                <button onClick={clearRecent} className="text-xs text-slate-600 hover:text-slate-400 transition-colors">
+                  Clear all
+                </button>
+              </div>
+              <div className="rounded-xl border border-slate-700 divide-y divide-slate-700/60 overflow-hidden">
+                {recentFiles.map((f, i) => (
+                  <div key={i} className="flex items-center gap-3 px-3 py-2 text-xs bg-slate-800/40 hover:bg-slate-700/40 transition-colors">
+                    <span className="text-slate-300 truncate flex-1" title={f.name}>{f.name}</span>
+                    <span className="text-slate-500 shrink-0">
+                      {f.sourceFormat} → {f.targetFormat}
+                    </span>
+                    <span className="text-slate-600 shrink-0">{f.toolCount}T</span>
+                    <span className="text-slate-600 shrink-0">{relativeTime(f.convertedAt)}</span>
+                    <button
+                      onClick={() => removeRecent(i)}
+                      className="text-slate-600 hover:text-slate-400 transition-colors shrink-0"
+                    >
+                      <X size={11} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="flex flex-col gap-5 flex-1 min-h-0">
@@ -409,6 +539,15 @@ export default function ConverterPage() {
           </div>
 
         </div>
+      )}
+
+      {/* Field mapping editor slide-over */}
+      {showFieldMapping && (
+        <FieldMappingEditor
+          sourceFormatId={sourceFormatId}
+          targetFormatId={targetFormatId}
+          onClose={() => setShowFieldMapping(false)}
+        />
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import type { CustomToolTypeDefinition } from '../lib/customToolTypes';
 
 export interface TableColumnVisibility {
   type:        boolean;
@@ -49,6 +50,12 @@ export interface Settings {
   librarySortKey: 'toolNumber' | 'description' | 'type' | 'diameter' | 'addedAt';
   librarySortDir: 'asc' | 'desc';
   libraryMaxTagsShown: number;
+
+  // Validation
+  validationWarningsEnabled: boolean;
+
+  // Custom Tool Types
+  customToolTypes: CustomToolTypeDefinition[];
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -88,6 +95,10 @@ export const DEFAULT_SETTINGS: Settings = {
   librarySortKey:                   'addedAt',
   librarySortDir:                   'desc',
   libraryMaxTagsShown:              3,
+
+  validationWarningsEnabled: true,
+
+  customToolTypes: [],
 };
 
 const STORAGE_KEY     = 'cnc-tool-converter:settings';

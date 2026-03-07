@@ -19,7 +19,8 @@ export type ToolType =
   | 'boring bar'
   | 'thread mill'
   | 'engraving'
-  | 'custom';
+  | 'custom'
+  | (string & {});  // allows user-defined custom type IDs
 
 export type ToolUnit = 'mm' | 'inch';
 export type CoolantMode = 'air' | 'flood' | 'suction' | 'mist' | 'disabled';

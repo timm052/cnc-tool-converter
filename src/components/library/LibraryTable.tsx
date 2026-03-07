@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { ChevronUp, ChevronDown, Star, Pencil } from 'lucide-react';
+import { ChevronUp, ChevronDown, Star, Pencil, AlertTriangle } from 'lucide-react';
 import type { LibraryTool } from '../../types/libraryTool';
 import { useSettings } from '../../contexts/SettingsContext';
+import { validateTool } from '../../lib/toolValidation';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -17,6 +18,10 @@ export interface LibraryTableProps {
   onEdit:         (tool: LibraryTool) => void;
   /** Highlight the active machine group filter (used to decide whether to show MachineGroup col) */
   showMachineCol?: boolean;
+  /** ID of the keyboard-focused tool */
+  focusedId?:     string;
+  /** Called when a row is clicked to set keyboard focus */
+  onFocusId?:     (id: string) => void;
 }
 
 // ── Label / colour maps ───────────────────────────────────────────────────────
@@ -106,11 +111,14 @@ export default function LibraryTable({
   onToggleStar,
   onEdit,
   showMachineCol = false,
+  focusedId,
+  onFocusId,
 }: LibraryTableProps) {
-  const { settings } = useSettings();
+  const { settings, updateSettings } = useSettings();
   const decimals = settings.tableDecimalPrecision;
   const compact  = settings.tableRowDensity === 'compact';
   const py       = compact ? 'py-1' : 'py-2';
+  const vis      = settings.tableColumnVisibility;
 
   const [sortKey, setSortKey] = useState<SortKey>(settings.librarySortKey as SortKey);
   const [sortDir, setSortDir] = useState<SortDir>(settings.librarySortDir);
@@ -118,10 +126,13 @@ export default function LibraryTable({
 
   const handleSort = (key: SortKey) => {
     if (key === sortKey) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+      const next: SortDir = sortDir === 'asc' ? 'desc' : 'asc';
+      setSortDir(next);
+      updateSettings({ librarySortDir: next });
     } else {
       setSortKey(key);
       setSortDir('asc');
+      updateSettings({ librarySortKey: key, librarySortDir: 'asc' });
     }
   };
 
@@ -162,14 +173,15 @@ export default function LibraryTable({
               />
             </th>
             <SortHeader label="T#"          sortKey="toolNumber"  currentKey={sortKey} dir={sortDir} onSort={handleSort} />
-            <SortHeader label="Type"        sortKey="type"        currentKey={sortKey} dir={sortDir} onSort={handleSort} />
-            <SortHeader label="Description" sortKey="description" currentKey={sortKey} dir={sortDir} onSort={handleSort} />
-            <SortHeader label="Ø Dia"       sortKey="diameter"    currentKey={sortKey} dir={sortDir} onSort={handleSort} />
-            {showMachineCol && (
-              <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-400 whitespace-nowrap">
-                Machine
-              </th>
-            )}
+            {vis.type        && <SortHeader label="Type"        sortKey="type"        currentKey={sortKey} dir={sortDir} onSort={handleSort} />}
+            {vis.description && <SortHeader label="Description" sortKey="description" currentKey={sortKey} dir={sortDir} onSort={handleSort} />}
+            {vis.diameter    && <SortHeader label="Ø Dia"       sortKey="diameter"    currentKey={sortKey} dir={sortDir} onSort={handleSort} />}
+            {vis.length      && <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-400 whitespace-nowrap">Length</th>}
+            {vis.flutes      && <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-400 whitespace-nowrap">Flutes</th>}
+            {vis.rpm         && <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-400 whitespace-nowrap">RPM</th>}
+            {vis.feed        && <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-400 whitespace-nowrap">Feed</th>}
+            {vis.material    && <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-400 whitespace-nowrap">Material</th>}
+            {showMachineCol  && <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-400 whitespace-nowrap">Machine</th>}
             <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">
               Tags
             </th>
@@ -179,14 +191,20 @@ export default function LibraryTable({
         </thead>
         <tbody>
           {sorted.map((tool, i) => {
-            const selected = selectedIds.has(tool.id);
+            const selected  = selectedIds.has(tool.id);
+            const focused   = focusedId === tool.id;
+            const issues    = settings.validationWarningsEnabled ? validateTool(tool) : [];
+            const hasIssues = issues.length > 0;
+            const issueTitle = issues.map((w) => `${w.severity === 'error' ? '✖' : '⚠'} ${w.message}`).join('\n');
             return (
               <tr
                 key={tool.id}
+                onClick={() => onFocusId?.(tool.id)}
                 className={[
-                  'border-b border-slate-700/50 hover:bg-slate-700/40 transition-colors group',
+                  'border-b border-slate-700/50 hover:bg-slate-700/40 transition-colors group cursor-default',
                   i % 2 === 0 ? 'bg-slate-800/20' : 'bg-transparent',
                   selected ? 'ring-1 ring-inset ring-blue-500/30 bg-blue-500/5' : '',
+                  focused  ? 'outline outline-2 outline-blue-500/60 outline-offset-[-1px]' : '',
                 ].join(' ')}
               >
                 {/* Checkbox */}
@@ -208,29 +226,70 @@ export default function LibraryTable({
                 </td>
 
                 {/* Type badge */}
-                <td className={`px-3 ${py}`}>
-                  <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${TOOL_TYPE_COLOURS[tool.type] ?? 'bg-slate-500/20 text-slate-300'}`}>
-                    {TOOL_TYPE_LABELS[tool.type] ?? tool.type}
-                  </span>
-                </td>
+                {vis.type && (
+                  <td className={`px-3 ${py}`}>
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${TOOL_TYPE_COLOURS[tool.type] ?? 'bg-slate-500/20 text-slate-300'}`}>
+                      {TOOL_TYPE_LABELS[tool.type] ?? tool.type}
+                    </span>
+                  </td>
+                )}
 
                 {/* Description */}
-                <td
-                  className={`px-3 ${py} text-slate-200 max-w-[220px] cursor-pointer`}
-                  onClick={() => onEdit(tool)}
-                >
-                  <span className="block truncate" title={tool.description}>
-                    {tool.description}
-                  </span>
-                  {tool.manufacturer && (
-                    <span className="text-xs text-slate-500">{tool.manufacturer}</span>
-                  )}
-                </td>
+                {vis.description && (
+                  <td
+                    className={`px-3 ${py} text-slate-200 max-w-[220px] cursor-pointer`}
+                    onClick={() => onEdit(tool)}
+                  >
+                    <span className="block truncate" title={tool.description}>
+                      {tool.description}
+                    </span>
+                    {tool.manufacturer && (
+                      <span className="text-xs text-slate-500">{tool.manufacturer}</span>
+                    )}
+                  </td>
+                )}
 
                 {/* Diameter */}
-                <td className={`px-3 ${py} font-mono text-slate-300 whitespace-nowrap`}>
-                  {tool.geometry.diameter.toFixed(decimals)} {tool.unit}
-                </td>
+                {vis.diameter && (
+                  <td className={`px-3 ${py} font-mono text-slate-300 whitespace-nowrap`}>
+                    {tool.geometry.diameter.toFixed(decimals)} {tool.unit}
+                  </td>
+                )}
+
+                {/* Overall length */}
+                {vis.length && (
+                  <td className={`px-3 ${py} font-mono text-slate-400 whitespace-nowrap text-xs`}>
+                    {tool.geometry.overallLength != null ? `${tool.geometry.overallLength.toFixed(decimals)}` : '—'}
+                  </td>
+                )}
+
+                {/* Flutes */}
+                {vis.flutes && (
+                  <td className={`px-3 ${py} font-mono text-slate-400 text-xs`}>
+                    {tool.geometry.numberOfFlutes ?? '—'}
+                  </td>
+                )}
+
+                {/* RPM */}
+                {vis.rpm && (
+                  <td className={`px-3 ${py} font-mono text-slate-400 text-xs whitespace-nowrap`}>
+                    {tool.cutting?.spindleRpm != null ? tool.cutting.spindleRpm.toLocaleString() : '—'}
+                  </td>
+                )}
+
+                {/* Feed */}
+                {vis.feed && (
+                  <td className={`px-3 ${py} font-mono text-slate-400 text-xs whitespace-nowrap`}>
+                    {tool.cutting?.feedCutting != null ? tool.cutting.feedCutting.toFixed(decimals) : '—'}
+                  </td>
+                )}
+
+                {/* Material */}
+                {vis.material && (
+                  <td className={`px-3 ${py} text-slate-400 text-xs`}>
+                    {tool.material ?? '—'}
+                  </td>
+                )}
 
                 {/* Machine group (conditional) */}
                 {showMachineCol && (
@@ -260,30 +319,38 @@ export default function LibraryTable({
 
                 {/* Star + Edit */}
                 <td className={`px-3 ${py} whitespace-nowrap`}>
-                  <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onToggleStar(tool.id, !tool.starred); }}
-                      title={tool.starred ? 'Unstar' : 'Star'}
-                      className={`p-1 rounded hover:bg-slate-600 transition-colors ${tool.starred ? 'text-amber-400' : 'text-slate-500 hover:text-amber-300'}`}
-                    >
-                      <Star size={13} fill={tool.starred ? 'currentColor' : 'none'} />
-                    </button>
-                    <button
-                      onClick={() => onEdit(tool)}
-                      title="Edit"
-                      className="p-1 rounded text-slate-500 hover:text-slate-200 hover:bg-slate-600 transition-colors"
-                    >
-                      <Pencil size={13} />
-                    </button>
+                  <div className="flex items-center gap-1">
+                    {/* Validation warning (always visible if issues exist) */}
+                    {hasIssues && (
+                      <span title={issueTitle}>
+                        <AlertTriangle size={12} className="text-amber-400 shrink-0" />
+                      </span>
+                    )}
+                    <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onToggleStar(tool.id, !tool.starred); }}
+                        title={tool.starred ? 'Unstar' : 'Star'}
+                        className={`p-1 rounded hover:bg-slate-600 transition-colors ${tool.starred ? 'text-amber-400' : 'text-slate-500 hover:text-amber-300'}`}
+                      >
+                        <Star size={13} fill={tool.starred ? 'currentColor' : 'none'} />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onEdit(tool); }}
+                        title="Edit"
+                        className="p-1 rounded text-slate-500 hover:text-slate-200 hover:bg-slate-600 transition-colors"
+                      >
+                        <Pencil size={13} />
+                      </button>
+                    </div>
+                    {/* Always-visible star for starred tools (dimmer when not hovered) */}
+                    {tool.starred && (
+                      <Star
+                        size={13}
+                        fill="currentColor"
+                        className="text-amber-400 group-hover:hidden"
+                      />
+                    )}
                   </div>
-                  {/* Always-visible star for starred tools (dimmer when not hovered) */}
-                  {tool.starred && (
-                    <Star
-                      size={13}
-                      fill="currentColor"
-                      className="text-amber-400 group-hover:hidden"
-                    />
-                  )}
                 </td>
               </tr>
             );

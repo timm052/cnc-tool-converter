@@ -4,11 +4,14 @@ import { registry } from '../../converters';
 import type { LibraryTool } from '../../types/libraryTool';
 import { useSettings } from '../../contexts/SettingsContext';
 import FormatSelector from '../FormatSelector';
+import { toolsToCsv } from '../../lib/csvLibrary';
 
 interface ExportPanelProps {
   selectedTools: LibraryTool[];
   onClose:       () => void;
 }
+
+const CSV_FORMAT_ID = 'csv';
 
 export default function ExportPanel({ selectedTools, onClose }: ExportPanelProps) {
   const { settings } = useSettings();
@@ -17,12 +20,27 @@ export default function ExportPanel({ selectedTools, onClose }: ExportPanelProps
   const [formatId,    setFormatId]    = useState(exportableFormats[0]?.id ?? '');
   const [isExporting, setIsExporting] = useState(false);
 
-  async function handleDownload() {
-    const converter = registry.getConverter(formatId);
-    if (!converter) return;
+  const isCsv = formatId === CSV_FORMAT_ID;
 
+  async function handleDownload() {
     setIsExporting(true);
     try {
+      if (isCsv) {
+        const csv  = toolsToCsv(selectedTools);
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = 'library-export.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+        onClose();
+        return;
+      }
+
+      const converter = registry.getConverter(formatId);
+      if (!converter) return;
+
       const result = await converter.write(selectedTools, {
         filename:                     'library-export',
         linuxcncDecimalPlaces:        settings.linuxcncDecimalPlaces,
@@ -86,19 +104,31 @@ export default function ExportPanel({ selectedTools, onClose }: ExportPanelProps
           {/* Target format */}
           <div>
             <p className="text-xs font-medium text-slate-400 mb-2">TARGET FORMAT</p>
-            <FormatSelector
-              label=""
+            <select
               value={formatId}
-              formats={exportableFormats}
-              onChange={setFormatId}
-            />
+              onChange={(e) => setFormatId(e.target.value)}
+              className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            >
+              {exportableFormats.map((f) => (
+                <option key={f.id} value={f.id}>{f.name}</option>
+              ))}
+              <option value={CSV_FORMAT_ID}>CSV (spreadsheet)</option>
+            </select>
           </div>
 
           {/* Settings note */}
-          <p className="text-xs text-slate-500">
-            Format-specific options (decimal places, pocket assignment, etc.) are applied from
-            your <span className="text-slate-400">Settings → LinuxCNC Writer</span> preferences.
-          </p>
+          {!isCsv && (
+            <p className="text-xs text-slate-500">
+              Format-specific options (decimal places, pocket assignment, etc.) are applied from
+              your <span className="text-slate-400">Settings → LinuxCNC Writer</span> preferences.
+            </p>
+          )}
+          {isCsv && (
+            <p className="text-xs text-slate-500">
+              Exports a flat spreadsheet with tool geometry, cutting parameters, tags, and machine group.
+              Can be re-imported via Import → CSV (spreadsheet).
+            </p>
+          )}
 
         </div>
 

@@ -11,11 +11,14 @@
   },
   "dependencies": {
     "dexie": "^4.3.0",
+    "jspdf": "^4.2.0",
     "lucide-react": "^0.446.0",
+    "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^18.3.8",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",

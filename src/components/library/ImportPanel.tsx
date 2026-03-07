@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { X, CheckCircle, AlertCircle } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, AlertTriangle, ChevronDown } from 'lucide-react';
 import { registry } from '../../converters';
 import type { LibraryTool } from '../../types/libraryTool';
 import type { Tool } from '../../types/tool';
 import FileDropZone from '../FileDropZone';
-import FormatSelector from '../FormatSelector';
 import { useSettings } from '../../contexts/SettingsContext';
+import { useLibrary } from '../../contexts/LibraryContext';
+import { validateTool, findDuplicates, type DuplicateMatch } from '../../lib/toolValidation';
+import { csvToTools } from '../../lib/csvLibrary';
+import type { FormatInfo } from '../../types/converter';
 
 interface ImportPanelProps {
   onImport: (tools: LibraryTool[], overwrite: boolean) => Promise<{ added: number; skipped: number }>;
@@ -18,15 +21,64 @@ interface LoadedFile {
   content: string | ArrayBuffer;
 }
 
+const CSV_FORMAT: FormatInfo = {
+  id:             'csv',
+  name:           'CSV (spreadsheet)',
+  description:    'Comma-separated values spreadsheet',
+  fileExtensions: ['.csv'],
+  mimeTypes:      ['text/csv'],
+  canImport:      true,
+  canExport:      true,
+  readAs:         'text',
+};
+
+const REASON_LABELS: Record<DuplicateMatch['reason'], string> = {
+  'same-number':         'Same T#',
+  'same-diameter-type':  'Same Ø+Type',
+  'similar-description': 'Similar name',
+};
+
+const REASON_COLOURS: Record<DuplicateMatch['reason'], string> = {
+  'same-number':         'bg-orange-500/20 text-orange-300',
+  'same-diameter-type':  'bg-blue-500/20 text-blue-300',
+  'similar-description': 'bg-slate-500/20 text-slate-400',
+};
+
 export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
   const { settings } = useSettings();
+  const { tools: libraryTools } = useLibrary();
   const importableFormats = registry.getImportableFormats();
 
-  const [formatId,    setFormatId]    = useState(importableFormats[0]?.id ?? '');
-  const [loadedFiles, setLoadedFiles] = useState<LoadedFile[]>([]);
-  const [preview,     setPreview]     = useState<Tool[]>([]);
-  const [parseError,  setParseError]  = useState<string | null>(null);
-  const [overwrite,   setOverwrite]   = useState(settings.libraryImportOverwrite);
+  const [formatId,      setFormatId]      = useState(importableFormats[0]?.id ?? '');
+  const [loadedFiles,   setLoadedFiles]   = useState<LoadedFile[]>([]);
+  const [preview,       setPreview]       = useState<Tool[]>([]);
+  const [parseError,    setParseError]    = useState<string | null>(null);
+  const [overwrite,     setOverwrite]     = useState(settings.libraryImportOverwrite);
+  const [result,        setResult]        = useState<{ added: number; skipped: number } | null>(null);
+  const [isImporting,   setIsImporting]   = useState(false);
+  const [showWarnings,  setShowWarnings]  = useState(false);
+  const [duplicates,    setDuplicates]    = useState<DuplicateMatch[]>([]);
+  const [skipIndices,   setSkipIndices]   = useState<Set<number>>(new Set());
+  const [showDuplicates, setShowDuplicates] = useState(false);
+
+  const isCsv = formatId === 'csv';
+  const sourceFormat = isCsv ? CSV_FORMAT : importableFormats.find((f) => f.id === formatId);
+
+  // Compute validation warnings for the current preview
+  const validationWarnings = settings.validationWarningsEnabled
+    ? preview.flatMap((t) => {
+        const issues = validateTool(t).filter((v) => v.severity === 'warning');
+        return issues.map((w) => `T${t.toolNumber} (${t.description}): ${w.message}`);
+      })
+    : [];
+
+  // Deduplicate matches by incomingIndex (first/highest-priority reason per tool)
+  const uniqueDups = duplicates.reduce<DuplicateMatch[]>((acc, dup) => {
+    if (!acc.find((d) => d.incomingIndex === dup.incomingIndex)) acc.push(dup);
+    return acc;
+  }, []);
+
+  const importCount = preview.length - skipIndices.size;
 
   function toolToLibraryTool(tool: Tool): LibraryTool {
     const now = Date.now();
@@ -39,16 +91,26 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
       updatedAt:    now,
     };
   }
-  const [result,      setResult]      = useState<{ added: number; skipped: number } | null>(null);
-  const [isImporting, setIsImporting] = useState(false);
-
-  const sourceFormat = importableFormats.find((f) => f.id === formatId);
 
   async function handleFilesLoaded(files: LoadedFile[]) {
     setLoadedFiles(files);
     setParseError(null);
     setPreview([]);
     setResult(null);
+    setDuplicates([]);
+    setSkipIndices(new Set());
+
+    if (isCsv) {
+      const allText = files.map((f) => f.content as string).join('\n');
+      const { tools, errors } = csvToTools(allText);
+      if (errors.length > 0) {
+        setParseError(errors.join(' | '));
+      } else {
+        setPreview(tools);
+        setDuplicates(findDuplicates(tools, libraryTools));
+      }
+      return;
+    }
 
     const converter = registry.getConverter(formatId);
     if (!converter) return;
@@ -66,6 +128,7 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
       setParseError(allErrors.join(' | '));
     } else {
       setPreview(allTools);
+      setDuplicates(findDuplicates(allTools, libraryTools));
     }
   }
 
@@ -74,13 +137,26 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
     setPreview([]);
     setParseError(null);
     setResult(null);
+    setDuplicates([]);
+    setSkipIndices(new Set());
+  }
+
+  function toggleSkip(idx: number) {
+    setSkipIndices((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx); else next.add(idx);
+      return next;
+    });
   }
 
   async function handleImport() {
-    if (preview.length === 0) return;
+    if (importCount === 0) return;
     setIsImporting(true);
-    const libTools = preview.map(toolToLibraryTool);
-    const res = await onImport(libTools, overwrite);
+    const allLibTools = isCsv
+      ? (preview as LibraryTool[])
+      : preview.map(toolToLibraryTool);
+    const filtered = allLibTools.filter((_, i) => !skipIndices.has(i));
+    const res = await onImport(filtered, overwrite);
     setResult(res);
     setIsImporting(false);
   }
@@ -106,12 +182,16 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
           {/* Source format */}
           <div>
             <p className="text-xs font-medium text-slate-400 mb-2">SOURCE FORMAT</p>
-            <FormatSelector
-              label=""
+            <select
               value={formatId}
-              formats={importableFormats}
-              onChange={(id) => { setFormatId(id); handleClear(); }}
-            />
+              onChange={(e) => { setFormatId(e.target.value); handleClear(); }}
+              className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            >
+              {importableFormats.map((f) => (
+                <option key={f.id} value={f.id}>{f.name}</option>
+              ))}
+              <option value="csv">CSV (spreadsheet)</option>
+            </select>
           </div>
 
           {/* File drop */}
@@ -138,13 +218,77 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm text-slate-200">
                 <CheckCircle size={15} className="text-green-400" />
-                <span><strong>{preview.length}</strong> tools ready to import</span>
+                <span><strong>{preview.length}</strong> tools parsed</span>
               </div>
+
+              {/* Duplicate detection */}
+              {uniqueDups.length > 0 && (
+                <details
+                  open={showDuplicates}
+                  onToggle={(e) => setShowDuplicates((e.target as HTMLDetailsElement).open)}
+                  className="rounded-lg border border-orange-500/30 bg-orange-500/5"
+                >
+                  <summary className="flex items-center gap-2 px-3 py-2 cursor-pointer select-none text-xs text-orange-300 hover:text-orange-200">
+                    <AlertTriangle size={12} className="shrink-0" />
+                    <span className="font-medium">
+                      {uniqueDups.length} potential duplicate{uniqueDups.length !== 1 ? 's' : ''} found
+                      {skipIndices.size > 0 && ` (${skipIndices.size} skipped)`}
+                    </span>
+                    <ChevronDown size={11} className="ml-auto shrink-0" />
+                  </summary>
+                  <div className="px-3 pb-3 space-y-1.5">
+                    <p className="text-xs text-slate-500 mb-2">Check a tool to skip it during import.</p>
+                    {uniqueDups.map((dup) => {
+                      const incoming = preview[dup.incomingIndex];
+                      return (
+                        <label key={dup.incomingIndex} className="flex items-start gap-2.5 cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            checked={skipIndices.has(dup.incomingIndex)}
+                            onChange={() => toggleSkip(dup.incomingIndex)}
+                            className="mt-0.5 w-3.5 h-3.5 rounded border-slate-500 bg-slate-700 text-orange-500"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-mono text-xs text-blue-400">T{incoming.toolNumber}</span>
+                              <span className="text-xs text-slate-300 truncate">{incoming.description}</span>
+                              <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${REASON_COLOURS[dup.reason]}`}>
+                                {REASON_LABELS[dup.reason]}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-500 truncate">
+                              Matches: {dup.existingDescription}
+                            </p>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </details>
+              )}
+
+              {/* Validation warnings */}
+              {validationWarnings.length > 0 && (
+                <details
+                  open={showWarnings}
+                  onToggle={(e) => setShowWarnings((e.target as HTMLDetailsElement).open)}
+                  className="rounded-lg border border-amber-500/30 bg-amber-500/10"
+                >
+                  <summary className="flex items-center gap-2 px-3 py-2 cursor-pointer select-none text-xs text-amber-300 hover:text-amber-200">
+                    <AlertTriangle size={12} className="shrink-0" />
+                    <span className="font-medium">{validationWarnings.length} suspicious value{validationWarnings.length !== 1 ? 's' : ''} detected</span>
+                    <ChevronDown size={11} className="ml-auto shrink-0" />
+                  </summary>
+                  <ul className="px-3 pb-2.5 space-y-0.5 text-xs text-amber-400/80 list-disc list-inside">
+                    {validationWarnings.map((w, i) => <li key={i}>{w}</li>)}
+                  </ul>
+                </details>
+              )}
 
               {/* Preview list (first 6) */}
               <div className="rounded-lg border border-slate-700 divide-y divide-slate-700/60 overflow-hidden">
-                {preview.slice(0, 6).map((t) => (
-                  <div key={t.id} className="flex items-center gap-3 px-3 py-2 text-xs bg-slate-800/60">
+                {preview.slice(0, 6).map((t, i) => (
+                  <div key={t.id} className={`flex items-center gap-3 px-3 py-2 text-xs ${skipIndices.has(i) ? 'bg-slate-800/30 opacity-50 line-through' : 'bg-slate-800/60'}`}>
                     <span className="font-mono text-blue-400 shrink-0">T{t.toolNumber}</span>
                     <span className="text-slate-300 truncate">{t.description}</span>
                     <span className="ml-auto text-slate-500 shrink-0">{t.geometry.diameter} {t.unit}</span>
@@ -157,7 +301,7 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
                 )}
               </div>
 
-              {/* Duplicate handling */}
+              {/* Overwrite option */}
               <label className="flex items-center gap-2.5 cursor-pointer select-none">
                 <input
                   type="checkbox"
@@ -195,15 +339,15 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
           {!result && (
             <button
               onClick={handleImport}
-              disabled={preview.length === 0 || isImporting}
+              disabled={importCount === 0 || isImporting}
               className={[
                 'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors',
-                preview.length > 0 && !isImporting
+                importCount > 0 && !isImporting
                   ? 'bg-blue-600 hover:bg-blue-500 text-white'
                   : 'bg-slate-700 text-slate-500 cursor-not-allowed',
               ].join(' ')}
             >
-              {isImporting ? 'Importing…' : `Add ${preview.length > 0 ? preview.length : ''} tools to Library`}
+              {isImporting ? 'Importing…' : `Add ${importCount > 0 ? importCount : ''} tools to Library`}
             </button>
           )}
         </div>

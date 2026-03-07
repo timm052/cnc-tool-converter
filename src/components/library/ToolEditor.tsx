@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef, type ChangeEvent } from 'react';
-import { X, Trash2, Save, AlertCircle, ZoomIn, ZoomOut, Wand2 } from 'lucide-react';
+import { X, Trash2, Save, AlertCircle, ZoomIn, ZoomOut, Wand2, Undo2, Redo2, AlertTriangle } from 'lucide-react';
 import type { LibraryTool } from '../../types/libraryTool';
 import type { ToolType, ToolUnit, CoolantMode, FeedMode, ToolMaterial } from '../../types/tool';
 import { useSettings, type Settings } from '../../contexts/SettingsContext';
 import { ToolProfileSVG } from './ToolProfileSVG';
+import { useUndoRedo } from '../../hooks/useUndoRedo';
+import { validateTool, getErrors } from '../../lib/toolValidation';
+import { getAllToolTypeOptions, getFieldVisibility } from '../../lib/customToolTypes';
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -18,22 +21,9 @@ interface ToolEditorProps {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const TOOL_TYPES: ToolType[] = [
-  'flat end mill', 'ball end mill', 'bull nose end mill', 'chamfer mill',
-  'face mill', 'spot drill', 'drill', 'tapered mill', 'boring bar',
-  'thread mill', 'engraving', 'custom',
-];
-
 const COOLANT_MODES: CoolantMode[] = ['disabled', 'flood', 'mist', 'air', 'suction'];
 const FEED_MODES:   FeedMode[]     = ['per-minute', 'per-revolution'];
 const MATERIALS:    ToolMaterial[] = ['carbide', 'hss', 'ceramics', 'diamond', 'other'];
-
-// Which tool types show each conditional geometry field
-const SHOWS_CORNER_RADIUS = new Set<ToolType>(['bull nose end mill', 'custom']);
-const SHOWS_TAPER_ANGLE   = new Set<ToolType>(['drill', 'spot drill', 'chamfer mill', 'tapered mill', 'engraving', 'custom']);
-const SHOWS_TIP_DIAMETER  = new Set<ToolType>(['drill', 'spot drill', 'chamfer mill', 'tapered mill', 'engraving', 'thread mill', 'custom']);
-const SHOWS_THREAD_FIELDS = new Set<ToolType>(['thread mill']);
-const SHOWS_NUM_TEETH     = new Set<ToolType>(['thread mill', 'face mill']);
 
 // ── Description suggestion ────────────────────────────────────────────────────
 
@@ -128,47 +118,8 @@ function makeBlankTool(unit: ToolUnit, settings: Settings): LibraryTool {
   };
 }
 
-// ── Validation ────────────────────────────────────────────────────────────────
-
+// ── Validation delegated to src/lib/toolValidation.ts ────────────────────────
 type Errors = Partial<Record<string, string>>;
-
-function validate(draft: LibraryTool): Errors {
-  const e: Errors = {};
-  if (!draft.description.trim())
-    e.description = 'Description is required.';
-  if (!Number.isInteger(draft.toolNumber) || draft.toolNumber < 0)
-    e.toolNumber = 'Must be a non-negative integer.';
-  if (draft.pocketNumber !== undefined && (!Number.isInteger(draft.pocketNumber) || draft.pocketNumber < 0))
-    e.pocketNumber = 'Must be a non-negative integer.';
-  if (!draft.geometry.diameter || draft.geometry.diameter <= 0)
-    e.diameter = 'Must be greater than 0.';
-
-  // Length hierarchy: fluteLength ≤ bodyLength ≤ overallLength
-  const { overallLength: ol, bodyLength: bl, fluteLength: fl, shoulderLength: sl } = draft.geometry;
-  const fmt = (n: number) => parseFloat(n.toPrecision(6)).toString();
-
-  // bodyLength must be ≥ fluteLength
-  if (bl !== undefined && fl !== undefined && bl < fl)
-    e.bodyLength = `Must be ≥ flute length (${fmt(fl)}).`;
-
-  // bodyLength must be ≥ fluteLength + shoulderLength
-  if (bl !== undefined && fl !== undefined && sl !== undefined && bl < fl + sl)
-    e.bodyLength = `Must be ≥ flute + shoulder (${fmt(fl + sl)}).`;
-
-  // overallLength must be ≥ bodyLength
-  if (ol !== undefined && bl !== undefined && ol < bl)
-    e.overallLength = `Must be ≥ body length (${fmt(bl)}).`;
-
-  // overallLength must be ≥ fluteLength (when no bodyLength)
-  if (ol !== undefined && fl !== undefined && bl === undefined && ol < fl)
-    e.overallLength = `Must be ≥ flute length (${fmt(fl)}).`;
-
-  // overallLength must be ≥ fluteLength + shoulderLength (when no bodyLength)
-  if (ol !== undefined && fl !== undefined && sl !== undefined && bl === undefined && ol < fl + sl)
-    e.overallLength = `Must be ≥ flute + shoulder (${fmt(fl + sl)}).`;
-
-  return e;
-}
 
 // ── Field primitives ──────────────────────────────────────────────────────────
 
@@ -423,18 +374,32 @@ export default function ToolEditor({
 
   const initialSnapshotRef = useRef<string>('');
 
-  const [draft,       setDraft]       = useState<LibraryTool>(() => {
+  // Compute initial value once on mount; tool-change resets via useEffect below
+  const [initialDraft] = useState<LibraryTool>(() => {
     const init = tool ? { ...tool } : makeBlankTool(unit, settings);
     initialSnapshotRef.current = JSON.stringify(init);
     return init;
   });
+
+  const {
+    state:   draft,
+    set:     setDraft,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    reset:   resetDraft,
+  } = useUndoRedo<LibraryTool>(initialDraft);
+
   const [activeTab,    setActiveTab]   = useState<Tab>('library');
   const [isSaving,     setIsSaving]    = useState(false);
   const [showConfirm,  setShowConfirm] = useState(false);
   const ZOOM_LEVELS = [0.6, 1.0, 1.5, 2.1] as const;
   const [zoomIdx,  setZoomIdx]  = useState(1); // default = 1.0×
 
-  const errors    = validate(draft);
+  const allIssues = validateTool(draft);
+  const warnings  = allIssues.filter((i) => i.severity === 'warning');
+  const errors    = getErrors(allIssues);
   const hasErrors = Object.keys(errors).length > 0;
   const isDirty   = JSON.stringify(draft) !== initialSnapshotRef.current;
 
@@ -442,7 +407,7 @@ export default function ToolEditor({
   useEffect(() => {
     const init = tool ? { ...tool } : makeBlankTool(unit, settings);
     initialSnapshotRef.current = JSON.stringify(init);
-    setDraft(init);
+    resetDraft(init);
     setActiveTab('library');
     setShowConfirm(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -451,31 +416,46 @@ export default function ToolEditor({
   // Keyboard shortcuts
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      const target  = e.target as HTMLElement;
+      const inInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
+      const ctrl    = e.ctrlKey || e.metaKey;
+
       if (e.key === 'Escape') { onClose(); return; }
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      if (ctrl && e.key === 's') {
         e.preventDefault();
         if (!hasErrors && !isSaving) void handleSave();
+        return;
+      }
+      // Undo/redo only when not typing in a field
+      if (!inInput && ctrl && !e.shiftKey && e.key === 'z') {
+        e.preventDefault();
+        if (canUndo) undo();
+        return;
+      }
+      if (!inInput && ctrl && (e.shiftKey && e.key === 'z' || e.key === 'y')) {
+        e.preventDefault();
+        if (canRedo) redo();
       }
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasErrors, isSaving, draft]);
+  }, [hasErrors, isSaving, canUndo, canRedo, undo, redo]);
 
   function patchDraft(patch: Partial<LibraryTool>) {
-    setDraft((prev) => ({ ...prev, ...patch }));
+    setDraft({ ...draft, ...patch });
   }
   function patchGeo(patch: Partial<LibraryTool['geometry']>) {
-    setDraft((prev) => ({ ...prev, geometry: { ...prev.geometry, ...patch } }));
+    setDraft({ ...draft, geometry: { ...draft.geometry, ...patch } });
   }
   function patchOffsets(patch: Partial<NonNullable<LibraryTool['offsets']>>) {
-    setDraft((prev) => ({ ...prev, offsets: { ...(prev.offsets ?? {}), ...patch } }));
+    setDraft({ ...draft, offsets: { ...(draft.offsets ?? {}), ...patch } });
   }
   function patchCut(patch: Partial<NonNullable<LibraryTool['cutting']>>) {
-    setDraft((prev) => ({ ...prev, cutting: { ...(prev.cutting ?? {}), ...patch } }));
+    setDraft({ ...draft, cutting: { ...(draft.cutting ?? {}), ...patch } });
   }
   function patchNc(patch: Partial<NonNullable<LibraryTool['nc']>>) {
-    setDraft((prev) => ({ ...prev, nc: { ...(prev.nc ?? {}), ...patch } }));
+    setDraft({ ...draft, nc: { ...(draft.nc ?? {}), ...patch } });
   }
 
   async function handleSave() {
@@ -522,7 +502,24 @@ export default function ToolEditor({
               />
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={undo}
+              disabled={!canUndo}
+              title="Undo (Ctrl+Z)"
+              className="p-1.5 rounded text-slate-500 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <Undo2 size={14} />
+            </button>
+            <button
+              onClick={redo}
+              disabled={!canRedo}
+              title="Redo (Ctrl+Shift+Z)"
+              className="p-1.5 rounded text-slate-500 hover:text-slate-200 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <Redo2 size={14} />
+            </button>
+            <div className="w-px h-4 bg-slate-700 mx-1" />
             <span className="hidden sm:flex items-center gap-1 text-xs text-slate-600">
               <kbd className="px-1 py-0.5 rounded bg-slate-700 border border-slate-600 font-mono text-slate-400">Ctrl S</kbd>
               <span>save</span>
@@ -576,6 +573,16 @@ export default function ToolEditor({
           </div>
           <ToolProfileSVG draft={draft} zoom={ZOOM_LEVELS[zoomIdx]} />
         </div>
+
+        {/* Validation warnings */}
+        {settings.validationWarningsEnabled && warnings.length > 0 && (
+          <div className="shrink-0 mx-5 mt-3 flex items-start gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs">
+            <AlertTriangle size={13} className="shrink-0 mt-0.5" />
+            <div className="space-y-0.5">
+              {warnings.map((w, i) => <p key={i}>{w.message}</p>)}
+            </div>
+          </div>
+        )}
 
         {/* Tab content */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
@@ -631,7 +638,7 @@ export default function ToolEditor({
               <Row2 label="Tool type">
                 <SelF
                   value={draft.type}
-                  options={TOOL_TYPES.map((t) => ({ value: t, label: t }))}
+                  options={getAllToolTypeOptions(settings.customToolTypes)}
                   onChange={(v) => patchDraft({ type: v })}
                 />
               </Row2>
@@ -730,22 +737,22 @@ export default function ToolEditor({
                 </Row2>
 
                 {/* Conditional fields */}
-                {SHOWS_CORNER_RADIUS.has(type) && (
+                {getFieldVisibility(type, settings.customToolTypes).showsCornerRadius && (
                   <Row2 label={`Corner radius (${draft.unit})`}>
                     <NumF value={geo.cornerRadius} onChange={(v) => patchGeo({ cornerRadius: v })} min={0} />
                   </Row2>
                 )}
-                {SHOWS_TAPER_ANGLE.has(type) && (
+                {getFieldVisibility(type, settings.customToolTypes).showsTaperAngle && (
                   <Row2 label="Taper angle (°)">
                     <NumF value={geo.taperAngle} onChange={(v) => patchGeo({ taperAngle: v })} min={0} />
                   </Row2>
                 )}
-                {SHOWS_TIP_DIAMETER.has(type) && (
+                {getFieldVisibility(type, settings.customToolTypes).showsTipDiameter && (
                   <Row2 label={`Tip diameter (${draft.unit})`}>
                     <NumF value={geo.tipDiameter} onChange={(v) => patchGeo({ tipDiameter: v })} min={0} />
                   </Row2>
                 )}
-                {SHOWS_NUM_TEETH.has(type) && (
+                {getFieldVisibility(type, settings.customToolTypes).showsNumTeeth && (
                   <Row2 label="Number of teeth">
                     <NumF value={geo.numberOfTeeth} onChange={(v) => patchGeo({ numberOfTeeth: v })} min={0} step={1} />
                   </Row2>
@@ -753,7 +760,7 @@ export default function ToolEditor({
               </div>
 
               {/* Thread mill geometry section */}
-              {SHOWS_THREAD_FIELDS.has(type) && (
+              {getFieldVisibility(type, settings.customToolTypes).showsThreadFields && (
                 <div className="pt-2 border-t border-slate-700/60">
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
                     Thread geometry

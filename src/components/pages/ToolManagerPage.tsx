@@ -1,7 +1,8 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import {
   Library, Plus, Upload, Download, Search, Star, X,
-  ChevronDown, Layers, Tag, RotateCcw,
+  ChevronDown, Layers, Tag, RotateCcw, Keyboard, SlidersHorizontal, Columns2, Hash,
+  Printer, QrCode,
 } from 'lucide-react';
 import { useLibrary } from '../../contexts/LibraryContext';
 import type { LibraryTool } from '../../types/libraryTool';
@@ -9,10 +10,15 @@ import LibraryTable from '../library/LibraryTable';
 import ToolEditor from '../library/ToolEditor';
 import ImportPanel from '../library/ImportPanel';
 import ExportPanel from '../library/ExportPanel';
+import BulkEditPanel from '../library/BulkEditPanel';
+import ToolComparePanel from '../library/ToolComparePanel';
+import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
+import LabelPrintPanel from '../library/LabelPrintPanel';
+import ToolSheetPanel from '../library/ToolSheetPanel';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Panel = 'import' | 'export' | 'edit' | null;
+type Panel = 'import' | 'export' | 'edit' | 'bulk-edit' | 'compare' | 'renumber' | 'label-print' | 'sheet-print' | null;
 
 // ── Machine group sidebar ─────────────────────────────────────────────────────
 
@@ -105,28 +111,149 @@ function EmptyState({ onImport }: { onImport: () => void }) {
   );
 }
 
+// ── Renumber modal ────────────────────────────────────────────────────────────
+
+function RenumberModal({
+  tools,
+  onApply,
+  onClose,
+}: {
+  tools:    LibraryTool[];
+  onApply:  (updates: { id: string; patch: Partial<LibraryTool> }[]) => Promise<void>;
+  onClose:  () => void;
+}) {
+  const sorted = [...tools].sort((a, b) => a.toolNumber - b.toolNumber);
+  const [start,      setStart]      = useState(1);
+  const [step,       setStep]       = useState(1);
+  const [isApplying, setIsApplying] = useState(false);
+
+  const preview = sorted.map((t, i) => ({ tool: t, newNumber: start + i * step }));
+  const hasConflict = new Set(preview.map((p) => p.newNumber)).size !== preview.length;
+
+  async function handleApply() {
+    setIsApplying(true);
+    await onApply(preview.map(({ tool, newNumber }) => ({ id: tool.id, patch: { toolNumber: newNumber } })));
+    setIsApplying(false);
+  }
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[440px] bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl flex flex-col max-h-[80vh]">
+
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700 shrink-0">
+          <div>
+            <h2 className="text-base font-semibold text-slate-100 flex items-center gap-2">
+              <Hash size={14} className="text-slate-400" />
+              Renumber Tools
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Resequence {tools.length} tool{tools.length !== 1 ? 's' : ''} sorted by current T#
+            </p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700">
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4 flex-1 overflow-y-auto">
+          {/* Controls */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1">Start number</label>
+              <input
+                type="number"
+                value={start}
+                min={0}
+                step={1}
+                onChange={(e) => setStart(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1">Step</label>
+              <input
+                type="number"
+                value={step}
+                min={1}
+                step={1}
+                onChange={(e) => setStep(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+              />
+            </div>
+          </div>
+
+          {hasConflict && (
+            <p className="text-xs text-amber-400">Warning: duplicate T numbers will result — increase the step.</p>
+          )}
+
+          {/* Preview table */}
+          <div>
+            <p className="text-xs font-medium text-slate-400 mb-2">Preview</p>
+            <div className="rounded-lg border border-slate-700 overflow-hidden">
+              <div className="max-h-52 overflow-y-auto divide-y divide-slate-700/60">
+                {preview.map(({ tool, newNumber }) => (
+                  <div key={tool.id} className="flex items-center gap-3 px-3 py-1.5 bg-slate-800/60 text-xs">
+                    <span className="font-mono text-slate-500 w-10 shrink-0">T{tool.toolNumber}</span>
+                    <span className="text-slate-500">→</span>
+                    <span className={`font-mono w-10 shrink-0 font-semibold ${newNumber === tool.toolNumber ? 'text-slate-500' : 'text-blue-400'}`}>
+                      T{newNumber}
+                    </span>
+                    <span className="text-slate-400 truncate">{tool.description}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-5 py-4 border-t border-slate-700 shrink-0 flex items-center justify-end gap-3">
+          <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-700">
+            Cancel
+          </button>
+          <button
+            onClick={handleApply}
+            disabled={isApplying || hasConflict}
+            className={[
+              'px-4 py-2 rounded-lg text-sm font-semibold transition-colors',
+              !isApplying && !hasConflict
+                ? 'bg-blue-600 hover:bg-blue-500 text-white'
+                : 'bg-slate-700 text-slate-500 cursor-not-allowed',
+            ].join(' ')}
+          >
+            {isApplying ? 'Applying…' : `Apply to ${tools.length} tool${tools.length !== 1 ? 's' : ''}`}
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function ToolManagerPage() {
   const {
     tools, isLoading,
     allMachineGroups, allTags,
-    addTool, addTools, updateTool, deleteTool,
+    addTool, addTools, updateTool, updateTools, patchEach, deleteTool,
   } = useLibrary();
 
-  const restoreInputRef = useRef<HTMLInputElement>(null);
+  const restoreInputRef  = useRef<HTMLInputElement>(null);
 
   // ── Panel / editor state ──────────────────────────────────────────────────
   const [activePanel, setActivePanel] = useState<Panel>(null);
   const [editingTool, setEditingTool] = useState<LibraryTool | null>(null);
 
-  // ── Filter / selection state ──────────────────────────────────────────────
+  // ── Filter / selection / keyboard nav state ───────────────────────────────
   const [searchQuery,     setSearchQuery]     = useState('');
   const [machineFilter,   setMachineFilter]   = useState<string | null>(null);
   const [starredOnly,     setStarredOnly]     = useState(false);
   const [tagFilter,       setTagFilter]       = useState<string[]>([]);
   const [tagDropdownOpen, setTagDropdownOpen] = useState(false);
   const [selectedIds,     setSelectedIds]     = useState<Set<string>>(new Set());
+  const [focusedId,       setFocusedId]       = useState<string | null>(null);
+  const [showShortcuts,   setShowShortcuts]   = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // ── Derived / filtered list ───────────────────────────────────────────────
   const filteredTools = useMemo(() => {
@@ -236,6 +363,46 @@ export default function ToolManagerPage() {
     setTagFilter((prev) => prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]);
   }
 
+  // ── Keyboard navigation ───────────────────────────────────────────────────
+
+  const moveFocus = useCallback((dir: 1 | -1) => {
+    if (filteredTools.length === 0) return;
+    setFocusedId((prev) => {
+      const idx = prev ? filteredTools.findIndex((t) => t.id === prev) : -1;
+      const next = Math.max(0, Math.min(filteredTools.length - 1, idx + dir));
+      return filteredTools[next].id;
+    });
+  }, [filteredTools]);
+
+  const openFocused = useCallback(() => {
+    if (!focusedId) return;
+    const t = filteredTools.find((t) => t.id === focusedId);
+    if (t) openEdit(t);
+  }, [focusedId, filteredTools]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const toggleFocusedSelect = useCallback(() => {
+    if (!focusedId) return;
+    handleToggleSelect(focusedId);
+  }, [focusedId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useKeyboardShortcuts([
+    { key: 'ArrowDown', callback: () => moveFocus(1)  },
+    { key: 'ArrowUp',   callback: () => moveFocus(-1) },
+    { key: 'j',         callback: () => moveFocus(1)  },
+    { key: 'k',         callback: () => moveFocus(-1) },
+    { key: 'Enter',     callback: openFocused  },
+    { key: 'e',         callback: openFocused  },
+    { key: ' ',         callback: toggleFocusedSelect },
+    { key: '/',         callback: () => { searchInputRef.current?.focus(); searchInputRef.current?.select(); } },
+    { key: '?',         callback: () => setShowShortcuts((s) => !s) },
+    { key: 'Escape',    callback: () => {
+      if (activePanel !== null) { closePanel(); return; }
+      if (searchQuery)          { setSearchQuery(''); return; }
+      setSelectedIds(new Set());
+      setFocusedId(null);
+    }},
+  ], activePanel !== 'edit'); // disable nav shortcuts when editor is open (it has its own)
+
   // ── Loading ───────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
@@ -262,6 +429,26 @@ export default function ToolManagerPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          {selectedIds.size >= 2 && (
+            <button
+              onClick={() => setActivePanel('compare')}
+              title="Compare selected tools"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
+            >
+              <Columns2 size={14} />
+              Compare {selectedIds.size}
+            </button>
+          )}
+          {selectedIds.size > 0 && (
+            <button
+              onClick={() => setActivePanel('bulk-edit')}
+              title="Bulk edit selected tools"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
+            >
+              <SlidersHorizontal size={14} />
+              Edit {selectedIds.size}
+            </button>
+          )}
           {selectedIds.size > 0 && (
             <button
               onClick={() => setActivePanel('export')}
@@ -303,6 +490,43 @@ export default function ToolManagerPage() {
             <Upload size={14} />
             Import
           </button>
+          {tools.length > 0 && (
+            <button
+              onClick={() => setActivePanel('renumber')}
+              title="Renumber tools"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
+            >
+              <Hash size={14} />
+              Renumber
+            </button>
+          )}
+          {filteredTools.length > 0 && (
+            <button
+              onClick={() => setActivePanel('sheet-print')}
+              title="Print tool data sheet"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
+            >
+              <Printer size={14} />
+              Print Sheet
+            </button>
+          )}
+          {filteredTools.length > 0 && (
+            <button
+              onClick={() => setActivePanel('label-print')}
+              title="Print labels with QR codes"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
+            >
+              <QrCode size={14} />
+              Print Labels
+            </button>
+          )}
+          <button
+            onClick={() => setShowShortcuts((s) => !s)}
+            title="Keyboard shortcuts (?)"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
+          >
+            <Keyboard size={14} />
+          </button>
           <button
             onClick={openNew}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 hover:bg-blue-500 text-white transition-colors"
@@ -319,6 +543,7 @@ export default function ToolManagerPage() {
           <div className="relative flex-1 min-w-[180px] max-w-sm">
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
+              ref={searchInputRef}
               type="text"
               placeholder="Search tools…"
               value={searchQuery}
@@ -426,6 +651,8 @@ export default function ToolManagerPage() {
               onToggleStar={handleToggleStar}
               onEdit={openEdit}
               showMachineCol={machineFilter === null && allMachineGroups.length > 0}
+              focusedId={focusedId ?? undefined}
+              onFocusId={setFocusedId}
             />
           </div>
         </div>
@@ -447,6 +674,82 @@ export default function ToolManagerPage() {
           onDelete={deleteTool}
           onClose={closePanel}
         />
+      )}
+      {activePanel === 'bulk-edit' && (
+        <BulkEditPanel
+          tools={filteredTools.filter((t) => selectedIds.has(t.id))}
+          allGroups={allMachineGroups}
+          allTags={allTags}
+          onApply={async (patch) => {
+            await updateTools([...selectedIds], patch);
+          }}
+          onClose={closePanel}
+        />
+      )}
+      {activePanel === 'compare' && (
+        <ToolComparePanel
+          tools={filteredTools.filter((t) => selectedIds.has(t.id)).slice(0, 4)}
+          onClose={closePanel}
+        />
+      )}
+      {activePanel === 'renumber' && (
+        <RenumberModal
+          tools={filteredTools}
+          onApply={async (updates) => { await patchEach(updates); closePanel(); }}
+          onClose={closePanel}
+        />
+      )}
+      {activePanel === 'label-print' && (
+        <LabelPrintPanel
+          tools={selectedTools.length > 0 ? selectedTools : filteredTools}
+          onClose={closePanel}
+        />
+      )}
+      {activePanel === 'sheet-print' && (
+        <ToolSheetPanel
+          tools={selectedTools.length > 0 ? selectedTools : filteredTools}
+          onClose={closePanel}
+        />
+      )}
+
+      {/* ── Keyboard shortcuts legend ─────────────────────────────────────── */}
+      {showShortcuts && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setShowShortcuts(false)} />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-80 bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
+                <Keyboard size={14} className="text-slate-400" />
+                Keyboard Shortcuts
+              </h3>
+              <button onClick={() => setShowShortcuts(false)} className="p-1 rounded text-slate-500 hover:text-white hover:bg-slate-700">
+                <X size={14} />
+              </button>
+            </div>
+            <div className="space-y-1.5 text-xs">
+              {[
+                ['j / ↓',         'Move focus down'],
+                ['k / ↑',         'Move focus up'],
+                ['Enter / e',     'Edit focused tool'],
+                ['Space',         'Toggle selection'],
+                ['/',             'Focus search'],
+                ['Esc',           'Clear search / close panel'],
+                ['Ctrl+Enter',    'Convert (Converter page)'],
+                ['Ctrl+Z',        'Undo (Tool Editor)'],
+                ['Ctrl+Shift+Z',  'Redo (Tool Editor)'],
+                ['Ctrl+S',        'Save (Tool Editor)'],
+                ['?',             'Toggle this help'],
+              ].map(([key, desc]) => (
+                <div key={key} className="flex items-center justify-between gap-4">
+                  <kbd className="px-1.5 py-0.5 rounded bg-slate-700 border border-slate-600 font-mono text-slate-300 text-xs whitespace-nowrap">
+                    {key}
+                  </kbd>
+                  <span className="text-slate-400">{desc}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

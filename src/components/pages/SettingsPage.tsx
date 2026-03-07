@@ -1,10 +1,18 @@
-import { type ReactNode } from 'react';
-import { RotateCcw } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
+import { RotateCcw, Plus, Trash2 } from 'lucide-react';
 import {
   useSettings,
   type Settings,
   type TableColumnVisibility,
 } from '../../contexts/SettingsContext';
+import {
+  loadProfiles, createProfile, deleteProfile, updateProfileName,
+  type SettingsProfile,
+} from '../../lib/settingsProfiles';
+import {
+  type CustomToolTypeDefinition,
+  CUSTOM_TYPE_COLOUR_OPTIONS,
+} from '../../lib/customToolTypes';
 
 // ── Primitives ───────────────────────────────────────────────────────────────
 
@@ -151,6 +159,8 @@ const COL_LABELS: Record<keyof TableColumnVisibility, string> = {
 
 export default function SettingsPage() {
   const { settings, updateSettings, resetSettings } = useSettings();
+  const [profiles,     setProfiles]     = useState<SettingsProfile[]>(loadProfiles);
+  const [profileName,  setProfileName]  = useState('');
 
   function set<K extends keyof Settings>(key: K, value: Settings[K]) {
     updateSettings({ [key]: value } as Partial<Settings>);
@@ -160,6 +170,50 @@ export default function SettingsPage() {
     updateSettings({
       tableColumnVisibility: { ...settings.tableColumnVisibility, [col]: value },
     });
+  }
+
+  function saveProfile() {
+    if (!profileName.trim()) return;
+    const p = createProfile(profileName, settings);
+    setProfiles(loadProfiles());
+    setProfileName('');
+    return p;
+  }
+
+  function applyProfile(profile: SettingsProfile) {
+    updateSettings(profile.settings);
+  }
+
+  function removeProfile(id: string) {
+    deleteProfile(id);
+    setProfiles(loadProfiles());
+  }
+
+  function setCustomTypes(types: CustomToolTypeDefinition[]) {
+    set('customToolTypes', types);
+  }
+
+  function addCustomType() {
+    const newType: CustomToolTypeDefinition = {
+      id:               crypto.randomUUID(),
+      label:            'New Type',
+      profileShape:     'flat',
+      colour:           CUSTOM_TYPE_COLOUR_OPTIONS[0].value,
+      showsCornerRadius:   false,
+      showsTaperAngle:     false,
+      showsTipDiameter:    false,
+      showsThreadFields:   false,
+      showsNumTeeth:       false,
+    };
+    setCustomTypes([...settings.customToolTypes, newType]);
+  }
+
+  function updateCustomType(id: string, patch: Partial<CustomToolTypeDefinition>) {
+    setCustomTypes(settings.customToolTypes.map((t) => t.id === id ? { ...t, ...patch } : t));
+  }
+
+  function removeCustomType(id: string) {
+    setCustomTypes(settings.customToolTypes.filter((t) => t.id !== id));
   }
 
   return (
@@ -180,6 +234,48 @@ export default function SettingsPage() {
             Reset to defaults
           </button>
         </div>
+
+        {/* Settings Profiles */}
+        <Section title="Settings Profiles">
+          <Row label="Saved profiles" description="Save the current settings as a named profile to switch between configurations." align="start">
+            <div className="space-y-3 min-w-[220px]">
+              {profiles.length === 0 && (
+                <p className="text-xs text-slate-500">No profiles saved yet.</p>
+              )}
+              {profiles.map((p) => (
+                <div key={p.id} className="flex items-center gap-2">
+                  <button
+                    onClick={() => applyProfile(p)}
+                    className="flex-1 text-left px-2.5 py-1.5 rounded-lg text-xs bg-slate-700 hover:bg-blue-600 text-slate-200 hover:text-white border border-slate-600 transition-colors truncate"
+                    title={`Apply "${p.name}"`}
+                  >
+                    {p.name}
+                  </button>
+                  <button onClick={() => removeProfile(p.id)} className="p-1 text-slate-500 hover:text-red-400 transition-colors">
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              ))}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={profileName}
+                  onChange={(e) => setProfileName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && saveProfile()}
+                  placeholder="Profile name…"
+                  className="flex-1 px-2.5 py-1.5 text-xs bg-slate-700 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+                <button
+                  onClick={saveProfile}
+                  disabled={!profileName.trim()}
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white transition-colors"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </Row>
+        </Section>
 
         {/* Conversion Defaults */}
         <Section title="Conversion Defaults">
@@ -396,6 +492,85 @@ export default function SettingsPage() {
                   <span className="text-xs text-slate-300">{label}</span>
                 </label>
               ))}
+            </div>
+          </Row>
+        </Section>
+
+        {/* Custom Tool Types */}
+        <Section title="Custom Tool Types">
+          <Row label="Defined types" description="Add custom tool types that appear in the Type dropdown alongside built-in types." align="start">
+            <div className="space-y-3 min-w-[260px]">
+              {settings.customToolTypes.length === 0 && (
+                <p className="text-xs text-slate-500">No custom types defined.</p>
+              )}
+              {settings.customToolTypes.map((ct) => (
+                <div key={ct.id} className="rounded-lg border border-slate-700 bg-slate-800/60 p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={ct.label}
+                      onChange={(e) => updateCustomType(ct.id, { label: e.target.value })}
+                      className="flex-1 px-2 py-1 text-xs bg-slate-700 border border-slate-600 rounded text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      placeholder="Type label"
+                    />
+                    <button onClick={() => removeCustomType(ct.id)} className="p-1 text-slate-500 hover:text-red-400 shrink-0">
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Profile shape</p>
+                      <select
+                        value={ct.profileShape}
+                        onChange={(e) => updateCustomType(ct.id, { profileShape: e.target.value as CustomToolTypeDefinition['profileShape'] })}
+                        className="w-full px-2 py-1 text-xs bg-slate-700 border border-slate-600 rounded text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                      >
+                        {(['flat', 'ball', 'tapered', 'drill'] as const).map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Badge colour</p>
+                      <select
+                        value={ct.colour}
+                        onChange={(e) => updateCustomType(ct.id, { colour: e.target.value })}
+                        className="w-full px-2 py-1 text-xs bg-slate-700 border border-slate-600 rounded text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                      >
+                        {CUSTOM_TYPE_COLOUR_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                    {([
+                      ['showsCornerRadius', 'Corner radius'],
+                      ['showsTaperAngle',   'Taper angle'],
+                      ['showsTipDiameter',  'Tip diameter'],
+                      ['showsThreadFields', 'Thread fields'],
+                      ['showsNumTeeth',     'Num. teeth'],
+                    ] as [keyof CustomToolTypeDefinition, string][]).map(([field, label]) => (
+                      <label key={String(field)} className="flex items-center gap-1.5 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={ct[field] as boolean}
+                          onChange={(e) => updateCustomType(ct.id, { [field]: e.target.checked })}
+                          className="w-3 h-3 rounded border-slate-500 bg-slate-700 text-blue-500"
+                        />
+                        <span className="text-xs text-slate-400">{label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              <button
+                onClick={addCustomType}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-300 border border-slate-600 transition-colors"
+              >
+                <Plus size={12} />
+                Add custom type
+              </button>
             </div>
           </Row>
         </Section>
