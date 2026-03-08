@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { X, CheckCircle, AlertCircle, AlertTriangle, ChevronDown } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, AlertTriangle, ChevronDown, FolderOpen, FileText } from 'lucide-react';
 import { registry } from '../../converters';
 import type { LibraryTool } from '../../types/libraryTool';
 import type { Tool } from '../../types/tool';
 import FileDropZone from '../FileDropZone';
+import BatchFolderDropZone from '../converter/BatchFolderDropZone';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useLibrary } from '../../contexts/LibraryContext';
 import { validateTool, findDuplicates, type DuplicateMatch } from '../../lib/toolValidation';
@@ -60,6 +61,7 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
   const [duplicates,    setDuplicates]    = useState<DuplicateMatch[]>([]);
   const [skipIndices,   setSkipIndices]   = useState<Set<number>>(new Set());
   const [showDuplicates, setShowDuplicates] = useState(false);
+  const [folderMode,     setFolderMode]     = useState(false);
 
   const isCsv = formatId === 'csv';
   const sourceFormat = isCsv ? CSV_FORMAT : importableFormats.find((f) => f.id === formatId);
@@ -196,13 +198,40 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
 
           {/* File drop */}
           <div>
-            <p className="text-xs font-medium text-slate-400 mb-2">FILES</p>
-            <FileDropZone
-              format={sourceFormat}
-              onFilesLoaded={handleFilesLoaded}
-              loadedFileNames={loadedFiles.map((f) => f.name)}
-              onClear={handleClear}
-            />
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-medium text-slate-400">FILES</p>
+              <div className="flex rounded-lg overflow-hidden border border-slate-600 text-xs">
+                <button
+                  type="button"
+                  onClick={() => { setFolderMode(false); handleClear(); }}
+                  className={`flex items-center gap-1 px-2.5 py-1 transition-colors ${!folderMode ? 'bg-slate-600 text-slate-100' : 'text-slate-400 hover:bg-slate-700'}`}
+                >
+                  <FileText size={11} /> Files
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setFolderMode(true); handleClear(); }}
+                  className={`flex items-center gap-1 px-2.5 py-1 transition-colors ${folderMode ? 'bg-slate-600 text-slate-100' : 'text-slate-400 hover:bg-slate-700'}`}
+                >
+                  <FolderOpen size={11} /> Folder
+                </button>
+              </div>
+            </div>
+            {folderMode ? (
+              <BatchFolderDropZone
+                format={sourceFormat}
+                onFilesLoaded={handleFilesLoaded}
+                loadedFileNames={loadedFiles.map((f) => f.name)}
+                onClear={handleClear}
+              />
+            ) : (
+              <FileDropZone
+                format={sourceFormat}
+                onFilesLoaded={handleFilesLoaded}
+                loadedFileNames={loadedFiles.map((f) => f.name)}
+                onClear={handleClear}
+              />
+            )}
           </div>
 
           {/* Parse error */}

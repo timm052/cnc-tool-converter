@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { LibraryProvider } from './contexts/LibraryContext';
+import { MaterialProvider } from './contexts/MaterialContext';
+import { HolderProvider } from './contexts/HolderContext';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import ConverterPage from './components/pages/ConverterPage';
@@ -15,17 +17,21 @@ export default function App() {
   return (
     <SettingsProvider>
       <LibraryProvider>
-        <div className="flex flex-col h-screen bg-slate-950 text-slate-100 overflow-hidden">
-          <Header />
-          <div className="flex flex-1 overflow-hidden">
-            <Sidebar activePage={activePage} onNavigate={setActivePage} />
-            <main className="flex-1 overflow-hidden">
-              {activePage === 'converter' && <ConverterPage />}
-              {activePage === 'tools'     && <ToolManagerPage />}
-              {activePage === 'settings'  && <SettingsPage />}
-            </main>
-          </div>
-        </div>
+        <MaterialProvider>
+          <HolderProvider>
+            <div className="flex flex-col h-screen bg-slate-950 text-slate-100 overflow-hidden">
+              <Header />
+              <div className="flex flex-1 overflow-hidden">
+                <Sidebar activePage={activePage} onNavigate={setActivePage} />
+                <main className="flex-1 overflow-hidden">
+                  {activePage === 'converter' && <ConverterPage />}
+                  {activePage === 'tools'     && <ToolManagerPage />}
+                  {activePage === 'settings'  && <SettingsPage />}
+                </main>
+              </div>
+            </div>
+          </HolderProvider>
+        </MaterialProvider>
       </LibraryProvider>
     </SettingsProvider>
   );

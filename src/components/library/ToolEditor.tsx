@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef, type ChangeEvent } from 'react';
-import { X, Trash2, Save, AlertCircle, ZoomIn, ZoomOut, Wand2, Undo2, Redo2, AlertTriangle } from 'lucide-react';
-import type { LibraryTool } from '../../types/libraryTool';
+import { X, Trash2, Save, AlertCircle, ZoomIn, ZoomOut, Wand2, Undo2, Redo2, AlertTriangle, Copy, Plus, ChevronDown } from 'lucide-react';
+import type { LibraryTool, ToolMaterialEntry } from '../../types/libraryTool';
 import type { ToolType, ToolUnit, CoolantMode, FeedMode, ToolMaterial } from '../../types/tool';
+import type { ToolHolder } from '../../types/holder';
+import type { WorkMaterial } from '../../types/material';
+import { MATERIAL_CATEGORY_COLOURS, MATERIAL_CATEGORY_LABELS } from '../../types/material';
 import { useSettings, type Settings } from '../../contexts/SettingsContext';
 import { ToolProfileSVG } from './ToolProfileSVG';
 import { useUndoRedo } from '../../hooks/useUndoRedo';
@@ -14,8 +17,11 @@ interface ToolEditorProps {
   tool:             LibraryTool | null;   // null = create new
   allTags:          string[];
   allMachineGroups: string[];
+  allHolders?:      ToolHolder[];
+  allMaterials?:    WorkMaterial[];
   onSave:           (tool: LibraryTool) => Promise<void>;
   onDelete:         (id: string) => Promise<void>;
+  onDuplicate?:     (tool: LibraryTool) => void;
   onClose:          () => void;
 }
 
@@ -226,6 +232,24 @@ function Row2({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
+function FsNum({
+  value, base, onChange,
+}: { value: number | undefined; base?: number; onChange: (v: number | undefined) => void }) {
+  return (
+    <input
+      type="number"
+      min={0}
+      value={value ?? ''}
+      placeholder={base !== undefined ? String(base) : '—'}
+      onChange={(e) => {
+        const n = parseFloat(e.target.value);
+        onChange(isNaN(n) ? undefined : n);
+      }}
+      className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+    />
+  );
+}
+
 // ── Machine group combobox ────────────────────────────────────────────────────
 
 function MachineGroupInput({
@@ -354,19 +378,20 @@ function TagInput({
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 
-type Tab = 'library' | 'geometry' | 'offsets' | 'cutting' | 'nc';
+type Tab = 'library' | 'geometry' | 'offsets' | 'cutting' | 'nc' | 'crib';
 const TABS: { id: Tab; label: string }[] = [
   { id: 'library',  label: 'Library'  },
   { id: 'geometry', label: 'Geometry' },
   { id: 'offsets',  label: 'Offsets'  },
   { id: 'cutting',  label: 'Cutting'  },
   { id: 'nc',       label: 'NC'       },
+  { id: 'crib',     label: 'Crib'     },
 ];
 
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function ToolEditor({
-  tool, allTags, allMachineGroups, onSave, onDelete, onClose,
+  tool, allTags, allMachineGroups, allHolders = [], allMaterials = [], onSave, onDelete, onDuplicate, onClose,
 }: ToolEditorProps) {
   const { settings } = useSettings();
   const isNew = tool === null;
@@ -395,7 +420,9 @@ export default function ToolEditor({
   const [isSaving,     setIsSaving]    = useState(false);
   const [showConfirm,  setShowConfirm] = useState(false);
   const ZOOM_LEVELS = [0.6, 1.0, 1.5, 2.1] as const;
-  const [zoomIdx,  setZoomIdx]  = useState(1); // default = 1.0×
+  const [zoomIdx,      setZoomIdx]     = useState(1); // default = 1.0×
+  const [expandedMats, setExpandedMats] = useState<Set<string>>(new Set());
+  const [addMatId,     setAddMatId]    = useState('');
 
   const allIssues = validateTool(draft);
   const warnings  = allIssues.filter((i) => i.severity === 'warning');
@@ -458,6 +485,20 @@ export default function ToolEditor({
     setDraft({ ...draft, nc: { ...(draft.nc ?? {}), ...patch } });
   }
 
+  function patchMatEntry(materialId: string, patch: Partial<ToolMaterialEntry>) {
+    const entries = draft.toolMaterials ?? [];
+    setDraft({ ...draft, toolMaterials: entries.map((e) => e.materialId === materialId ? { ...e, ...patch } : e) });
+  }
+  function addMatEntry(materialId: string) {
+    const entries = draft.toolMaterials ?? [];
+    if (entries.some((e) => e.materialId === materialId)) return;
+    setDraft({ ...draft, toolMaterials: [...entries, { materialId }] });
+  }
+  function removeMatEntry(materialId: string) {
+    const updated = (draft.toolMaterials ?? []).filter((e) => e.materialId !== materialId);
+    setDraft({ ...draft, toolMaterials: updated.length ? updated : undefined });
+  }
+
   async function handleSave() {
     setIsSaving(true);
     try {
@@ -472,6 +513,19 @@ export default function ToolEditor({
     if (!tool) return;
     await onDelete(tool.id);
     onClose();
+  }
+
+  function handleDuplicate() {
+    if (!onDuplicate) return;
+    const now = Date.now();
+    onDuplicate({
+      ...draft,
+      id:          crypto.randomUUID(),
+      toolNumber:  draft.toolNumber + 1,
+      description: draft.description ? draft.description + ' (copy)' : 'Copy',
+      addedAt:     now,
+      updatedAt:   now,
+    });
   }
 
   const geo      = draft.geometry;
@@ -571,7 +625,7 @@ export default function ToolEditor({
               <ZoomIn size={13} />
             </button>
           </div>
-          <ToolProfileSVG draft={draft} zoom={ZOOM_LEVELS[zoomIdx]} />
+          <ToolProfileSVG draft={draft} zoom={ZOOM_LEVELS[zoomIdx]} allHolders={allHolders} />
         </div>
 
         {/* Validation warnings */}
@@ -780,6 +834,45 @@ export default function ToolEditor({
                 <span className="text-sm text-slate-300">Internal coolant channels</span>
                 <Toggle value={geo.coolantSupport ?? false} onChange={(v) => patchGeo({ coolantSupport: v })} />
               </div>
+
+              {/* Assembly — holder + stick-out */}
+              <div className="pt-2 border-t border-slate-700/60">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Assembly</p>
+                <div className="space-y-3">
+                  <Row2 label="Tool holder">
+                    <select
+                      title="Tool holder"
+                      value={draft.holderId ?? ''}
+                      onChange={(e) => patchDraft({ holderId: e.target.value || undefined })}
+                      className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                    >
+                      <option value="">— None —</option>
+                      {allHolders.map((h) => (
+                        <option key={h.id} value={h.id}>{h.name} ({h.type}, GL {h.gaugeLength} mm)</option>
+                      ))}
+                    </select>
+                    {allHolders.length === 0 && (
+                      <p className="mt-1 text-xs text-slate-600">No holders in library — add them via the Holders button.</p>
+                    )}
+                  </Row2>
+                  <Row2 label={`Stick-out from holder face (${distUnit})`}>
+                    <NumF value={draft.assemblyStickOut} min={0} onChange={(v) => patchDraft({ assemblyStickOut: v })} />
+                  </Row2>
+                  {(() => {
+                    const h = allHolders.find((h) => h.id === draft.holderId);
+                    if (!h || draft.assemblyStickOut == null) return null;
+                    const totalMm = h.gaugeLength + draft.assemblyStickOut;
+                    return (
+                      <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-700/40 border border-slate-700">
+                        <span className="text-xs text-slate-400">Total assembly length</span>
+                        <span className="text-xs font-mono font-semibold text-blue-300">
+                          {totalMm.toFixed(2)} mm
+                        </span>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
             </>
           )}
 
@@ -805,56 +898,245 @@ export default function ToolEditor({
             </>
           )}
 
-          {/* ── Cutting tab ───────────────────────────────────────────────── */}
-          {activeTab === 'cutting' && (
-            <>
-              <div className="grid grid-cols-2 gap-3">
-                <Row2 label="Spindle (rpm)">
-                  <NumF value={cut.spindleRpm} onChange={(v) => patchCut({ spindleRpm: v })} min={0} step={1} />
-                </Row2>
-                <Row2 label="Ramp spindle (rpm)">
-                  <NumF value={cut.rampSpindleRpm} onChange={(v) => patchCut({ rampSpindleRpm: v })} min={0} step={1} />
-                </Row2>
-                <Row2 label={`Cutting feed (${feedUnit})`}>
-                  <NumF value={cut.feedCutting} onChange={(v) => patchCut({ feedCutting: v })} min={0} />
-                </Row2>
-                <Row2 label={`Plunge feed (${feedUnit})`}>
-                  <NumF value={cut.feedPlunge} onChange={(v) => patchCut({ feedPlunge: v })} min={0} />
-                </Row2>
-                <Row2 label={`Ramp feed (${feedUnit})`}>
-                  <NumF value={cut.feedRamp} onChange={(v) => patchCut({ feedRamp: v })} min={0} />
-                </Row2>
-                <Row2 label={`Entry feed (${feedUnit})`}>
-                  <NumF value={cut.feedEntry} onChange={(v) => patchCut({ feedEntry: v })} min={0} />
-                </Row2>
-                <Row2 label={`Exit feed (${feedUnit})`}>
-                  <NumF value={cut.feedExit} onChange={(v) => patchCut({ feedExit: v })} min={0} />
-                </Row2>
-                <Row2 label={`Retract feed (${feedUnit})`}>
-                  <NumF value={cut.feedRetract} onChange={(v) => patchCut({ feedRetract: v })} min={0} />
-                </Row2>
-              </div>
+          {/* ── Cutting / F&S tab ────────────────────────────────────────── */}
+          {activeTab === 'cutting' && (() => {
+            const assigned    = draft.toolMaterials ?? [];
+            const assignedIds = new Set(assigned.map((e) => e.materialId));
+            const unassigned  = allMaterials.filter((m) => !assignedIds.has(m.id));
+            const speedUnit   = draft.unit === 'mm' ? 'm/min' : 'ft/min';
+            const baseRpm     = cut.spindleRpm;
+            const baseFeed    = cut.feedCutting;
+            const basePlunge  = cut.feedPlunge;
 
-              <Row2 label="Coolant mode">
-                <SelF
-                  value={cut.coolant ?? 'disabled'}
-                  options={COOLANT_MODES.map((m) => ({ value: m, label: m }))}
-                  onChange={(v) => patchCut({ coolant: v })}
-                />
-              </Row2>
-              <Row2 label="Feed mode">
-                <SelF
-                  value={cut.feedMode ?? 'per-minute'}
-                  options={FEED_MODES.map((m) => ({ value: m, label: m }))}
-                  onChange={(v) => patchCut({ feedMode: v })}
-                />
-              </Row2>
-              <div className="flex items-center justify-between pt-2">
-                <span className="text-sm text-slate-300">Clockwise rotation</span>
-                <Toggle value={cut.clockwise ?? true} onChange={(v) => patchCut({ clockwise: v })} />
-              </div>
-            </>
-          )}
+            const computedSurfaceSpeed = cut.spindleRpm !== undefined && geo.diameter
+              ? Math.round(Math.PI * geo.diameter * cut.spindleRpm / (draft.unit === 'mm' ? 1000 : 12))
+              : undefined;
+
+            function toggleExpand(id: string) {
+              setExpandedMats((prev) => {
+                const next = new Set(prev);
+                next.has(id) ? next.delete(id) : next.add(id);
+                return next;
+              });
+            }
+
+            return (
+              <>
+                {/* Default cutting parameters */}
+                <div className="grid grid-cols-2 gap-3">
+                  <Row2 label="Spindle (rpm)">
+                    <NumF value={cut.spindleRpm} onChange={(v) => patchCut({ spindleRpm: v })} min={0} step={1} />
+                  </Row2>
+                  <Row2 label={`Surface speed (${speedUnit})`}>
+                    <NumF value={computedSurfaceSpeed} min={0} onChange={() => { /* read-only */ }} />
+                  </Row2>
+                  <Row2 label="Ramp spindle (rpm)">
+                    <NumF value={cut.rampSpindleRpm} onChange={(v) => patchCut({ rampSpindleRpm: v })} min={0} step={1} />
+                  </Row2>
+                  <Row2 label={`Cutting feed (${feedUnit})`}>
+                    <NumF value={cut.feedCutting} onChange={(v) => patchCut({ feedCutting: v })} min={0} />
+                  </Row2>
+                  <Row2 label={`Plunge feed (${feedUnit})`}>
+                    <NumF value={cut.feedPlunge} onChange={(v) => patchCut({ feedPlunge: v })} min={0} />
+                  </Row2>
+                  <Row2 label={`Ramp feed (${feedUnit})`}>
+                    <NumF value={cut.feedRamp} onChange={(v) => patchCut({ feedRamp: v })} min={0} />
+                  </Row2>
+                  <Row2 label={`Entry feed (${feedUnit})`}>
+                    <NumF value={cut.feedEntry} onChange={(v) => patchCut({ feedEntry: v })} min={0} />
+                  </Row2>
+                  <Row2 label={`Exit feed (${feedUnit})`}>
+                    <NumF value={cut.feedExit} onChange={(v) => patchCut({ feedExit: v })} min={0} />
+                  </Row2>
+                  <Row2 label={`Retract feed (${feedUnit})`}>
+                    <NumF value={cut.feedRetract} onChange={(v) => patchCut({ feedRetract: v })} min={0} />
+                  </Row2>
+                </div>
+
+                <Row2 label="Coolant mode">
+                  <SelF
+                    value={cut.coolant ?? 'disabled'}
+                    options={COOLANT_MODES.map((m) => ({ value: m, label: m }))}
+                    onChange={(v) => patchCut({ coolant: v })}
+                  />
+                </Row2>
+                <Row2 label="Feed mode">
+                  <SelF
+                    value={cut.feedMode ?? 'per-minute'}
+                    options={FEED_MODES.map((m) => ({ value: m, label: m }))}
+                    onChange={(v) => patchCut({ feedMode: v })}
+                  />
+                </Row2>
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-sm text-slate-300">Clockwise rotation</span>
+                  <Toggle value={cut.clockwise ?? true} onChange={(v) => patchCut({ clockwise: v })} />
+                </div>
+
+                {/* Per-material F&S overrides */}
+                <div className="pt-3 border-t border-slate-700/60">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Per-material overrides</p>
+
+                  {allMaterials.length === 0 && (
+                    <p className="text-xs text-slate-500 italic leading-relaxed">
+                      No materials in library. Add materials via the Materials button in the toolbar.
+                    </p>
+                  )}
+
+                  <div className="space-y-2">
+                    {assigned.map((entry) => {
+                      const mat      = allMaterials.find((m) => m.id === entry.materialId);
+                      const matLabel = mat?.name ?? entry.materialId;
+                      const catKey   = mat?.category ?? 'other';
+                      const expanded = expandedMats.has(entry.materialId);
+
+                      return (
+                        <div key={entry.materialId} className="rounded-xl border border-slate-700 bg-slate-800/40 overflow-hidden">
+                          <div className="flex items-center gap-2 px-3 py-2 cursor-pointer select-none"
+                            onClick={() => toggleExpand(entry.materialId)}
+                          >
+                            <ChevronDown size={14} className={`shrink-0 text-slate-400 transition-transform ${expanded ? '' : '-rotate-90'}`} />
+                            <span className="flex-1 text-sm font-medium text-slate-200 truncate">{matLabel}</span>
+                            {mat && (
+                              <span className={`shrink-0 px-1.5 py-0.5 rounded text-xs font-medium ${MATERIAL_CATEGORY_COLOURS[catKey]}`}>
+                                {MATERIAL_CATEGORY_LABELS[catKey]}
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              title="Remove material"
+                              onClick={(e) => { e.stopPropagation(); removeMatEntry(entry.materialId); }}
+                              className="shrink-0 p-1 rounded text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+
+                          {expanded && (
+                            <div className="px-3 pb-3 border-t border-slate-700/60 pt-3 space-y-3">
+                              <p className="text-xs text-slate-500">Blank / default fields inherit the base value shown in grey.</p>
+                              <div className="grid grid-cols-2 gap-3">
+                                <Row2 label="Spindle (rpm)">
+                                  <FsNum value={entry.rpm} base={baseRpm} onChange={(v) => patchMatEntry(entry.materialId, { rpm: v })} />
+                                </Row2>
+                                <Row2 label={`Surface speed (${speedUnit})`}>
+                                  <FsNum value={entry.surfaceSpeed} onChange={(v) => patchMatEntry(entry.materialId, { surfaceSpeed: v })} />
+                                </Row2>
+                                <Row2 label="Ramp spindle (rpm)">
+                                  <FsNum value={entry.rampSpindleRpm} base={cut.rampSpindleRpm} onChange={(v) => patchMatEntry(entry.materialId, { rampSpindleRpm: v })} />
+                                </Row2>
+                                <Row2 label={`Cutting feed (${feedUnit})`}>
+                                  <FsNum value={entry.feedRate} base={baseFeed} onChange={(v) => patchMatEntry(entry.materialId, { feedRate: v })} />
+                                </Row2>
+                                <Row2 label={`Plunge feed (${feedUnit})`}>
+                                  <FsNum value={entry.feedPlunge} base={basePlunge} onChange={(v) => patchMatEntry(entry.materialId, { feedPlunge: v })} />
+                                </Row2>
+                                <Row2 label={`Ramp feed (${feedUnit})`}>
+                                  <FsNum value={entry.feedRamp} base={cut.feedRamp} onChange={(v) => patchMatEntry(entry.materialId, { feedRamp: v })} />
+                                </Row2>
+                                <Row2 label={`Entry feed (${feedUnit})`}>
+                                  <FsNum value={entry.feedEntry} base={cut.feedEntry} onChange={(v) => patchMatEntry(entry.materialId, { feedEntry: v })} />
+                                </Row2>
+                                <Row2 label={`Exit feed (${feedUnit})`}>
+                                  <FsNum value={entry.feedExit} base={cut.feedExit} onChange={(v) => patchMatEntry(entry.materialId, { feedExit: v })} />
+                                </Row2>
+                                <Row2 label={`Retract feed (${feedUnit})`}>
+                                  <FsNum value={entry.feedRetract} base={cut.feedRetract} onChange={(v) => patchMatEntry(entry.materialId, { feedRetract: v })} />
+                                </Row2>
+                                <Row2 label={`Feed/tooth (${distUnit}/tooth)`}>
+                                  <FsNum value={entry.feedPerTooth} onChange={(v) => patchMatEntry(entry.materialId, { feedPerTooth: v })} />
+                                </Row2>
+                                <Row2 label={`Depth of cut (${distUnit})`}>
+                                  <FsNum value={entry.depthOfCut} onChange={(v) => patchMatEntry(entry.materialId, { depthOfCut: v })} />
+                                </Row2>
+                                <Row2 label={`Width of cut (${distUnit})`}>
+                                  <FsNum value={entry.widthOfCut} onChange={(v) => patchMatEntry(entry.materialId, { widthOfCut: v })} />
+                                </Row2>
+                                <Row2 label="Coolant">
+                                  <select
+                                    title="Coolant override"
+                                    value={entry.coolant ?? ''}
+                                    onChange={(e) => patchMatEntry(entry.materialId, { coolant: (e.target.value as CoolantMode) || undefined })}
+                                    className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                                  >
+                                    <option value="">— default —</option>
+                                    {COOLANT_MODES.map((m) => <option key={m} value={m}>{m}</option>)}
+                                  </select>
+                                </Row2>
+                                <Row2 label="Feed mode">
+                                  <select
+                                    title="Feed mode override"
+                                    value={entry.feedMode ?? ''}
+                                    onChange={(e) => patchMatEntry(entry.materialId, { feedMode: (e.target.value as FeedMode) || undefined })}
+                                    className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                                  >
+                                    <option value="">— default —</option>
+                                    {FEED_MODES.map((m) => <option key={m} value={m}>{m}</option>)}
+                                  </select>
+                                </Row2>
+                                <Row2 label="Spindle direction">
+                                  <select
+                                    title="Spindle direction override"
+                                    value={entry.clockwise === undefined ? '' : String(entry.clockwise)}
+                                    onChange={(e) => patchMatEntry(entry.materialId, { clockwise: e.target.value === '' ? undefined : e.target.value === 'true' })}
+                                    className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                                  >
+                                    <option value="">— default —</option>
+                                    <option value="true">CW (clockwise)</option>
+                                    <option value="false">CCW (counter-clockwise)</option>
+                                  </select>
+                                </Row2>
+                              </div>
+                              <Row2 label="Notes">
+                                <input
+                                  type="text"
+                                  value={entry.notes ?? ''}
+                                  onChange={(e) => patchMatEntry(entry.materialId, { notes: e.target.value || undefined })}
+                                  placeholder="Optional notes for this material"
+                                  className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </Row2>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {unassigned.length > 0 && (
+                    <div className="flex gap-2 pt-3 mt-2 border-t border-slate-700/60">
+                      <select
+                        title="Select material to add"
+                        value={addMatId}
+                        onChange={(e) => setAddMatId(e.target.value)}
+                        className="flex-1 px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                      >
+                        <option value="">— Select material —</option>
+                        {unassigned.map((m) => (
+                          <option key={m.id} value={m.id}>{m.name}</option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        disabled={!addMatId}
+                        onClick={() => {
+                          if (!addMatId) return;
+                          addMatEntry(addMatId);
+                          setExpandedMats((prev) => new Set([...prev, addMatId]));
+                          setAddMatId('');
+                        }}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:bg-slate-700 disabled:text-slate-500 transition-colors"
+                      >
+                        <Plus size={12} /> Add
+                      </button>
+                    </div>
+                  )}
+                  {assigned.length === 0 && allMaterials.length > 0 && unassigned.length === 0 && (
+                    <p className="text-xs text-slate-500 italic">All library materials assigned.</p>
+                  )}
+                </div>
+              </>
+            );
+          })()}
 
           {/* ── NC tab ───────────────────────────────────────────────────── */}
           {activeTab === 'nc' && (
@@ -880,16 +1162,120 @@ export default function ToolEditor({
             </div>
           )}
 
+          {/* ── Crib tab ──────────────────────────────────────────────────── */}
+          {activeTab === 'crib' && (
+            <>
+              {/* Inventory */}
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Inventory</p>
+              <div className="grid grid-cols-2 gap-3">
+                <Row2 label="Quantity on hand">
+                  <NumF value={draft.quantity} min={0} step={1} onChange={(v) => patchDraft({ quantity: v })} />
+                </Row2>
+                <Row2 label="Reorder below">
+                  <NumF value={draft.reorderPoint} min={0} step={1} onChange={(v) => patchDraft({ reorderPoint: v })} />
+                </Row2>
+                <Row2 label="Unit cost">
+                  <NumF value={draft.unitCost} min={0} onChange={(v) => patchDraft({ unitCost: v })} />
+                </Row2>
+              </div>
+              <Row2 label="Supplier">
+                <TextF
+                  value={draft.supplier ?? ''}
+                  onChange={(v) => patchDraft({ supplier: v || undefined })}
+                  placeholder="e.g. Kyocera / McMaster"
+                />
+              </Row2>
+              <Row2 label="Crib location">
+                <TextF
+                  value={draft.location ?? ''}
+                  onChange={(v) => patchDraft({ location: v || undefined })}
+                  placeholder="e.g. Drawer A3, Shelf 2"
+                />
+              </Row2>
+
+              {/* Custom fields */}
+              <div className="pt-2 border-t border-slate-700/60">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Custom fields</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const existing = draft.customFields ?? {};
+                      const key = `Field ${Object.keys(existing).length + 1}`;
+                      patchDraft({ customFields: { ...existing, [key]: '' } });
+                    }}
+                    className="flex items-center gap-1 text-xs text-slate-500 hover:text-blue-400 transition-colors"
+                  >
+                    <Plus size={11} /> Add field
+                  </button>
+                </div>
+                {Object.keys(draft.customFields ?? {}).length === 0 && (
+                  <p className="text-xs text-slate-600 italic">No custom fields. Click "Add field" to create one.</p>
+                )}
+                <div className="space-y-2">
+                  {Object.entries(draft.customFields ?? {}).map(([key, val]) => (
+                    <div key={key} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={key}
+                        onChange={(e) => {
+                          const newKey = e.target.value;
+                          const updated: Record<string, string> = {};
+                          for (const [k, v] of Object.entries(draft.customFields ?? {})) {
+                            updated[k === key ? newKey : k] = v;
+                          }
+                          patchDraft({ customFields: updated });
+                        }}
+                        placeholder="Field name"
+                        className="w-32 shrink-0 px-2 py-1.5 text-xs bg-slate-700 border border-slate-600 rounded-lg text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                      <input
+                        type="text"
+                        value={val}
+                        onChange={(e) => patchDraft({ customFields: { ...(draft.customFields ?? {}), [key]: e.target.value } })}
+                        placeholder="Value"
+                        className="flex-1 px-2 py-1.5 text-xs bg-slate-700 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                      <button
+                        type="button"
+                        title="Remove field"
+                        onClick={() => {
+                          const updated = { ...(draft.customFields ?? {}) };
+                          delete updated[key];
+                          patchDraft({ customFields: Object.keys(updated).length ? updated : undefined });
+                        }}
+                        className="p-1.5 rounded text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
         </div>
 
         {/* Footer */}
         <div className="px-5 py-4 border-t border-slate-700 shrink-0 flex items-center gap-3">
           {!isNew && !showConfirm && (
             <button
+              type="button"
               onClick={() => setShowConfirm(true)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/30 transition-colors"
             >
               <Trash2 size={13} /> Delete
+            </button>
+          )}
+          {!isNew && !showConfirm && onDuplicate && (
+            <button
+              type="button"
+              onClick={handleDuplicate}
+              title="Duplicate this tool"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-700 border border-slate-600 transition-colors"
+            >
+              <Copy size={13} /> Duplicate
             </button>
           )}
           {showConfirm && (

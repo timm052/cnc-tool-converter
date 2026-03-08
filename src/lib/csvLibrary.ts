@@ -3,12 +3,16 @@ import type { ToolType, ToolUnit, ToolMaterial } from '../types/tool';
 
 // ── Column schema ─────────────────────────────────────────────────────────────
 // Fixed order: T#,Type,Description,Diameter,Unit,FluteLength,OverallLength,
-//              Flutes,RPM,FeedCutting,Material,MachineGroup,Tags,Starred
+//              Flutes,RPM,FeedCutting,Material,MachineGroup,Tags,Starred,
+//              Quantity,ReorderPoint,Supplier,UnitCost,Location,
+//              HolderId,AssemblyStickOut,CustomFields
 
 const HEADER = [
   'T#', 'Type', 'Description', 'Diameter', 'Unit',
   'FluteLength', 'OverallLength', 'Flutes', 'RPM', 'FeedCutting',
   'Material', 'MachineGroup', 'Tags', 'Starred',
+  'Quantity', 'ReorderPoint', 'Supplier', 'UnitCost', 'Location',
+  'HolderId', 'AssemblyStickOut', 'CustomFields', 'ToolMaterials',
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -57,21 +61,38 @@ export function toolsToCsv(tools: LibraryTool[]): string {
   const lines: string[] = [HEADER.join(',')];
 
   for (const t of tools) {
+    const customFieldsStr  = t.customFields && Object.keys(t.customFields).length
+      ? JSON.stringify(t.customFields)
+      : '';
+    const toolMaterialsStr = t.toolMaterials && t.toolMaterials.length
+      ? JSON.stringify(t.toolMaterials)
+      : '';
+
     const row = [
       String(t.toolNumber),
       t.type,
       t.description,
       String(t.geometry.diameter),
       t.unit,
-      t.geometry.fluteLength  !== undefined ? String(t.geometry.fluteLength)  : '',
+      t.geometry.fluteLength   !== undefined ? String(t.geometry.fluteLength)   : '',
       t.geometry.overallLength !== undefined ? String(t.geometry.overallLength) : '',
       t.geometry.numberOfFlutes !== undefined ? String(t.geometry.numberOfFlutes) : '',
-      t.cutting?.spindleRpm !== undefined ? String(t.cutting.spindleRpm) : '',
+      t.cutting?.spindleRpm  !== undefined ? String(t.cutting.spindleRpm)  : '',
       t.cutting?.feedCutting !== undefined ? String(t.cutting.feedCutting) : '',
-      t.material ?? '',
+      t.material     ?? '',
       t.machineGroup ?? '',
       t.tags.join(';'),
       t.starred ? 'true' : 'false',
+      // New fields
+      t.quantity     !== undefined ? String(t.quantity)     : '',
+      t.reorderPoint !== undefined ? String(t.reorderPoint) : '',
+      t.supplier     ?? '',
+      t.unitCost     !== undefined ? String(t.unitCost) : '',
+      t.location     ?? '',
+      t.holderId     ?? '',
+      t.assemblyStickOut !== undefined ? String(t.assemblyStickOut) : '',
+      customFieldsStr,
+      toolMaterialsStr,
     ];
     lines.push(row.map(csvEscape).join(','));
   }
@@ -114,19 +135,24 @@ export function csvToTools(csv: string): CsvImportResult {
       'overalllength': 'overalllength', 'flutes': 'flutes', 'rpm': 'rpm',
       'feedcutting': 'feedcutting', 'material': 'material',
       'machinegroup': 'machinegroup', 'tags': 'tags', 'starred': 'starred',
+      'quantity': 'quantity', 'reorderpoint': 'reorderpoint',
+      'supplier': 'supplier', 'unitcost': 'unitcost', 'location': 'location',
+      'holderid': 'holderid', 'assemblystickout': 'assemblystickout',
+      'customfields': 'customfields', 'toolmaterials': 'toolmaterials',
     };
     headerRow.forEach((col, i) => {
       const key = COL_ALIASES[col.replace(/\s/g, '').toLowerCase()];
       if (key) colMap[key] = i;
     });
   } else {
-    // Default column positions
-    HEADER.forEach((h, i) => { colMap[h.toLowerCase().replace('#', '#')] = i; });
     colMap['t#'] = 0; colMap['type'] = 1; colMap['description'] = 2;
     colMap['diameter'] = 3; colMap['unit'] = 4; colMap['flutelength'] = 5;
     colMap['overalllength'] = 6; colMap['flutes'] = 7; colMap['rpm'] = 8;
     colMap['feedcutting'] = 9; colMap['material'] = 10; colMap['machinegroup'] = 11;
     colMap['tags'] = 12; colMap['starred'] = 13;
+    colMap['quantity'] = 14; colMap['reorderpoint'] = 15; colMap['supplier'] = 16;
+    colMap['unitcost'] = 17; colMap['location'] = 18;
+    colMap['holderid'] = 19; colMap['assemblystickout'] = 20; colMap['customfields'] = 21;
   }
 
   const get = (row: string[], key: string): string =>
@@ -157,11 +183,11 @@ export function csvToTools(csv: string): CsvImportResult {
     const rawMat  = get(row, 'material').toLowerCase();
     const material = MATERIALS.has(rawMat) ? rawMat as ToolMaterial : undefined;
 
-    const fluteLength    = parseFloat(get(row, 'flutelength'))  || undefined;
-    const overallLength  = parseFloat(get(row, 'overalllength')) || undefined;
-    const numberOfFlutes = parseInt(get(row, 'flutes'), 10) || undefined;
-    const spindleRpm     = parseFloat(get(row, 'rpm'))          || undefined;
-    const feedCutting    = parseFloat(get(row, 'feedcutting'))  || undefined;
+    const fluteLength    = parseFloat(get(row, 'flutelength'))    || undefined;
+    const overallLength  = parseFloat(get(row, 'overalllength'))  || undefined;
+    const numberOfFlutes = parseInt(get(row, 'flutes'), 10)       || undefined;
+    const spindleRpm     = parseFloat(get(row, 'rpm'))            || undefined;
+    const feedCutting    = parseFloat(get(row, 'feedcutting'))    || undefined;
 
     const tagsRaw = get(row, 'tags');
     const tags    = tagsRaw ? tagsRaw.split(';').map((t) => t.trim()).filter(Boolean) : [];
@@ -171,6 +197,27 @@ export function csvToTools(csv: string): CsvImportResult {
 
     const machineGroup = get(row, 'machinegroup') || undefined;
     const description  = get(row, 'description') || `T${tNum}`;
+
+    // New crib / assembly / custom fields
+    const quantity         = parseFloat(get(row, 'quantity'))         || undefined;
+    const reorderPoint     = parseFloat(get(row, 'reorderpoint'))     || undefined;
+    const supplier         = get(row, 'supplier')         || undefined;
+    const unitCost         = parseFloat(get(row, 'unitcost'))         || undefined;
+    const location         = get(row, 'location')         || undefined;
+    const holderId         = get(row, 'holderid')         || undefined;
+    const assemblyStickOut = parseFloat(get(row, 'assemblystickout')) || undefined;
+
+    let customFields: Record<string, string> | undefined;
+    const cfRaw = get(row, 'customfields');
+    if (cfRaw) {
+      try { customFields = JSON.parse(cfRaw) as Record<string, string>; } catch { /* ignore */ }
+    }
+
+    let toolMaterials: import('../types/libraryTool').ToolMaterialEntry[] | undefined;
+    const tmRaw = get(row, 'toolmaterials');
+    if (tmRaw) {
+      try { toolMaterials = JSON.parse(tmRaw) as import('../types/libraryTool').ToolMaterialEntry[]; } catch { /* ignore */ }
+    }
 
     tools.push({
       id:          crypto.randomUUID(),
@@ -193,6 +240,16 @@ export function csvToTools(csv: string): CsvImportResult {
       starred,
       addedAt:   now,
       updatedAt: now,
+      // New fields
+      quantity,
+      reorderPoint,
+      supplier,
+      unitCost,
+      location,
+      holderId,
+      assemblyStickOut,
+      customFields,
+      toolMaterials,
     });
   });
 

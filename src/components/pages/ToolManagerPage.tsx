@@ -2,9 +2,11 @@ import { useState, useMemo, useRef, useCallback } from 'react';
 import {
   Library, Plus, Upload, Download, Search, Star, X,
   ChevronDown, Layers, Tag, RotateCcw, Keyboard, SlidersHorizontal, Columns2, Hash,
-  Printer, QrCode,
+  Printer, QrCode, FlaskConical, Wrench,
 } from 'lucide-react';
 import { useLibrary } from '../../contexts/LibraryContext';
+import { useHolders } from '../../contexts/HolderContext';
+import { useMaterials } from '../../contexts/MaterialContext';
 import type { LibraryTool } from '../../types/libraryTool';
 import LibraryTable from '../library/LibraryTable';
 import ToolEditor from '../library/ToolEditor';
@@ -15,10 +17,12 @@ import ToolComparePanel from '../library/ToolComparePanel';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import LabelPrintPanel from '../library/LabelPrintPanel';
 import ToolSheetPanel from '../library/ToolSheetPanel';
+import MaterialLibraryPanel from '../library/MaterialLibraryPanel';
+import HolderLibraryPanel from '../library/HolderLibraryPanel';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Panel = 'import' | 'export' | 'edit' | 'bulk-edit' | 'compare' | 'renumber' | 'label-print' | 'sheet-print' | null;
+type Panel = 'import' | 'export' | 'edit' | 'bulk-edit' | 'compare' | 'renumber' | 'label-print' | 'sheet-print' | 'materials' | 'holders' | null;
 
 // ── Machine group sidebar ─────────────────────────────────────────────────────
 
@@ -237,6 +241,8 @@ export default function ToolManagerPage() {
     allMachineGroups, allTags,
     addTool, addTools, updateTool, updateTools, patchEach, deleteTool,
   } = useLibrary();
+  const { holders }   = useHolders();
+  const { materials } = useMaterials();
 
   const restoreInputRef  = useRef<HTMLInputElement>(null);
 
@@ -320,6 +326,11 @@ export default function ToolManagerPage() {
     } else {
       await addTool(tool);
     }
+  }
+
+  async function handleDuplicate(copy: LibraryTool) {
+    await addTool(copy);
+    openEdit(copy);
   }
 
   function closePanel() {
@@ -483,6 +494,22 @@ export default function ToolManagerPage() {
             onChange={handleRestore}
             className="hidden"
           />
+          <button
+            onClick={() => setActivePanel('materials')}
+            title="Material library"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
+          >
+            <FlaskConical size={14} />
+            Materials
+          </button>
+          <button
+            onClick={() => setActivePanel('holders')}
+            title="Holder library"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
+          >
+            <Wrench size={14} />
+            Holders
+          </button>
           <button
             onClick={() => setActivePanel('import')}
             className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
@@ -663,15 +690,18 @@ export default function ToolManagerPage() {
         <ImportPanel onImport={addTools} onClose={closePanel} />
       )}
       {activePanel === 'export' && (
-        <ExportPanel selectedTools={selectedTools} onClose={closePanel} />
+        <ExportPanel selectedTools={selectedTools} allMaterials={materials} onClose={closePanel} />
       )}
       {activePanel === 'edit' && (
         <ToolEditor
           tool={editingTool}
           allTags={allTags}
           allMachineGroups={allMachineGroups}
+          allHolders={holders}
+          allMaterials={materials}
           onSave={handleSaveTool}
           onDelete={deleteTool}
+          onDuplicate={handleDuplicate}
           onClose={closePanel}
         />
       )}
@@ -680,9 +710,8 @@ export default function ToolManagerPage() {
           tools={filteredTools.filter((t) => selectedIds.has(t.id))}
           allGroups={allMachineGroups}
           allTags={allTags}
-          onApply={async (patch) => {
-            await updateTools([...selectedIds], patch);
-          }}
+          allMaterials={materials}
+          onApply={async (updates) => { await patchEach(updates); }}
           onClose={closePanel}
         />
       )}
@@ -710,6 +739,12 @@ export default function ToolManagerPage() {
           tools={selectedTools.length > 0 ? selectedTools : filteredTools}
           onClose={closePanel}
         />
+      )}
+      {activePanel === 'materials' && (
+        <MaterialLibraryPanel onClose={closePanel} />
+      )}
+      {activePanel === 'holders' && (
+        <HolderLibraryPanel onClose={closePanel} />
       )}
 
       {/* ── Keyboard shortcuts legend ─────────────────────────────────────── */}

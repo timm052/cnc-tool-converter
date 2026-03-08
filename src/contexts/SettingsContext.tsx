@@ -10,6 +10,7 @@ export interface TableColumnVisibility {
   rpm:         boolean;
   feed:        boolean;
   material:    boolean;
+  qty:         boolean;
 }
 
 export interface Settings {
@@ -82,6 +83,7 @@ export const DEFAULT_SETTINGS: Settings = {
     rpm:         true,
     feed:        true,
     material:    true,
+    qty:         false,
   },
 
   mergeBehavior:  'merge',

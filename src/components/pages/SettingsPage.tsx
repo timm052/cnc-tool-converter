@@ -153,6 +153,7 @@ const COL_LABELS: Record<keyof TableColumnVisibility, string> = {
   rpm:         'RPM',
   feed:        'Feed rate',
   material:    'Material',
+  qty:         'Quantity (Crib)',
 };
 
 // ── Page ─────────────────────────────────────────────────────────────────────

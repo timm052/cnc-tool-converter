@@ -181,6 +181,7 @@ export default function LibraryTable({
             {vis.rpm         && <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-400 whitespace-nowrap">RPM</th>}
             {vis.feed        && <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-400 whitespace-nowrap">Feed</th>}
             {vis.material    && <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-400 whitespace-nowrap">Material</th>}
+            {vis.qty         && <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-400 whitespace-nowrap">Qty</th>}
             {showMachineCol  && <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-400 whitespace-nowrap">Machine</th>}
             <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">
               Tags
@@ -288,6 +289,25 @@ export default function LibraryTable({
                 {vis.material && (
                   <td className={`px-3 ${py} text-slate-400 text-xs`}>
                     {tool.material ?? '—'}
+                  </td>
+                )}
+
+                {/* Quantity */}
+                {vis.qty && (
+                  <td className={`px-3 ${py} text-xs whitespace-nowrap`}>
+                    {tool.quantity == null ? (
+                      <span className="text-slate-600">—</span>
+                    ) : (() => {
+                      const isLow = tool.reorderPoint != null && tool.quantity <= tool.reorderPoint;
+                      return (
+                        <span className={isLow ? 'font-semibold text-red-400' : 'text-slate-300'}>
+                          {tool.quantity}
+                          {isLow && (
+                            <span className="ml-1 px-1 py-0.5 rounded text-xs bg-red-500/20 text-red-400">low</span>
+                          )}
+                        </span>
+                      );
+                    })()}
                   </td>
                 )}
 

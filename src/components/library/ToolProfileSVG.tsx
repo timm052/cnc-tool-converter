@@ -10,6 +10,7 @@
 
 import type { LibraryTool } from '../../types/libraryTool';
 import type { ToolType, ToolGeometry } from '../../types/tool';
+import type { ToolHolder } from '../../types/holder';
 import { useSettings } from '../../contexts/SettingsContext';
 
 // ── Resolved geometry ─────────────────────────────────────────────────────────
@@ -80,13 +81,53 @@ const TIP_Y   = 128;   // SVG y of tool tip
 
 // ── Scale ─────────────────────────────────────────────────────────────────────
 
-function computeScale(geo: ResolvedGeometry): number {
-  const maxR = Math.max(geo.diameter, geo.shaftDiameter) / 2;
+function computeScale(geo: ResolvedGeometry, assemblyTotalH?: number, maxRadiusMm?: number): number {
+  const totalH = assemblyTotalH != null ? Math.max(geo.overallLength, assemblyTotalH) : geo.overallLength;
+  const maxR   = Math.max(geo.diameter / 2, geo.shaftDiameter / 2, maxRadiusMm ?? 0);
   const s = Math.min(
-    AVAIL_H / geo.overallLength,
+    AVAIL_H / totalH,
     (AVAIL_W / 2) / maxR,
   );
   return Math.max(0.5, Math.min(s, 30));
+}
+
+// ── Holder silhouette builder ──────────────────────────────────────────────────
+
+function buildHolderPath(
+  entryY:     number,   // SVG y of collet face (bottom of holder body)
+  holderTopY: number,   // SVG y of spindle face (top of holder body)
+  shankRpx:   number,   // half-width of tool shank in px
+  barrelRpx:  number,   // half-width of holder barrel in px
+): string {
+  const h = entryY - holderTopY;           // total holder height in px (positive)
+  const colletFrac  = 0.22;                // narrow collet section at bottom
+  const taperFrac   = 0.13;                // taper out to barrel
+  const barrelFrac  = 0.45;               // main barrel body
+  // top spindle taper is the remainder
+
+  const y0 = r1(entryY);
+  const y1 = r1(entryY    - h * colletFrac);
+  const y2 = r1(y1        - h * taperFrac);
+  const y3 = r1(y2        - h * barrelFrac);
+  const y4 = r1(holderTopY);
+
+  const sR = r1(shankRpx);
+  const bR = r1(barrelRpx);
+  const tR = r1(shankRpx * 0.65);   // narrow spindle end
+
+  return [
+    `M${r1(CX - sR)},${y0}`,   // bottom-left  (collet face)
+    `L${r1(CX + sR)},${y0}`,   // bottom-right
+    `L${r1(CX + sR)},${y1}`,   // up right (collet section)
+    `L${r1(CX + bR)},${y2}`,   // taper right to barrel
+    `L${r1(CX + bR)},${y3}`,   // up right (barrel)
+    `L${r1(CX + tR)},${y4}`,   // taper right to spindle top
+    `L${r1(CX - tR)},${y4}`,   // spindle top-left
+    `L${r1(CX - bR)},${y3}`,   // down left (barrel)
+    `L${r1(CX - bR)},${y2}`,   // end of barrel left
+    `L${r1(CX - sR)},${y1}`,   // taper left back to collet
+    'Z',
+  ].join(' ');
 }
 
 // ── Coordinate transform ──────────────────────────────────────────────────────
@@ -381,7 +422,15 @@ function HorizDimLine({
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function ToolProfileSVG({ draft, zoom = 1 }: { draft: LibraryTool; zoom?: number }) {
+export function ToolProfileSVG({
+  draft,
+  zoom = 1,
+  allHolders = [],
+}: {
+  draft:       LibraryTool;
+  zoom?:       number;
+  allHolders?: ToolHolder[];
+}) {
   const { settings } = useSettings();
   const dec  = settings.tableDecimalPrecision;
   const unit = draft.unit;
@@ -390,17 +439,31 @@ export function ToolProfileSVG({ draft, zoom = 1 }: { draft: LibraryTool; zoom?:
   // result matches what the user typed in the editor (e.g. 6 → "6", not "6.000")
   const fmt = (n: number) => parseFloat(n.toFixed(dec)).toString();
 
+  // Resolve holder data
+  const holder     = allHolders.find((h) => h.id === draft.holderId) ?? null;
+  const stickOut   = draft.assemblyStickOut;
+  const showHolder = holder !== null && stickOut != null && stickOut >= 0;
+
+  // Holder barrel radius in mm (schematic — proportional to shank)
+  const resolved = resolveGeometry(draft.type, draft.geometry);
+  const holderBarrelMm = showHolder
+    ? Math.max(resolved.shaftDiameter * 1.8, (holder!.colletDiameterMax ?? resolved.shaftDiameter * 1.5) * 1.2, 6)
+    : 0;
+
+  // Full assembly height (tip to holder spindle face) used for rescaling
+  const assemblyTotalH = showHolder ? stickOut! + holder!.gaugeLength : undefined;
+
   // Zoom is achieved by:
   //   - Keeping viewBox height fixed at 185 (so the full tool stays visible vertically)
   //   - Narrowing viewBox width by 1/zoom, centred on CX=240 (content scales up by zoom)
   //   - Growing the SVG height attribute proportionally so layout space matches
-  const svgH   = Math.round(185 * zoom);
-  const vbW    = r1(480 / zoom);
-  const vbX    = r1(CX - vbW / 2);
-  const viewBoxAttr = `${vbX} 0 ${vbW} 185`;
+  const vbH  = 185;
+  const svgH = Math.round(vbH * zoom);
+  const vbW  = r1(480 / zoom);
+  const vbX  = r1(CX - vbW / 2);
+  const viewBoxAttr = `${vbX} 0 ${vbW} ${vbH}`;
 
-  const resolved = resolveGeometry(draft.type, draft.geometry);
-  const scale    = computeScale(resolved);
+  const scale = computeScale(resolved, assemblyTotalH, holderBarrelMm / 2);
 
   if (!isFinite(scale) || resolved.diameter * scale < 3) {
     return (
@@ -444,7 +507,18 @@ export function ToolProfileSVG({ draft, zoom = 1 }: { draft: LibraryTool; zoom?:
     ?? (showBody ? rawBodyLen! - resolved.fluteLength : undefined);
   const shLabel = rawShoulderLen !== undefined ? `Shldr ${fmt(rawShoulderLen)} ${unit}` : '';
 
-  const extX     = CX + maxRpx + 4;
+  // ── Holder geometry (computed early so barrel width can inform extX) ──────────
+  const holderEntryY   = showHolder ? ty(stickOut!, scale) : null;
+  const holderTopY     = showHolder ? ty(stickOut! + holder!.gaugeLength, scale) : null;
+  const holderBarrelPx = showHolder ? r1(holderBarrelMm / 2 * scale) : 0;
+  const holderShankPx  = showHolder ? r1(resolved.shaftDiameter / 2 * scale) : 0;
+  const holderPath     = showHolder
+    ? buildHolderPath(holderEntryY!, holderTopY!, holderShankPx, holderBarrelPx)
+    : null;
+
+  // Right/left profile edges including holder barrel
+  const rightEdgePx = Math.max(maxRpx, holderBarrelPx);
+  const extX     = CX + rightEdgePx + 4;
   const leftExtX = CX - maxRpx - 4;
 
   // Dim lines sit close to the tool — offset from the profile edge, not the SVG edge.
@@ -469,6 +543,15 @@ export function ToolProfileSVG({ draft, zoom = 1 }: { draft: LibraryTool; zoom?:
   // Coolant indicator
   const coolantCY = ty(resolved.overallLength * 0.65, scale);
   const coolantR  = Math.max(1.5, r1(resolved.shaftDiameter * scale * 0.12));
+
+  // Stick-out annotation (right side, inner slot when OAL also shown)
+  const showSO  = showHolder && stickOut! > 0;
+  const soAnnX  = r1(extX + (showBody ? DIM_STEP * 3 : DIM_STEP * 2));
+  const soLabel = showSO ? `SO ${fmt(stickOut!)} ${unit}` : '';
+
+  // Gauge-length annotation (right side, outermost slot)
+  const glAnnX  = r1(extX + (showBody ? DIM_STEP * 4 : DIM_STEP * 3));
+  const glLabel = showHolder ? `GL ${fmt(holder!.gaugeLength)} mm` : '';
 
   return (
     <svg
@@ -503,6 +586,31 @@ export function ToolProfileSVG({ draft, zoom = 1 }: { draft: LibraryTool; zoom?:
       {/* Centre axis guide */}
       <line x1="240" y1="10" x2="240" y2="130"
             stroke="#1e293b" strokeWidth="0.8" strokeDasharray="3,3" />
+
+      {/* Holder body — drawn behind the tool */}
+      {holderPath && (
+        <>
+          <path d={holderPath} fill="#0e2233" />
+          <path d={holderPath} fill="none" stroke="#3b6e8f" strokeWidth="1.2" strokeLinejoin="round" />
+          {/* Bore channel — shows the cavity the tool sits in */}
+          <line
+            x1={r1(CX - holderShankPx)} y1={r1(holderEntryY!)}
+            x2={r1(CX - holderShankPx)} y2={r1(holderTopY! + (holderEntryY! - holderTopY!) * 0.22)}
+            stroke="#3b6e8f" strokeWidth="0.6" strokeOpacity="0.5" strokeDasharray="2,2"
+          />
+          <line
+            x1={r1(CX + holderShankPx)} y1={r1(holderEntryY!)}
+            x2={r1(CX + holderShankPx)} y2={r1(holderTopY! + (holderEntryY! - holderTopY!) * 0.22)}
+            stroke="#3b6e8f" strokeWidth="0.6" strokeOpacity="0.5" strokeDasharray="2,2"
+          />
+          {/* Collet face / entry depth line */}
+          <line
+            x1={r1(CX - holderBarrelPx)} y1={r1(holderEntryY!)}
+            x2={r1(CX + holderBarrelPx)} y2={r1(holderEntryY!)}
+            stroke="#60a5fa" strokeWidth="0.7" strokeOpacity="0.6" strokeDasharray="3,2"
+          />
+        </>
+      )}
 
       {/* Profile fill — dark gunmetal steel */}
       <path d={profileD} fill="#1c2e3e" />
@@ -609,6 +717,42 @@ export function ToolProfileSVG({ draft, zoom = 1 }: { draft: LibraryTool; zoom?:
           label={shLabel}
           extLeft={leftExtX}
         />
+      )}
+
+      {/* Stick-out annotation (right side) */}
+      {showSO && (TIP_Y - holderEntryY!) >= 18 && (
+        <VertDimLine
+          x={soAnnX}
+          y1={holderEntryY!}
+          y2={TIP_Y}
+          label={soLabel}
+          extLeft={extX}
+        />
+      )}
+
+      {/* Gauge-length annotation (right side, outermost) */}
+      {showHolder && (holderEntryY! - holderTopY!) >= 18 && (
+        <VertDimLine
+          x={glAnnX}
+          y1={holderTopY!}
+          y2={holderEntryY!}
+          label={glLabel}
+          extLeft={extX}
+        />
+      )}
+
+      {/* Holder name badge (only if room above the spindle face) */}
+      {showHolder && holderTopY! > 14 && (
+        <text
+          x={r1(CX)} y={r1(holderTopY! - 4)}
+          fontSize="10" fontWeight="500"
+          fill="#60a5fa" fillOpacity="0.8"
+          textAnchor="middle"
+          fontFamily="ui-monospace, monospace"
+          dominantBaseline="auto"
+        >
+          {holder!.name}
+        </text>
       )}
 
       {/* Tool type label */}
