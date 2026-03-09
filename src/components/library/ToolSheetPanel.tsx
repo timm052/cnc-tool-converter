@@ -101,6 +101,7 @@ export default function ToolSheetPanel({ tools, onClose }: ToolSheetPanelProps) 
               <FieldToggle label="Tags"           checked={opts.showTags}         onChange={(v) => patch({ showTags: v })} />
               <FieldToggle label="Manufacturer"   checked={opts.showManufacturer} onChange={(v) => patch({ showManufacturer: v })} />
               <FieldToggle label="Comments"       checked={opts.showComment}      onChange={(v) => patch({ showComment: v })} />
+              <FieldToggle label="Crib / Inventory" checked={opts.showCrib}       onChange={(v) => patch({ showCrib: v })} />
             </div>
           </div>
 

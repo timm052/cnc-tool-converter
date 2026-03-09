@@ -6,12 +6,13 @@ import {
   type TableColumnVisibility,
 } from '../../contexts/SettingsContext';
 import {
-  loadProfiles, createProfile, deleteProfile, updateProfileName,
+  loadProfiles, createProfile, deleteProfile,
   type SettingsProfile,
 } from '../../lib/settingsProfiles';
 import {
   type CustomToolTypeDefinition,
   CUSTOM_TYPE_COLOUR_OPTIONS,
+  getAllToolTypeOptions,
 } from '../../lib/customToolTypes';
 
 // ── Primitives ───────────────────────────────────────────────────────────────
@@ -339,20 +340,7 @@ export default function SettingsPage() {
           <Row label="Default tool type" description="Tool type selected when opening the New Tool editor.">
             <Sel
               value={settings.libraryDefaultType}
-              options={[
-                { value: 'flat end mill',       label: 'Flat end mill' },
-                { value: 'ball end mill',        label: 'Ball end mill' },
-                { value: 'bull nose end mill',   label: 'Bull nose end mill' },
-                { value: 'chamfer mill',         label: 'Chamfer mill' },
-                { value: 'face mill',            label: 'Face mill' },
-                { value: 'spot drill',           label: 'Spot drill' },
-                { value: 'drill',                label: 'Drill' },
-                { value: 'tapered mill',         label: 'Tapered mill' },
-                { value: 'boring bar',           label: 'Boring bar' },
-                { value: 'thread mill',          label: 'Thread mill' },
-                { value: 'engraving',            label: 'Engraving' },
-                { value: 'custom',               label: 'Custom' },
-              ]}
+              options={getAllToolTypeOptions(settings.customToolTypes)}
               onChange={(v) => set('libraryDefaultType', v)}
             />
           </Row>

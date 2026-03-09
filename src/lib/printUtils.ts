@@ -147,6 +147,7 @@ export interface SheetOptions {
   showTags:        boolean;
   showManufacturer: boolean;
   showComment:     boolean;
+  showCrib:        boolean;
 }
 
 export const DEFAULT_SHEET_OPTIONS: SheetOptions = {
@@ -158,114 +159,8 @@ export const DEFAULT_SHEET_OPTIONS: SheetOptions = {
   showTags:         true,
   showManufacturer: true,
   showComment:      true,
+  showCrib:         true,
 };
-
-// ── Print tool sheet ──────────────────────────────────────────────────────────
-
-export function printToolSheet(tools: LibraryTool[], opts: SheetOptions = DEFAULT_SHEET_OPTIONS): void {
-  const cards = tools.map((tool) => {
-    const geo = tool.geometry;
-    const cut = tool.cutting ?? {};
-
-    type Row = [string, string];
-    type Section = { header: string; rows: Row[] };
-    const sections: Section[] = [];
-
-    // ── Basic (always shown) ───────────────────────────────────────────────
-    const basicRows: Row[] = [['Type', tool.type], ['Ø', `${geo.diameter}\u202f${tool.unit}`]];
-    if (opts.showGeometry) {
-      if (geo.overallLength  != null) basicRows.push(['OAL',      `${geo.overallLength}\u202f${tool.unit}`]);
-      if (geo.fluteLength    != null) basicRows.push(['Flute L',  `${geo.fluteLength}\u202f${tool.unit}`]);
-      if (geo.bodyLength     != null) basicRows.push(['Body L',   `${geo.bodyLength}\u202f${tool.unit}`]);
-      if (geo.shoulderLength != null) basicRows.push(['Shoulder', `${geo.shoulderLength}\u202f${tool.unit}`]);
-      if (geo.shaftDiameter  != null) basicRows.push(['Shaft Ø',  `${geo.shaftDiameter}\u202f${tool.unit}`]);
-      if (geo.numberOfFlutes != null) basicRows.push(['Flutes',   String(geo.numberOfFlutes)]);
-      if (geo.cornerRadius   != null) basicRows.push(['Corner R', `${geo.cornerRadius}\u202f${tool.unit}`]);
-      if (geo.taperAngle     != null) basicRows.push(['Taper',    `${geo.taperAngle}°`]);
-      if (geo.tipDiameter    != null) basicRows.push(['Tip Ø',    `${geo.tipDiameter}\u202f${tool.unit}`]);
-      if (geo.threadPitch    != null) basicRows.push(['Pitch',    `${geo.threadPitch}\u202f${tool.unit}`]);
-    }
-    sections.push({ header: '', rows: basicRows });
-
-    // ── Material ───────────────────────────────────────────────────────────
-    if (opts.showMaterial && tool.material) {
-      sections.push({ header: 'Material', rows: [['Material', tool.material]] });
-    }
-
-    // ── Cutting ────────────────────────────────────────────────────────────
-    if (opts.showCutting) {
-      const rows: Row[] = [];
-      if (cut.spindleRpm  != null) rows.push(['RPM',         cut.spindleRpm.toLocaleString()]);
-      if (cut.feedCutting != null) rows.push(['Feed (cut)',   `${cut.feedCutting}`]);
-      if (cut.feedPlunge  != null) rows.push(['Feed (plunge)',`${cut.feedPlunge}`]);
-      if (cut.feedRamp    != null) rows.push(['Feed (ramp)',  `${cut.feedRamp}`]);
-      if (cut.coolant)             rows.push(['Coolant',       cut.coolant]);
-      if (rows.length) sections.push({ header: 'Cutting', rows });
-    }
-
-    // ── Meta ───────────────────────────────────────────────────────────────
-    const metaRows: Row[] = [];
-    if (opts.showMachineGroup  && tool.machineGroup)  metaRows.push(['Machine',  tool.machineGroup]);
-    if (opts.showTags          && tool.tags.length)   metaRows.push(['Tags',     tool.tags.join(', ')]);
-    if (opts.showManufacturer  && tool.manufacturer)  metaRows.push(['Make',     tool.manufacturer]);
-    if (opts.showManufacturer  && tool.productId)     metaRows.push(['Prod. ID', tool.productId]);
-    if (opts.showComment       && tool.comment)       metaRows.push(['Notes',    tool.comment]);
-    if (metaRows.length) sections.push({ header: 'Info', rows: metaRows });
-
-    const bodyHtml = sections.map((sec) => {
-      const header = sec.header
-        ? `<tr class="sh"><td colspan="2">${esc(sec.header)}</td></tr>`
-        : '';
-      const rows = sec.rows
-        .map(([l, v]) => `<tr><td class="fl">${esc(l)}</td><td class="fv">${esc(v)}</td></tr>`)
-        .join('');
-      return header + rows;
-    }).join('');
-
-    return `<div class="card">
-  <div class="card-header">
-    <span class="tnum">T${tool.toolNumber}</span>
-    <span class="desc">${esc(tool.description)}</span>
-    ${tool.pocketNumber != null ? `<span class="pocket">P${tool.pocketNumber}</span>` : ''}
-  </div>
-  <table class="ftable"><tbody>${bodyHtml}</tbody></table>
-</div>`;
-  }).join('\n');
-
-  const html = `<!DOCTYPE html>
-<html><head><meta charset="utf-8" /><title>Tool Sheet \u2014 ${tools.length} tool${tools.length !== 1 ? 's' : ''}</title>
-<style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: Arial, Helvetica, sans-serif; font-size: 7.5pt; color: #111; padding: 6mm; background: #fff; }
-h1   { font-size: 8.5pt; color: #333; margin-bottom: 3mm; }
-.grid { display: grid; grid-template-columns: repeat(${opts.columns}, 1fr); gap: 3mm; align-items: start; }
-.card { border: 0.4pt solid #ccc; border-radius: 2pt; page-break-inside: avoid; overflow: hidden; }
-.card-header { background: #1e3560; color: #fff; padding: 1.5mm 3mm; display: flex; align-items: baseline; gap: 2mm; }
-.tnum   { font-size: 7pt; font-weight: bold; font-family: monospace; color: #93c5fd; flex-shrink: 0; }
-.desc   { font-size: 7pt; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pocket { font-size: 6pt; color: #94a3b8; font-family: monospace; flex-shrink: 0; }
-.ftable { width: 100%; border-collapse: collapse; }
-.ftable tr:nth-child(even) td { background: #f5f7fb; }
-.sh td  { padding: 0.5mm 3mm; font-size: 5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
-          color: #6b87bb; background: #edf1f9 !important; border-top: 0.3pt solid #d8e1f0; }
-.fl { padding: 0.65mm 3mm; font-size: 6.5pt; color: #555; width: 38%; border-right: 0.3pt solid #e2e8f0; white-space: nowrap; }
-.fv { padding: 0.65mm 3mm; font-size: 6.5pt; font-family: monospace; word-break: break-all; }
-@media print {
-  body { padding: 5mm; }
-  @page { margin: 8mm; size: A4; }
-}
-</style></head>
-<body>
-<h1>Tool Sheet \u2014 ${tools.length} tool${tools.length !== 1 ? 's' : ''}</h1>
-<div class="grid">${cards}</div>
-<script>window.onload = () => { setTimeout(() => window.print(), 150); }<\/script>
-</body></html>`;
-
-  const win = window.open('', '_blank');
-  if (!win) { alert('Could not open print window — check your popup blocker.'); return; }
-  win.document.write(html);
-  win.document.close();
-}
 
 // ── PDF tool sheet ────────────────────────────────────────────────────────────
 //
@@ -319,6 +214,18 @@ function buildPdfRows(tool: LibraryTool, opts: SheetOptions): SheetRow[] {
     if (cut.coolant)             row('Coolant',       cut.coolant);
     if (out.length > before)     out.splice(before, 0, { kind: 'section', label: 'Cutting' });
   }
+
+  const cribBefore = out.length;
+  if (opts.showCrib) {
+    if (tool.quantity         != null) row('Qty on Hand', String(tool.quantity));
+    if (tool.reorderPoint     != null) row('Reorder At',  String(tool.reorderPoint));
+    if (tool.supplier)                 row('Supplier',    tool.supplier);
+    if (tool.unitCost         != null) row('Unit Cost',   String(tool.unitCost));
+    if (tool.location)                 row('Location',    tool.location);
+    if (tool.holderId)                 row('Holder ID',   tool.holderId);
+    if (tool.assemblyStickOut != null) row('Stick-Out',   `${tool.assemblyStickOut}\u202f${tool.unit}`);
+  }
+  if (out.length > cribBefore) out.splice(cribBefore, 0, { kind: 'section', label: 'Crib' });
 
   const metaBefore = out.length;
   if (opts.showMachineGroup  && tool.machineGroup)  row('Machine',  tool.machineGroup);

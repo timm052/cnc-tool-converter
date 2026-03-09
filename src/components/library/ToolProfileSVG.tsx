@@ -8,6 +8,7 @@
  * Tool is drawn tip-down (machinist convention), symmetrically about cx=240.
  */
 
+import { useId } from 'react';
 import type { LibraryTool } from '../../types/libraryTool';
 import type { ToolType, ToolGeometry } from '../../types/tool';
 import type { ToolHolder } from '../../types/holder';
@@ -236,18 +237,27 @@ function buildProfilePath(type: ToolType, geo: ResolvedGeometry, s: number): str
       const pitch  = geo.threadPitch;
       const nTeeth = geo.numberOfTeeth;
       const notchD = fR * 0.2;
-      const rightPts: string[] = [];
-      const leftPts:  string[] = [];
 
+      // Collect tooth positions bottom-up (first tooth nearest tip)
+      const teeth: { crestY: number; rootY: number }[] = [];
       for (let i = 0; i < nTeeth; i++) {
-        const crestY = FL - i * pitch;
-        const rootY  = FL - i * pitch - pitch * 0.5;
-        if (rootY < 0) break;
-        rightPts.push(`L${tx(fR, s)},${ty(crestY, s)}`);
-        rightPts.push(`L${tx(fR - notchD, s)},${ty(rootY, s)}`);
-        leftPts.unshift(`L${tx(-(fR - notchD), s)},${ty(rootY, s)}`);
-        leftPts.unshift(`L${tx(-fR, s)},${ty(crestY, s)}`);
+        const crestY = (i + 1) * pitch;
+        const rootY  = i * pitch + pitch * 0.5;
+        if (crestY > FL) break;
+        teeth.push({ crestY, rootY });
       }
+
+      // Right side: traverse top → bottom (reversed)
+      const rightPts = teeth.slice().reverse().flatMap(({ crestY, rootY }) => [
+        `L${tx(fR, s)},${ty(crestY, s)}`,
+        `L${tx(fR - notchD, s)},${ty(rootY, s)}`,
+      ]);
+
+      // Left side: traverse bottom → top (root before crest for correct notch direction)
+      const leftPts = teeth.flatMap(({ crestY, rootY }) => [
+        `L${tx(-(fR - notchD), s)},${ty(rootY, s)}`,
+        `L${tx(-fR, s)},${ty(crestY, s)}`,
+      ]);
 
       tip = [
         ...rightPts,
@@ -432,6 +442,7 @@ export function ToolProfileSVG({
   allHolders?: ToolHolder[];
 }) {
   const { settings } = useSettings();
+  const clipId = useId();
   const dec  = settings.tableDecimalPrecision;
   const unit = draft.unit;
 
@@ -563,7 +574,7 @@ export function ToolProfileSVG({
     >
       <defs>
         {/* Clip flute hatch marks to the profile shape */}
-        <clipPath id="toolProfileClip">
+        <clipPath id={clipId}>
           <path d={profileD} />
         </clipPath>
       </defs>
@@ -617,7 +628,7 @@ export function ToolProfileSVG({
 
       {/* Shoulder zone — violet tint between flute top and body/shank boundary */}
       {showBody && (
-        <g clipPath="url(#toolProfileClip)">
+        <g clipPath={`url(#${clipId})`}>
           <rect
             x={r1(CX - maxRpx - 2)} y={blY1!}
             width={r1((maxRpx + 2) * 2)} height={r1(flzTop - blY1!)}
@@ -628,7 +639,7 @@ export function ToolProfileSVG({
 
       {/* Flute hatch marks — clipped to profile, only in flute zone */}
       {resolved.numberOfFlutes !== undefined && (
-        <g clipPath="url(#toolProfileClip)">
+        <g clipPath={`url(#${clipId})`}>
           <FluteLines
             numberOfFlutes={resolved.numberOfFlutes}
             fRpx={fRpx}

@@ -10,7 +10,6 @@ interface LibraryContextValue {
   addTool:          (tool: LibraryTool) => Promise<void>;
   addTools:         (tools: LibraryTool[], overwrite?: boolean) => Promise<{ added: number; skipped: number }>;
   updateTool:       (id: string, patch: Partial<LibraryTool>) => Promise<void>;
-  updateTools:      (ids: string[], patch: Partial<LibraryTool>) => Promise<void>;
   /** Apply a different patch to each tool — single DB transaction, single re-render. */
   patchEach:        (updates: { id: string; patch: Partial<LibraryTool> }[]) => Promise<void>;
   deleteTool:       (id: string) => Promise<void>;
@@ -80,14 +79,6 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     setTools(await loadAll());
   }, []);
 
-  const updateTools = useCallback(async (ids: string[], patch: Partial<LibraryTool>) => {
-    const now = Date.now();
-    await db.transaction('rw', db.tools, async () => {
-      for (const id of ids) await db.tools.update(id, { ...patch, updatedAt: now });
-    });
-    setTools(await loadAll());
-  }, []);
-
   const patchEach = useCallback(async (updates: { id: string; patch: Partial<LibraryTool> }[]) => {
     const now = Date.now();
     await db.transaction('rw', db.tools, async () => {
@@ -110,7 +101,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     <LibraryContext.Provider value={{
       tools, isLoading,
       allMachineGroups, allTags,
-      addTool, addTools, updateTool, updateTools, patchEach, deleteTool, deleteTools,
+      addTool, addTools, updateTool, patchEach, deleteTool, deleteTools,
     }}>
       {children}
     </LibraryContext.Provider>

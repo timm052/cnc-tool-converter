@@ -34,6 +34,11 @@ const FIELD_GROUPS: { group: string; rows: { label: string; get: (t: LibraryTool
       { label: 'Corner Radius',  get: (t) => t.geometry.cornerRadius ?? '—' },
       { label: 'Taper Angle',    get: (t) => t.geometry.taperAngle ?? '—' },
       { label: 'Tip Dia',        get: (t) => t.geometry.tipDiameter ?? '—' },
+      { label: 'Shoulder L',     get: (t) => t.geometry.shoulderLength ?? '—' },
+      { label: '# Teeth',        get: (t) => t.geometry.numberOfTeeth ?? '—' },
+      { label: 'Thread Pitch',   get: (t) => t.geometry.threadPitch ?? '—' },
+      { label: 'Thread Angle',   get: (t) => t.geometry.threadProfileAngle ?? '—' },
+      { label: 'Coolant Supp.',  get: (t) => t.geometry.coolantSupport ? 'Yes' : 'No' },
     ],
   },
   {
@@ -48,8 +53,16 @@ const FIELD_GROUPS: { group: string; rows: { label: string; get: (t: LibraryTool
   {
     group: 'Library',
     rows: [
-      { label: 'Tags',    get: (t) => t.tags.join(', ') || '—' },
-      { label: 'Starred', get: (t) => t.starred ? 'Yes' : 'No' },
+      { label: 'Tags',         get: (t) => t.tags.join(', ') || '—' },
+      { label: 'Starred',      get: (t) => t.starred ? 'Yes' : 'No' },
+      { label: 'Pocket #',     get: (t) => t.pocketNumber ?? '—' },
+      { label: 'Quantity',     get: (t) => t.quantity ?? '—' },
+      { label: 'Reorder At',   get: (t) => t.reorderPoint ?? '—' },
+      { label: 'Supplier',     get: (t) => t.supplier ?? '—' },
+      { label: 'Unit Cost',    get: (t) => t.unitCost ?? '—' },
+      { label: 'Location',     get: (t) => t.location ?? '—' },
+      { label: 'Holder',       get: (t) => t.holderId ?? '—' },
+      { label: 'Stick-Out',    get: (t) => t.assemblyStickOut ?? '—' },
     ],
   },
 ];

@@ -18,11 +18,6 @@ const BUILTIN_TYPES = [
   'thread mill', 'engraving', 'custom',
 ] as const;
 
-/** Returns combined list of built-in + custom type IDs (strings). */
-export function getAllToolTypeIds(customTypes: CustomToolTypeDefinition[]): string[] {
-  return [...BUILTIN_TYPES, ...customTypes.map((c) => c.id)];
-}
-
 /** Returns combined list for the <select> options. */
 export function getAllToolTypeOptions(
   customTypes: CustomToolTypeDefinition[],
