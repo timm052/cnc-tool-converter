@@ -14,6 +14,7 @@ import ImportPanel from '../library/ImportPanel';
 import ExportPanel from '../library/ExportPanel';
 import BulkEditPanel from '../library/BulkEditPanel';
 import ToolComparePanel from '../library/ToolComparePanel';
+import DuplicateFinderPanel from '../library/DuplicateFinderPanel';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import LabelPrintPanel from '../library/LabelPrintPanel';
 import ToolSheetPanel from '../library/ToolSheetPanel';
@@ -22,7 +23,7 @@ import HolderLibraryPanel from '../library/HolderLibraryPanel';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Panel = 'import' | 'export' | 'edit' | 'bulk-edit' | 'compare' | 'renumber' | 'label-print' | 'sheet-print' | 'materials' | 'holders' | null;
+type Panel = 'import' | 'export' | 'edit' | 'bulk-edit' | 'compare' | 'renumber' | 'label-print' | 'sheet-print' | 'materials' | 'holders' | 'duplicates' | null;
 
 // ── Machine group sidebar ─────────────────────────────────────────────────────
 
@@ -239,7 +240,7 @@ export default function ToolManagerPage() {
   const {
     tools, isLoading,
     allMachineGroups, allTags,
-    addTool, addTools, updateTool, updateTools, patchEach, deleteTool,
+    addTool, addTools, updateTool, patchEach, deleteTool, deleteTools,
   } = useLibrary();
   const { holders }   = useHolders();
   const { materials } = useMaterials();
@@ -519,6 +520,16 @@ export default function ToolManagerPage() {
           </button>
           {tools.length > 0 && (
             <button
+              onClick={() => setActivePanel('duplicates')}
+              title="Find duplicate tools"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
+            >
+              <Wrench size={14} className="rotate-0" />
+              Duplicates
+            </button>
+          )}
+          {tools.length > 0 && (
+            <button
               onClick={() => setActivePanel('renumber')}
               title="Renumber tools"
               className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
@@ -745,6 +756,13 @@ export default function ToolManagerPage() {
       )}
       {activePanel === 'holders' && (
         <HolderLibraryPanel onClose={closePanel} />
+      )}
+      {activePanel === 'duplicates' && (
+        <DuplicateFinderPanel
+          tools={tools}
+          onDelete={async (ids) => { await deleteTools(ids); }}
+          onClose={closePanel}
+        />
       )}
 
       {/* ── Keyboard shortcuts legend ─────────────────────────────────────── */}
