@@ -1,0 +1,775 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   MAC OS 9 PLATINUM THEME (reference-accurate)
+   Blue desktop, pinstripe window title bars, platinum #dddddd chrome,
+   white content areas, 3D bevel borders, Charcoal/Geneva font.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Theme preview thumbnail (used in Settings theme picker) ─────────────── */
+
+.theme-preview-mac9 {
+  background-color: #4466AA;
+  font-family: "Charcoal", "Geneva", Helvetica, Arial, sans-serif;
+}
+.theme-preview-mac9__titlebar {
+  background: repeating-linear-gradient(
+    to bottom,
+    #bbbbbb 0px, #bbbbbb 1px,
+    #999999 1px, #999999 2px
+  );
+  border-bottom: 1px solid #000000;
+}
+.theme-preview-mac9__close {
+  background-color: #dddddd;
+  border: 1px solid #000000;
+  box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #888888;
+}
+.theme-preview-mac9__label {
+  background-color: rgba(0, 0, 0, 0.35);
+}
+.theme-preview-mac9__window {
+  background-color: #dddddd;
+}
+.theme-preview-mac9__body {
+  background-color: #dddddd;
+  border-right: 1px solid #000000;
+}
+.theme-preview-mac9__content {
+  background-color: #ffffff;
+}
+.theme-preview-mac9__row {
+  background-color: #999999;
+}
+.theme-preview-mac9__row--accent {
+  background-color: #555555;
+}
+
+/* ── Font ─────────────────────────────────────────────────────────────────── */
+
+[data-theme="macos9"],
+[data-theme="macos9"] * {
+  font-family: "Charcoal", "Geneva", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+}
+
+/* ── Scrollbars ─────────────────────────────────────────────────────────── */
+[data-theme="macos9"] * {
+  scrollbar-color: #bbbbbb #e8e8e8;
+}
+[data-theme="macos9"] *::-webkit-scrollbar-track {
+  background: #e8e8e8 !important;
+  border-left: 1px solid #aaaaaa !important;
+}
+[data-theme="macos9"] *::-webkit-scrollbar-thumb {
+  background-color: #cccccc !important;
+  border-top: 1px solid #ffffff !important;
+  border-left: 1px solid #ffffff !important;
+  border-right: 1px solid #666666 !important;
+  border-bottom: 1px solid #666666 !important;
+}
+[data-theme="macos9"] *::-webkit-scrollbar-thumb:hover {
+  background-color: #bbbbbb !important;
+}
+
+/* ── Desktop — Indigo blue (matches reference screenshot) ─────────────── */
+[data-theme="macos9"].bg-slate-950,
+[data-theme="macos9"] .bg-slate-950 {
+  background-color: #4466AA !important;
+}
+
+/* ── Header — Mac OS 9 menu bar (fallback for non-macos9-titlebar header) ── */
+[data-theme="macos9"] header:not(.macos9-titlebar) {
+  background-color: #dddddd !important;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    #cccccc 0px, #cccccc 1px,
+    #bbbbbb 1px, #bbbbbb 2px
+  ) !important;
+  border-bottom: 2px solid #000000 !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+}
+[data-theme="macos9"] header:not(.macos9-titlebar) * {
+  color: #000000 !important;
+  text-shadow: none !important;
+}
+[data-theme="macos9"] header:not(.macos9-titlebar) .bg-blue-600 {
+  background-color: #dddddd !important;
+  border: 1px solid !important;
+  border-color: #ffffff #666666 #666666 #ffffff !important;
+  box-shadow: none !important;
+}
+[data-theme="macos9"] header:not(.macos9-titlebar) .bg-blue-600\/20 {
+  background-color: rgba(0,0,0,0.08) !important;
+}
+[data-theme="macos9"] header:not(.macos9-titlebar) .text-blue-400,
+[data-theme="macos9"] header:not(.macos9-titlebar) .text-slate-400 {
+  color: #333333 !important;
+}
+[data-theme="macos9"] header:not(.macos9-titlebar) .border-blue-600\/30 {
+  border-color: #888888 !important;
+}
+
+/* ── Sidebar — Platinum chrome with 3D right border ─────────────────────── */
+[data-theme="macos9"] aside {
+  background-color: #dddddd !important;
+  border-right: 1px solid #000000 !important;
+  box-shadow: inset -1px 0 0 #888888 !important;
+}
+[data-theme="macos9"] aside .border-slate-700 {
+  border-color: #aaaaaa !important;
+}
+[data-theme="macos9"] aside .text-slate-500 {
+  color: #555555 !important;
+}
+
+/* Sidebar nav buttons — Mac OS 9 flat list style (Finder-like, no bevel) */
+[data-theme="macos9"] aside button {
+  background-color: transparent !important;
+  color: #000000 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  font-size: 11px !important;
+  padding-top: 3px !important;
+  padding-bottom: 3px !important;
+}
+[data-theme="macos9"] aside button:hover {
+  background-color: rgba(0, 0, 0, 0.1) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+[data-theme="macos9"] aside button:active {
+  background-color: rgba(0, 0, 0, 0.18) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+[data-theme="macos9"] aside button.bg-blue-600 {
+  background-color: #555555 !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+[data-theme="macos9"] aside button.bg-blue-600 *,
+[data-theme="macos9"] aside button span,
+[data-theme="macos9"] aside button svg {
+  color: inherit !important;
+}
+/* Hide the chevron — Mac OS 9 list items don't have them */
+[data-theme="macos9"] aside .lucide-chevron-right {
+  display: none !important;
+}
+
+/* ── Panel/window backgrounds — Platinum #dddddd chrome ─────────────────── */
+[data-theme="macos9"] .bg-slate-900 {
+  background-color: #dddddd !important;
+}
+[data-theme="macos9"] .bg-slate-800 {
+  background-color: #dddddd !important;
+}
+/* Row backgrounds → white content area */
+[data-theme="macos9"] .bg-slate-800\/50 {
+  background-color: #ffffff !important;
+}
+[data-theme="macos9"] .bg-slate-700 {
+  background-color: #cccccc !important;
+}
+[data-theme="macos9"] .bg-slate-700\/50 {
+  background-color: #d8d8d8 !important;
+}
+[data-theme="macos9"] .bg-slate-600 {
+  background-color: #bbbbbb !important;
+}
+
+/* ── Text ───────────────────────────────────────────────────────────────── */
+[data-theme="macos9"] .text-slate-100,
+[data-theme="macos9"] .text-slate-200,
+[data-theme="macos9"] .text-slate-300 {
+  color: #000000 !important;
+}
+[data-theme="macos9"] .text-slate-400 {
+  color: #333333 !important;
+}
+[data-theme="macos9"] .text-slate-500 {
+  color: #666666 !important;
+}
+[data-theme="macos9"] .text-white {
+  color: #000000 !important;
+}
+
+/* ── Borders ────────────────────────────────────────────────────────────── */
+[data-theme="macos9"] .border-slate-700,
+[data-theme="macos9"] .border-slate-600 {
+  border-color: #aaaaaa !important;
+}
+[data-theme="macos9"] .divide-slate-700\/60 > * + *,
+[data-theme="macos9"] .divide-y > * + * {
+  border-color: #cccccc !important;
+}
+
+/* ── Panels — Mac OS 9 window border style ──────────────────────────────── */
+/* Outer black frame + inset 3D bevel */
+[data-theme="macos9"] .border.rounded-xl,
+[data-theme="macos9"] .rounded-xl.border {
+  border: 1px solid #000000 !important;
+  border-radius: 0 !important;
+  box-shadow:
+    inset 1px 1px 0 #ffffff,
+    inset -1px -1px 0 #888888 !important;
+}
+
+/* Panel section title bars: pinstripe */
+[data-theme="macos9"] .rounded-xl > .bg-slate-800,
+[data-theme="macos9"] .border > h3 {
+  background: repeating-linear-gradient(
+    to bottom,
+    #bbbbbb 0px, #bbbbbb 1px,
+    #999999 1px, #999999 2px
+  ) !important;
+}
+
+/* ── Square corners everywhere except toggles ───────────────────────────── */
+[data-theme="macos9"] * {
+  border-radius: 0 !important;
+}
+[data-theme="macos9"] button[role="switch"] {
+  border-radius: 10px !important;
+}
+[data-theme="macos9"] .rounded-full {
+  border-radius: 10px !important;
+}
+
+/* ── Accent (grey — no blue in Mac OS 9 Platinum) ───────────────────────── */
+[data-theme="macos9"] .bg-blue-600 {
+  background-color: #555555 !important;
+  background-image: none !important;
+}
+[data-theme="macos9"] .bg-blue-600\/20 {
+  background-color: rgba(0, 0, 0, 0.07) !important;
+}
+[data-theme="macos9"] .text-blue-400,
+[data-theme="macos9"] .text-blue-500 {
+  color: #444444 !important;
+}
+[data-theme="macos9"] .text-blue-200 {
+  color: #888888 !important;
+}
+[data-theme="macos9"] .border-blue-600\/30 {
+  border-color: rgba(0, 0, 0, 0.25) !important;
+}
+[data-theme="macos9"] .hover\:bg-blue-700:hover {
+  background-color: #444444 !important;
+}
+
+/* ── Buttons — Mac OS 9 3D bevel (no gradient, flat chrome + border trick) */
+[data-theme="macos9"] main button {
+  background-color: #dddddd !important;
+  background-image: none !important;
+  color: #000000 !important;
+  border: 1px solid !important;
+  border-color: #ffffff #888888 #888888 #ffffff !important;
+  border-radius: 0 !important;
+  box-shadow: 1px 1px 0 rgba(0,0,0,0.2) !important;
+  text-shadow: none !important;
+}
+[data-theme="macos9"] main button:hover {
+  background-color: #e8e8e8 !important;
+  border-color: #ffffff #666666 #666666 #ffffff !important;
+}
+[data-theme="macos9"] main button:active {
+  background-color: #cccccc !important;
+  border-color: #888888 #ffffff #ffffff #888888 !important;
+  box-shadow: none !important;
+  transform: translate(1px, 1px) !important;
+}
+
+/* Default/accent button: Mac OS 9 "default" ring (thick black outline) */
+[data-theme="macos9"] main button.bg-blue-600 {
+  background-color: #555555 !important;
+  background-image: none !important;
+  color: #ffffff !important;
+  border: 1px solid #333333 !important;
+  /* Thick outer ring = the Mac OS 9 default button indicator */
+  box-shadow: 0 0 0 2px #000000, 1px 1px 0 rgba(0,0,0,0.2) !important;
+  text-shadow: none !important;
+}
+[data-theme="macos9"] main button.bg-blue-600:hover {
+  background-color: #444444 !important;
+  background-image: none !important;
+}
+[data-theme="macos9"] main button.bg-blue-600 * {
+  color: #ffffff !important;
+}
+
+/* Red / destructive */
+[data-theme="macos9"] main button.text-red-400,
+[data-theme="macos9"] main button.bg-red-600 {
+  color: #cc0000 !important;
+}
+
+/* ── Inputs — sunken bevel, white bg ────────────────────────────────────── */
+[data-theme="macos9"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+[data-theme="macos9"] select,
+[data-theme="macos9"] textarea {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid !important;
+  border-color: #888888 #ffffff #ffffff #888888 !important;
+  border-radius: 0 !important;
+  box-shadow: inset 1px 1px 1px rgba(0,0,0,0.12) !important;
+}
+[data-theme="macos9"] input::placeholder,
+[data-theme="macos9"] textarea::placeholder {
+  color: #aaaaaa !important;
+}
+[data-theme="macos9"] select option {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+[data-theme="macos9"] input:focus,
+[data-theme="macos9"] select:focus,
+[data-theme="macos9"] textarea:focus {
+  border-color: #555555 #cccccc #cccccc #555555 !important;
+  outline: none !important;
+}
+
+/* ── Toggle / switch ────────────────────────────────────────────────────── */
+[data-theme="macos9"] button[role="switch"] {
+  border: 1px solid #888888 !important;
+  border-radius: 10px !important;
+  box-shadow: inset 1px 1px 2px rgba(0,0,0,0.15) !important;
+}
+[data-theme="macos9"] button[role="switch"].bg-blue-600 {
+  background-color: #555555 !important;
+  background-image: none !important;
+}
+[data-theme="macos9"] button[role="switch"].bg-slate-600 {
+  background-color: #bbbbbb !important;
+  background-image: none !important;
+}
+
+/* ── Drop zones ─────────────────────────────────────────────────────────── */
+[data-theme="macos9"] .border-dashed {
+  border-color: #888888 !important;
+  background-color: #ffffff !important;
+}
+
+/* ── Tables — pinstripe header, Mac blue selection ──────────────────────── */
+[data-theme="macos9"] th {
+  background: repeating-linear-gradient(
+    to bottom,
+    #cccccc 0px, #cccccc 1px,
+    #bbbbbb 1px, #bbbbbb 2px
+  ) !important;
+  color: #000000 !important;
+  border-bottom: 1px solid #000000 !important;
+}
+[data-theme="macos9"] tr:hover td {
+  background-color: #555555 !important;
+  color: #ffffff !important;
+}
+[data-theme="macos9"] tr:hover td * {
+  color: #ffffff !important;
+}
+[data-theme="macos9"] td {
+  border-color: #cccccc !important;
+}
+
+/* ── Slide-over panels ──────────────────────────────────────────────────── */
+[data-theme="macos9"] .fixed.right-0 {
+  background-color: #dddddd !important;
+  border-left: 1px solid #000000 !important;
+  box-shadow: inset 1px 0 0 #ffffff, -2px 0 4px rgba(0,0,0,0.25) !important;
+}
+[data-theme="macos9"] .fixed.right-0 .bg-slate-900,
+[data-theme="macos9"] .fixed.right-0 .bg-slate-800 {
+  background-color: #dddddd !important;
+}
+/* Panel title bar: pinstripe (matches window title bars in screenshot) */
+[data-theme="macos9"] .fixed.right-0 > div:first-child {
+  background: repeating-linear-gradient(
+    to bottom,
+    #bbbbbb 0px, #bbbbbb 1px,
+    #999999 1px, #999999 2px
+  ) !important;
+  border-bottom: 1px solid #000000 !important;
+}
+[data-theme="macos9"] .fixed.right-0 > div:first-child * {
+  color: #000000 !important;
+}
+
+/* ── Badges / pills ─────────────────────────────────────────────────────── */
+[data-theme="macos9"] .rounded-full {
+  border-radius: 10px !important;
+  border: 1px solid #aaaaaa !important;
+}
+
+/* ── Tooltips — Mac OS 9 balloon help style ─────────────────────────────── */
+[data-theme="macos9"] [role="tooltip"] {
+  background-color: #ffffcc !important;
+  color: #000000 !important;
+  border: 1px solid #000000 !important;
+  border-radius: 0 !important;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.3) !important;
+}
+
+/* ── Focus rings ────────────────────────────────────────────────────────── */
+[data-theme="macos9"] *:focus-visible {
+  outline: 1px dotted #000000 !important;
+  outline-offset: 1px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MAC OS 9 — STRUCTURAL CHROME
+   Window control boxes, pinstripe section headers, drop shadows,
+   resize grip, Mac typography scale.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Title-bar window control boxes ─────────────────────────────────────── */
+/* Close box on the left, zoom box on the right — via pseudo-elements       */
+
+[data-theme="macos9"] header {
+  position: relative !important;
+  padding-left: 30px !important;
+  padding-right: 28px !important;
+}
+
+/* Close (go-away) box */
+[data-theme="macos9"] header::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  background-color: #dddddd;
+  border: 1px solid #000000;
+  /* Raised bevel: light top-left, dark bottom-right */
+  box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #666666;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Zoom (collapse) box */
+[data-theme="macos9"] header::after {
+  content: '';
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  background-color: #dddddd;
+  border: 1px solid #000000;
+  box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #666666;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ── Slide-over panels: close box in title bar ──────────────────────────── */
+[data-theme="macos9"] .fixed.right-0 > div:first-child {
+  position: relative !important;
+  padding-left: 30px !important;
+}
+[data-theme="macos9"] .fixed.right-0 > div:first-child::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  background-color: #dddddd;
+  border: 1px solid #000000;
+  box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #666666;
+  pointer-events: none;
+}
+
+/* ── Section headers: pinstripe label bars ──────────────────────────────── */
+/* Target the <h3> headings produced by the Section component               */
+[data-theme="macos9"] h3 {
+  background: repeating-linear-gradient(
+    to bottom,
+    #bbbbbb 0px, #bbbbbb 1px,
+    #999999 1px, #999999 2px
+  ) !important;
+  color: #000000 !important;
+  padding: 3px 8px 3px 14px !important;
+  margin-bottom: 0 !important;
+  font-size: 11px !important;
+  font-weight: bold !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  border-bottom: 1px solid #000000 !important;
+}
+
+/* ── Panel drop shadow (Mac OS 9 windows cast a drop shadow) ────────────── */
+[data-theme="macos9"] .rounded-xl.border,
+[data-theme="macos9"] .border.rounded-xl {
+  box-shadow:
+    3px 3px 0 rgba(0, 0, 0, 0.35),
+    inset 1px 1px 0 #ffffff,
+    inset -1px -1px 0 #888888 !important;
+}
+
+/* ── Resize grip — bottom-right corner of the window ───────────────────── */
+/* Mac OS 9 windows had a diagonal-hatch resize thumb (grow box)            */
+[data-theme="macos9"] main {
+  position: relative !important;
+}
+[data-theme="macos9"] main::after {
+  content: '';
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  width: 16px;
+  height: 16px;
+  /* Diagonal hatch pattern matching Mac OS 9 grow box */
+  background: repeating-linear-gradient(
+    -45deg,
+    #ffffff 0px, #ffffff 1px,
+    #888888 1px, #888888 2px,
+    #dddddd 2px, #dddddd 3px
+  );
+  border-top: 1px solid #888888;
+  border-left: 1px solid #888888;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ── Mac OS 9 typography scale ──────────────────────────────────────────── */
+/* Mac OS 9 system font was rendered at 9-12pt — compact and crisp          */
+[data-theme="macos9"] .text-lg {
+  font-size: 13px !important;
+  font-weight: bold !important;
+}
+[data-theme="macos9"] .text-base {
+  font-size: 12px !important;
+}
+[data-theme="macos9"] .text-sm {
+  font-size: 11px !important;
+}
+[data-theme="macos9"] .text-xs {
+  font-size: 10px !important;
+}
+
+/* ── Sidebar footer — Mac OS 9 status bar ───────────────────────────────── */
+[data-theme="macos9"] aside > div:last-child {
+  background: repeating-linear-gradient(
+    to bottom,
+    #bbbbbb 0px, #bbbbbb 1px,
+    #999999 1px, #999999 2px
+  ) !important;
+  border-top: 1px solid #000000 !important;
+}
+[data-theme="macos9"] aside > div:last-child * {
+  color: #000000 !important;
+  font-size: 10px !important;
+}
+
+/* ── Active nav item: Mac OS 9 list-view selection (dark grey, white text) */
+[data-theme="macos9"] aside button.bg-blue-600 {
+  background-color: #555555 !important;
+  color: #ffffff !important;
+}
+[data-theme="macos9"] aside button.bg-blue-600 * {
+  color: #ffffff !important;
+}
+
+/* ── Sidebar nav: remove button chrome, use plain list style ────────────── */
+[data-theme="macos9"] aside button {
+  border-radius: 0 !important;
+  text-align: left !important;
+}
+
+/* ── Window content area: inset 3D bevel (looks like a Mac OS 9 window pane) */
+[data-theme="macos9"] .flex.flex-1.overflow-hidden {
+  border-top: none !important;
+  box-shadow: inset 2px 2px 0 #ffffff, inset -2px -2px 0 #888888 !important;
+  outline: 1px solid #000000 !important;
+  outline-offset: 0 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MAC OS 9 TITLE BAR — component CSS for theme-aware Header rendering.
+   Header.tsx renders .macos9-titlebar when settings.theme === 'macos9'.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.macos9-titlebar {
+  display: flex !important;
+  align-items: center !important;
+  height: 22px !important;
+  min-height: 22px !important;
+  background: repeating-linear-gradient(
+    to bottom,
+    #cccccc 0px, #cccccc 1px,
+    #aaaaaa 1px, #aaaaaa 2px
+  ) !important;
+  border-bottom: 2px solid #000000 !important;
+  padding: 0 4px !important;
+  position: relative !important;
+  flex-shrink: 0 !important;
+  font-family: "Charcoal", "Geneva", Helvetica, Arial, sans-serif !important;
+  gap: 4px !important;
+}
+
+.macos9-titlebar__title {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-family: "Charcoal", "Geneva", Helvetica, Arial, sans-serif !important;
+  font-size: 11px !important;
+  font-weight: bold !important;
+  color: #000000 !important;
+  pointer-events: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  text-shadow: none !important;
+}
+
+.macos9-titlebar__controls {
+  display: flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.macos9-titlebar__controls--right {
+  margin-left: auto !important;
+}
+
+/* Mac OS 9 window control button (close / collapse / zoom) */
+.macos9-winbtn {
+  width: 13px !important;
+  height: 13px !important;
+  background-color: #dddddd !important;
+  border: 1px solid #000000 !important;
+  box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #888888 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 9px !important;
+  line-height: 1 !important;
+  color: #000000 !important;
+  cursor: default !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  flex-shrink: 0 !important;
+  min-width: unset !important;
+  min-height: unset !important;
+  font-family: "Charcoal", "Geneva", Helvetica, Arial, sans-serif !important;
+  font-weight: normal !important;
+  text-shadow: none !important;
+}
+
+.macos9-winbtn:hover {
+  background-color: #eeeeee !important;
+  box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #888888 !important;
+}
+
+.macos9-winbtn:active {
+  background-color: #aaaaaa !important;
+  box-shadow: inset -1px -1px 0 #ffffff, inset 1px 1px 0 #888888 !important;
+}
+
+/* ── Mac OS 9: plug all blue-desktop bleed-through ────────────────────────
+   main has no bg class → transparent → shows #4466AA desktop.
+   Everything else inherits from here.
+   ─────────────────────────────────────────────────────────────────────── */
+[data-theme="macos9"] main {
+  background-color: #dddddd !important;
+}
+
+/* bg-blue-500 / bg-blue-500 opacity variants (type badges, count pills,
+   selected row ring, tag-filter active state, etc.) */
+[data-theme="macos9"] .bg-blue-500 {
+  background-color: #666666 !important;
+}
+[data-theme="macos9"] .bg-blue-500\/20,
+[data-theme="macos9"] .bg-blue-500\/10,
+[data-theme="macos9"] .bg-blue-500\/5 {
+  background-color: rgba(0, 0, 0, 0.06) !important;
+}
+[data-theme="macos9"] .hover\:bg-blue-500:hover {
+  background-color: #555555 !important;
+}
+
+/* text-blue-300 (type badge labels like "Flat EM") */
+[data-theme="macos9"] .text-blue-300 {
+  color: #555555 !important;
+}
+
+/* border / ring blue-500 variants */
+[data-theme="macos9"] .border-blue-500\/40,
+[data-theme="macos9"] .border-blue-500\/30 {
+  border-color: rgba(0, 0, 0, 0.22) !important;
+}
+
+/* Tailwind ring-color for focus rings and selected-row rings */
+[data-theme="macos9"] .ring-blue-500\/30,
+[data-theme="macos9"] .focus\:ring-blue-500,
+[data-theme="macos9"] .focus\:ring-blue-500:focus {
+  --tw-ring-color: rgba(0, 0, 0, 0.25) !important;
+}
+
+/* ── Red — tool warnings, delete actions, low-stock indicators ───────────── */
+[data-theme="macos9"] .text-red-300,
+[data-theme="macos9"] .text-red-400 { color: #991b1b !important; }
+
+/* ── Amber — star icon, warnings, thread-mill type badge ────────────────── */
+[data-theme="macos9"] .text-amber-200,
+[data-theme="macos9"] .text-amber-300,
+[data-theme="macos9"] .text-amber-400,
+[data-theme="macos9"] .text-amber-400\/80,
+[data-theme="macos9"] .text-amber-500,
+[data-theme="macos9"] .text-amber-500\/60 { color: #92400e !important; }
+
+/* ── Orange — chamfer-mill type badge ───────────────────────────────────── */
+[data-theme="macos9"] .text-orange-200,
+[data-theme="macos9"] .text-orange-300,
+[data-theme="macos9"] .text-orange-500 { color: #9a3412 !important; }
+
+/* ── Yellow — spot-drill type badge ────────────────────────────────────── */
+[data-theme="macos9"] .text-yellow-300 { color: #854d0e !important; }
+
+/* ── Green — drill type badge, success states ───────────────────────────── */
+[data-theme="macos9"] .text-green-300,
+[data-theme="macos9"] .text-green-400 { color: #14532d !important; }
+
+/* ── Emerald — tag chips ────────────────────────────────────────────────── */
+[data-theme="macos9"] .text-emerald-300,
+[data-theme="macos9"] .text-emerald-400 { color: #064e3b !important; }
+
+/* ── Teal — boring-bar type badge ───────────────────────────────────────── */
+[data-theme="macos9"] .text-teal-300 { color: #134e4a !important; }
+
+/* ── Cyan — face-mill type badge ────────────────────────────────────────── */
+[data-theme="macos9"] .text-cyan-300 { color: #164e63 !important; }
+
+/* ── Purple — ball-end-mill type badge, tag chips ───────────────────────── */
+[data-theme="macos9"] .text-purple-300 { color: #581c87 !important; }
+
+/* ── Violet — bull-nose type badge, tag chips ───────────────────────────── */
+[data-theme="macos9"] .text-violet-300 { color: #5b21b6 !important; }
+
+/* ── Indigo — tag chips ─────────────────────────────────────────────────── */
+[data-theme="macos9"] .text-indigo-300 { color: #3730a3 !important; }
+
+/* ── Pink — tapered-mill type badge, tag chips ──────────────────────────── */
+[data-theme="macos9"] .text-pink-300 { color: #9d174d !important; }
+
+/* ── Rose — engraving type badge ────────────────────────────────────────── */
+[data-theme="macos9"] .text-rose-300 { color: #9f1239 !important; }
+
+/* ── Hover-state text that targets light variants ───────────────────────── */
+[data-theme="macos9"] .hover\:text-amber-300:hover,
+[data-theme="macos9"] .hover\:text-amber-200:hover { color: #b45309 !important; }
+
+/* ── Warning box backgrounds and borders ────────────────────────────────── */
+[data-theme="macos9"] .bg-amber-500\/10 { background-color: #fef3c7 !important; }
+[data-theme="macos9"] .bg-amber-500\/5  { background-color: #fffbeb !important; }
+[data-theme="macos9"] .border-amber-500\/30,
+[data-theme="macos9"] .border-amber-500\/40 { border-color: #d97706 !important; }

@@ -1,6 +1,26 @@
 import { Wrench, Github } from 'lucide-react';
+import { useSettings } from '../contexts/SettingsContext';
 
 export default function Header() {
+  const { settings } = useSettings();
+
+  if (settings.theme === 'macos9') {
+    return (
+      <header className="macos9-titlebar shrink-0">
+        <div className="macos9-titlebar__controls">
+          <button type="button" className="macos9-winbtn" title="Close" aria-label="Close">×</button>
+        </div>
+        <div className="macos9-titlebar__title">
+          CNC Tool Converter
+        </div>
+        <div className="macos9-titlebar__controls macos9-titlebar__controls--right">
+          <button type="button" className="macos9-winbtn" title="Collapse" aria-label="Collapse" />
+          <button type="button" className="macos9-winbtn" title="Zoom" aria-label="Zoom">+</button>
+        </div>
+      </header>
+    );
+  }
+
   return (
     <header className="flex items-center justify-between px-6 py-3 bg-slate-900 border-b border-slate-700 shrink-0">
       {/* Logo + title */}

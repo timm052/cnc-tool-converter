@@ -1,0 +1,418 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   RETRO 90s THEME — Windows 95 / 98 Skeuomorphic Style
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Theme preview thumbnail (used in Settings theme picker) ─────────────── */
+
+.theme-preview-retro {
+  background-color: #008080;
+  font-family: Tahoma, sans-serif;
+}
+.theme-preview-retro__titlebar {
+  background: linear-gradient(to right, #000080, #1084d0);
+}
+.theme-preview-retro__titlebar-icon {
+  background-color: rgba(255, 255, 255, 0.6);
+}
+.theme-preview-retro__titlebar-label {
+  background-color: rgba(255, 255, 255, 0.4);
+}
+.theme-preview-retro__body {
+  background-color: #c0c0c0;
+  border-right: 1px solid #808080;
+}
+.theme-preview-retro__content {
+  background-color: #d4d0c8;
+}
+.theme-preview-retro__row {
+  background-color: #808080;
+}
+.theme-preview-retro__row--accent {
+  background-color: #000080;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RETRO 90s THEME — Windows 95 / 98 Skeuomorphic Style
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="retro90s"] {
+  font-family: "MS Sans Serif", "Microsoft Sans Serif", Tahoma, Arial, sans-serif !important;
+}
+
+[data-theme="retro90s"] * {
+  border-radius: 0 !important;
+  font-family: "MS Sans Serif", "Microsoft Sans Serif", Tahoma, Arial, sans-serif !important;
+  scrollbar-color: #c0c0c0 #808080;
+}
+
+/* ── Scrollbars ────────────────────────────────────────────────────────────── */
+[data-theme="retro90s"] *::-webkit-scrollbar-track {
+  background: #c0c0c0 !important;
+  border-left: 1px solid #808080;
+  border-right: 1px solid #ffffff;
+}
+[data-theme="retro90s"] *::-webkit-scrollbar-thumb {
+  background-color: #c0c0c0 !important;
+  border-top: 1px solid #ffffff !important;
+  border-left: 1px solid #ffffff !important;
+  border-right: 1px solid #404040 !important;
+  border-bottom: 1px solid #404040 !important;
+}
+[data-theme="retro90s"] *::-webkit-scrollbar-thumb:hover {
+  background-color: #d4d0c8 !important;
+}
+
+/* ── Root desktop background ───────────────────────────────────────────────── */
+[data-theme="retro90s"].bg-slate-950,
+[data-theme="retro90s"] .bg-slate-950 {
+  background-color: #008080 !important;
+}
+
+/* ── Header — Windows title bar style ─────────────────────────────────────── */
+[data-theme="retro90s"] header {
+  background: linear-gradient(to right, #000080 0%, #1084d0 100%) !important;
+  border-bottom: 2px solid #003366 !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+}
+[data-theme="retro90s"] header * {
+  color: #ffffff !important;
+}
+[data-theme="retro90s"] header .bg-blue-600 {
+  background-color: rgba(255,255,255,0.25) !important;
+  border: 1px solid rgba(255,255,255,0.5) !important;
+}
+[data-theme="retro90s"] header .text-blue-400,
+[data-theme="retro90s"] header .border-blue-600\/30,
+[data-theme="retro90s"] header .bg-blue-600\/20 {
+  background-color: rgba(255,255,255,0.15) !important;
+  border-color: rgba(255,255,255,0.4) !important;
+  color: #ffffff !important;
+}
+
+/* ── Sidebar ──────────────────────────────────────────────────────────────── */
+[data-theme="retro90s"] aside {
+  background-color: #c0c0c0 !important;
+  border-right: 2px solid !important;
+  border-color: #ffffff #808080 #808080 #ffffff !important;
+}
+[data-theme="retro90s"] aside .border-slate-700 {
+  border-color: #808080 !important;
+}
+[data-theme="retro90s"] aside .text-slate-500 {
+  color: #444444 !important;
+}
+
+/* Sidebar nav buttons */
+[data-theme="retro90s"] aside button {
+  background-color: #c0c0c0 !important;
+  color: #000000 !important;
+  border: 2px solid transparent !important;
+  box-shadow: none !important;
+}
+[data-theme="retro90s"] aside button:hover {
+  background-color: #000080 !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+}
+[data-theme="retro90s"] aside button.bg-blue-600 {
+  background-color: #000080 !important;
+  color: #ffffff !important;
+  border: 2px inset #c0c0c0 !important;
+}
+[data-theme="retro90s"] aside button.bg-blue-600 * {
+  color: #ffffff !important;
+}
+[data-theme="retro90s"] aside button span {
+  color: inherit !important;
+}
+[data-theme="retro90s"] aside button svg {
+  color: inherit !important;
+}
+
+/* ── Main content area panels ─────────────────────────────────────────────── */
+[data-theme="retro90s"] .bg-slate-900 {
+  background-color: #c0c0c0 !important;
+}
+[data-theme="retro90s"] .bg-slate-800 {
+  background-color: #c0c0c0 !important;
+}
+/* Tailwind bg-slate-800/50 */
+[data-theme="retro90s"] .bg-slate-800\/50 {
+  background-color: #d4d0c8 !important;
+}
+[data-theme="retro90s"] .bg-slate-700 {
+  background-color: #a0a0a0 !important;
+}
+[data-theme="retro90s"] .bg-slate-700\/50 {
+  background-color: #b8b8b8 !important;
+}
+[data-theme="retro90s"] .bg-slate-600 {
+  background-color: #808080 !important;
+}
+[data-theme="retro90s"] .bg-slate-750 {
+  background-color: #909090 !important;
+}
+
+/* ── Text colors ──────────────────────────────────────────────────────────── */
+[data-theme="retro90s"] .text-slate-100,
+[data-theme="retro90s"] .text-slate-200,
+[data-theme="retro90s"] .text-slate-300 {
+  color: #000000 !important;
+}
+[data-theme="retro90s"] .text-slate-400 {
+  color: #444444 !important;
+}
+[data-theme="retro90s"] .text-slate-500 {
+  color: #808080 !important;
+}
+[data-theme="retro90s"] .text-white {
+  color: #000000 !important;
+}
+/* Exception: anything inside header keeps white text */
+[data-theme="retro90s"] header .text-white,
+[data-theme="retro90s"] header .text-slate-100,
+[data-theme="retro90s"] header .text-slate-200,
+[data-theme="retro90s"] header .text-slate-300,
+[data-theme="retro90s"] header .text-slate-400 {
+  color: #ffffff !important;
+}
+
+/* ── Borders ──────────────────────────────────────────────────────────────── */
+[data-theme="retro90s"] .border-slate-700,
+[data-theme="retro90s"] .border-slate-600 {
+  border-color: #808080 !important;
+}
+[data-theme="retro90s"] .divide-slate-700\/60 > * + *,
+[data-theme="retro90s"] .divide-y > * + * {
+  border-color: #a0a0a0 !important;
+}
+
+/* Panels: raised Windows-style bevel */
+[data-theme="retro90s"] .border.rounded-xl,
+[data-theme="retro90s"] .rounded-xl.border {
+  border: 2px solid !important;
+  border-color: #ffffff #808080 #808080 #ffffff !important;
+  box-shadow: 1px 1px 0 #000000 !important;
+}
+
+/* ── Blue accent / brand ──────────────────────────────────────────────────── */
+[data-theme="retro90s"] .bg-blue-600 {
+  background-color: #000080 !important;
+}
+[data-theme="retro90s"] .bg-blue-600\/20 {
+  background-color: rgba(0,0,128,0.15) !important;
+}
+[data-theme="retro90s"] .text-blue-400,
+[data-theme="retro90s"] .text-blue-500 {
+  color: #000080 !important;
+}
+[data-theme="retro90s"] .text-blue-200 {
+  color: #1e40af !important;
+}
+[data-theme="retro90s"] .border-blue-600\/30 {
+  border-color: rgba(0,0,128,0.4) !important;
+}
+[data-theme="retro90s"] .hover\:bg-blue-700:hover {
+  background-color: #0000a0 !important;
+}
+[data-theme="retro90s"] .focus-visible\:ring-blue-500,
+[data-theme="retro90s"] .focus\:ring-blue-500 {
+  --tw-ring-color: #000080 !important;
+}
+
+/* ── General buttons (outside header & sidebar) ───────────────────────────── */
+[data-theme="retro90s"] main button,
+[data-theme="retro90s"] .retro-btn {
+  background-color: #c0c0c0 !important;
+  color: #000000 !important;
+  border: 2px solid !important;
+  border-color: #ffffff #808080 #808080 #ffffff !important;
+  box-shadow: 1px 1px 0 #000000 !important;
+  text-shadow: none !important;
+}
+[data-theme="retro90s"] main button:hover {
+  background-color: #d4d0c8 !important;
+}
+[data-theme="retro90s"] main button:active {
+  border-color: #808080 #ffffff #ffffff #808080 !important;
+  box-shadow: none !important;
+  transform: translate(1px, 1px) !important;
+}
+
+/* Blue accent buttons keep navy bg */
+[data-theme="retro90s"] main button.bg-blue-600,
+[data-theme="retro90s"] main button.bg-blue-600:hover {
+  background-color: #000080 !important;
+  color: #ffffff !important;
+  border-color: #4444cc #000044 #000044 #4444cc !important;
+}
+[data-theme="retro90s"] main button.bg-blue-600 * {
+  color: #ffffff !important;
+}
+
+/* Red / destructive buttons */
+[data-theme="retro90s"] main button.text-red-400,
+[data-theme="retro90s"] main button.hover\:text-red-400,
+[data-theme="retro90s"] main button.bg-red-600 {
+  color: #cc0000 !important;
+}
+
+/* ── Inputs / selects / textareas ─────────────────────────────────────────── */
+[data-theme="retro90s"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+[data-theme="retro90s"] select,
+[data-theme="retro90s"] textarea {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid !important;
+  border-color: #808080 #ffffff #ffffff #808080 !important;
+  box-shadow: inset 1px 1px 2px rgba(0,0,0,0.15) !important;
+}
+[data-theme="retro90s"] input::placeholder,
+[data-theme="retro90s"] textarea::placeholder {
+  color: #808080 !important;
+}
+[data-theme="retro90s"] select option {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* ── Toggle / switch ──────────────────────────────────────────────────────── */
+[data-theme="retro90s"] button[role="switch"] {
+  border: 2px inset #808080 !important;
+  box-shadow: inset 1px 1px 1px #404040 !important;
+}
+[data-theme="retro90s"] button[role="switch"].bg-blue-600 {
+  background-color: #000080 !important;
+}
+[data-theme="retro90s"] button[role="switch"].bg-slate-600 {
+  background-color: #808080 !important;
+}
+
+/* ── Drop zones ───────────────────────────────────────────────────────────── */
+[data-theme="retro90s"] .border-dashed {
+  border-style: dashed !important;
+  border-color: #808080 !important;
+  background-color: #d4d0c8 !important;
+}
+
+/* ── Tables ───────────────────────────────────────────────────────────────── */
+[data-theme="retro90s"] th {
+  background-color: #c0c0c0 !important;
+  color: #000000 !important;
+  border-bottom: 2px solid #808080 !important;
+}
+[data-theme="retro90s"] tr:hover td {
+  background-color: #000080 !important;
+  color: #ffffff !important;
+}
+[data-theme="retro90s"] tr:hover td * {
+  color: #ffffff !important;
+}
+[data-theme="retro90s"] td {
+  border-color: #c0c0c0 !important;
+}
+
+/* ── Slide-over panels (fixed right-side) ─────────────────────────────────── */
+[data-theme="retro90s"] .fixed.right-0 {
+  background-color: #c0c0c0 !important;
+  border-left: 2px solid !important;
+  border-color: #ffffff #808080 #808080 #ffffff !important;
+  box-shadow: -2px 0 4px rgba(0,0,0,0.3) !important;
+}
+[data-theme="retro90s"] .fixed.right-0 .bg-slate-900,
+[data-theme="retro90s"] .fixed.right-0 .bg-slate-800 {
+  background-color: #c0c0c0 !important;
+}
+
+/* Slide-over inner header bar (title bar style) */
+[data-theme="retro90s"] .fixed.right-0 > div:first-child {
+  background: linear-gradient(to right, #000080, #1084d0) !important;
+}
+[data-theme="retro90s"] .fixed.right-0 > div:first-child * {
+  color: #ffffff !important;
+}
+
+/* ── Badges / tags / pills ────────────────────────────────────────────────── */
+[data-theme="retro90s"] .rounded-full {
+  border-radius: 0 !important;
+  border: 1px solid #808080 !important;
+}
+
+/* ── Tooltips / popovers ──────────────────────────────────────────────────── */
+[data-theme="retro90s"] [role="tooltip"] {
+  background-color: #ffffe1 !important;
+  color: #000000 !important;
+  border: 1px solid #000000 !important;
+}
+
+/* ── Focus rings ──────────────────────────────────────────────────────────── */
+[data-theme="retro90s"] *:focus-visible {
+  outline: 2px dotted #000080 !important;
+  outline-offset: 1px !important;
+}
+
+/* ── `main` background — prevent desktop colour from bleeding through ─────── */
+[data-theme="retro90s"] main { background-color: #c0c0c0 !important; }
+
+/* ── text-blue-300 ────────────────────────────────────────────────────────── */
+[data-theme="retro90s"] .text-blue-300 { color: #1d4ed8 !important; }
+
+/* ── Red — tool warnings, delete actions, low-stock indicators ───────────── */
+[data-theme="retro90s"] .text-red-300,
+[data-theme="retro90s"] .text-red-400 { color: #991b1b !important; }
+
+/* ── Amber — star icon, warnings, thread-mill type badge ────────────────── */
+[data-theme="retro90s"] .text-amber-200,
+[data-theme="retro90s"] .text-amber-300,
+[data-theme="retro90s"] .text-amber-400,
+[data-theme="retro90s"] .text-amber-400\/80,
+[data-theme="retro90s"] .text-amber-500,
+[data-theme="retro90s"] .text-amber-500\/60 { color: #92400e !important; }
+
+/* ── Orange — chamfer-mill type badge ───────────────────────────────────── */
+[data-theme="retro90s"] .text-orange-200,
+[data-theme="retro90s"] .text-orange-300,
+[data-theme="retro90s"] .text-orange-500 { color: #9a3412 !important; }
+
+/* ── Yellow — spot-drill type badge ────────────────────────────────────── */
+[data-theme="retro90s"] .text-yellow-300 { color: #854d0e !important; }
+
+/* ── Green — drill type badge, success states ───────────────────────────── */
+[data-theme="retro90s"] .text-green-300,
+[data-theme="retro90s"] .text-green-400 { color: #14532d !important; }
+
+/* ── Emerald — tag chips ────────────────────────────────────────────────── */
+[data-theme="retro90s"] .text-emerald-300,
+[data-theme="retro90s"] .text-emerald-400 { color: #064e3b !important; }
+
+/* ── Teal — boring-bar type badge ───────────────────────────────────────── */
+[data-theme="retro90s"] .text-teal-300 { color: #134e4a !important; }
+
+/* ── Cyan — face-mill type badge ────────────────────────────────────────── */
+[data-theme="retro90s"] .text-cyan-300 { color: #164e63 !important; }
+
+/* ── Purple — ball-end-mill type badge, tag chips ───────────────────────── */
+[data-theme="retro90s"] .text-purple-300 { color: #581c87 !important; }
+
+/* ── Violet — bull-nose type badge, tag chips ───────────────────────────── */
+[data-theme="retro90s"] .text-violet-300 { color: #5b21b6 !important; }
+
+/* ── Indigo — tag chips ─────────────────────────────────────────────────── */
+[data-theme="retro90s"] .text-indigo-300 { color: #3730a3 !important; }
+
+/* ── Pink — tapered-mill type badge, tag chips ──────────────────────────── */
+[data-theme="retro90s"] .text-pink-300 { color: #9d174d !important; }
+
+/* ── Rose — engraving type badge ────────────────────────────────────────── */
+[data-theme="retro90s"] .text-rose-300 { color: #9f1239 !important; }
+
+/* ── Hover-state text that targets light variants ───────────────────────── */
+[data-theme="retro90s"] .hover\:text-amber-300:hover,
+[data-theme="retro90s"] .hover\:text-amber-200:hover { color: #b45309 !important; }
+
+/* ── Warning box backgrounds and borders ────────────────────────────────── */
+[data-theme="retro90s"] .bg-amber-500\/10 { background-color: #fef3c7 !important; }
+[data-theme="retro90s"] .bg-amber-500\/5  { background-color: #fffbeb !important; }
+[data-theme="retro90s"] .border-amber-500\/30,
+[data-theme="retro90s"] .border-amber-500\/40 { border-color: #d97706 !important; }

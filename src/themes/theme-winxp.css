@@ -1,0 +1,447 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   WINDOWS XP LUNA THEME
+   The classic "Fisher-Price" look: colourful gradients, rounded chrome,
+   warm Luna beige (#ECE9D8) window bodies, Tahoma font.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Theme preview thumbnail (used in Settings theme picker) ─────────────── */
+
+.theme-preview-xp {
+  background-color: #3D6DB5;
+  font-family: Tahoma, sans-serif;
+}
+.theme-preview-xp__titlebar {
+  background: linear-gradient(to bottom, #4D88D6 0%, #1B5FB5 8%, #1659B3 50%, #1D65C4 92%, #6DA3E8 100%);
+  border-radius: 4px 4px 0 0;
+  padding: 0 2px;
+}
+.theme-preview-xp__titlebar-icon {
+  background-color: rgba(255, 255, 255, 0.85);
+  border-radius: 1px;
+}
+.theme-preview-xp__titlebar-label {
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 1px;
+}
+.theme-preview-xp__window {
+  background-color: #ECE9D8;
+}
+.theme-preview-xp__body {
+  background-color: #ECE9D8;
+  border-right: 1px solid #ACA899;
+}
+.theme-preview-xp__content {
+  background-color: #ffffff;
+}
+.theme-preview-xp__row {
+  background-color: #ACA899;
+  border-radius: 1px;
+}
+.theme-preview-xp__row--accent {
+  background-color: #245EDC;
+  border-radius: 1px;
+}
+
+/* ── Font ─────────────────────────────────────────────────────────────────── */
+
+[data-theme="winxp"] {
+  font-family: Tahoma, "MS Sans Serif", Arial, sans-serif !important;
+}
+
+[data-theme="winxp"] * {
+  font-family: Tahoma, "MS Sans Serif", Arial, sans-serif !important;
+}
+
+/* ── Scrollbars — XP style ──────────────────────────────────────────────── */
+[data-theme="winxp"] * {
+  scrollbar-color: #c0c0c0 #ffffff;
+}
+[data-theme="winxp"] *::-webkit-scrollbar-track {
+  background: #ffffff !important;
+}
+[data-theme="winxp"] *::-webkit-scrollbar-thumb {
+  background-color: #c3bfb2 !important;
+  border: 1px solid #aca899 !important;
+}
+[data-theme="winxp"] *::-webkit-scrollbar-thumb:hover {
+  background-color: #9e9a8e !important;
+}
+
+/* ── Root desktop — XP Bliss-era blue ──────────────────────────────────── */
+[data-theme="winxp"].bg-slate-950,
+[data-theme="winxp"] .bg-slate-950 {
+  background-color: #3D6DB5 !important;
+}
+
+/* ── Header — XP Luna title bar ─────────────────────────────────────────── */
+[data-theme="winxp"] header {
+  background: linear-gradient(to bottom,
+    #9AC8FF 0%, #6AAAF0 1px,   /* bright Luna highlight stripe */
+    #4D88D6 2px, #2060BC 12%,  /* drop to medium blue */
+    #1659B3 45%,               /* deep Luna blue body */
+    #1D65C4 80%, #5898DC 100%  /* lighter at bottom edge */
+  ) !important;
+  border-bottom: 2px solid #0A3080 !important;
+  border-radius: 0 !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+}
+[data-theme="winxp"] header * {
+  color: #ffffff !important;
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.4) !important;
+}
+[data-theme="winxp"] header .bg-blue-600 {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+}
+[data-theme="winxp"] header .bg-blue-600\/20 {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+}
+[data-theme="winxp"] header .text-blue-400,
+[data-theme="winxp"] header .border-blue-600\/30 {
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+}
+
+/* ── Sidebar — XP task pane style ───────────────────────────────────────── */
+[data-theme="winxp"] aside {
+  background-color: #D6E8FA !important;
+  border-right: 2px solid #0A3080 !important;
+}
+[data-theme="winxp"] aside .border-slate-700 {
+  border-color: #7AAAD8 !important;
+}
+[data-theme="winxp"] aside .text-slate-500 {
+  color: #1a3a6c !important;
+}
+/* Task pane section headers (the "p" labels like "Machine Groups") */
+[data-theme="winxp"] aside p {
+  background: linear-gradient(to bottom, #5B8FCC 0%, #3B6EAB 100%) !important;
+  color: #ffffff !important;
+  padding: 2px 8px !important;
+  margin: 0 -8px !important;
+  font-weight: bold !important;
+  font-size: 11px !important;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.4) !important;
+}
+
+/* Sidebar nav buttons */
+[data-theme="winxp"] aside button {
+  background-color: transparent !important;
+  color: #1a3a6c !important;
+  border: 1px solid transparent !important;
+  border-radius: 3px !important;
+  box-shadow: none !important;
+}
+[data-theme="winxp"] aside button:hover {
+  background-color: #C1D8F5 !important;
+  border-color: #245EDC !important;
+  color: #000000 !important;
+}
+[data-theme="winxp"] aside button.bg-blue-600 {
+  background: linear-gradient(to bottom, #6699DD 0%, #245EDC 100%) !important;
+  border: 1px solid #1144AA !important;
+  color: #ffffff !important;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.3) !important;
+}
+[data-theme="winxp"] aside button.bg-blue-600 * {
+  color: #ffffff !important;
+}
+[data-theme="winxp"] aside button span,
+[data-theme="winxp"] aside button svg {
+  color: inherit !important;
+}
+
+/* ── Main panel backgrounds — XP white content / Luna chrome ───────────── */
+[data-theme="winxp"] .bg-slate-900 {
+  background-color: #ECE9D8 !important;  /* outer chrome / toolbar strip */
+}
+[data-theme="winxp"] .bg-slate-800 {
+  background-color: #ffffff !important;  /* window content areas — XP is white */
+}
+[data-theme="winxp"] .bg-slate-800\/50 {
+  background-color: #EEF5FD !important;  /* alternate/hover rows — pale blue-white */
+}
+[data-theme="winxp"] .bg-slate-700 {
+  background-color: #D4D0C8 !important;
+}
+[data-theme="winxp"] .bg-slate-700\/50 {
+  background-color: #DDD9CF !important;
+}
+[data-theme="winxp"] .bg-slate-600 {
+  background-color: #ACA899 !important;
+}
+
+/* ── Text ───────────────────────────────────────────────────────────────── */
+[data-theme="winxp"] .text-slate-100,
+[data-theme="winxp"] .text-slate-200,
+[data-theme="winxp"] .text-slate-300 {
+  color: #000000 !important;
+}
+[data-theme="winxp"] .text-slate-400 {
+  color: #444444 !important;
+}
+[data-theme="winxp"] .text-slate-500 {
+  color: #6C6860 !important;
+}
+[data-theme="winxp"] .text-white {
+  color: #000000 !important;
+}
+/* Keep header text white */
+[data-theme="winxp"] header .text-white,
+[data-theme="winxp"] header .text-slate-100,
+[data-theme="winxp"] header .text-slate-200,
+[data-theme="winxp"] header .text-slate-300,
+[data-theme="winxp"] header .text-slate-400 {
+  color: #ffffff !important;
+}
+
+/* ── Borders ────────────────────────────────────────────────────────────── */
+[data-theme="winxp"] .border-slate-700,
+[data-theme="winxp"] .border-slate-600 {
+  border-color: #ACA899 !important;
+}
+[data-theme="winxp"] .divide-slate-700\/60 > * + *,
+[data-theme="winxp"] .divide-y > * + * {
+  border-color: #D4D0C8 !important;
+}
+
+/* Panels: XP window border (thin sunken) */
+[data-theme="winxp"] .border.rounded-xl,
+[data-theme="winxp"] .rounded-xl.border {
+  border: 1px solid #ACA899 !important;
+  border-radius: 4px !important;
+  box-shadow: inset 1px 1px 0 #ffffff, 1px 1px 2px rgba(0,0,0,0.15) !important;
+}
+
+/* ── Blue / brand accent ────────────────────────────────────────────────── */
+[data-theme="winxp"] .bg-blue-600 {
+  background: linear-gradient(to bottom, #6699DD 0%, #245EDC 100%) !important;
+}
+[data-theme="winxp"] .bg-blue-600\/20 {
+  background-color: rgba(36, 94, 220, 0.12) !important;
+}
+[data-theme="winxp"] .text-blue-400,
+[data-theme="winxp"] .text-blue-500 {
+  color: #1144AA !important;
+}
+[data-theme="winxp"] .text-blue-200 {
+  color: #6699DD !important;
+}
+[data-theme="winxp"] .border-blue-600\/30 {
+  border-color: rgba(36, 94, 220, 0.4) !important;
+}
+[data-theme="winxp"] .hover\:bg-blue-700:hover {
+  background: linear-gradient(to bottom, #4477BB 0%, #1144AA 100%) !important;
+}
+
+/* ── General buttons (XP style: gradient, rounded, border) ─────────────── */
+[data-theme="winxp"] main button {
+  background: linear-gradient(to bottom, #ffffff 0%, #D4E8F8 100%) !important;
+  color: #000000 !important;
+  border: 1px solid #ACA899 !important;
+  border-radius: 3px !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 1px 1px 1px rgba(0,0,0,0.1) !important;
+  text-shadow: none !important;
+}
+[data-theme="winxp"] main button:hover {
+  background: linear-gradient(to bottom, #ddeeff 0%, #a8c8f0 100%) !important;
+  border-color: #245EDC !important;
+}
+[data-theme="winxp"] main button:active {
+  background: linear-gradient(to bottom, #c0d8f0 0%, #90b8e8 100%) !important;
+  box-shadow: inset 1px 1px 2px rgba(0,0,0,0.2) !important;
+}
+
+/* Blue accent buttons */
+[data-theme="winxp"] main button.bg-blue-600,
+[data-theme="winxp"] main button.bg-blue-600:hover {
+  background: linear-gradient(to bottom, #6699DD 0%, #1A52C8 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid #0A3080 !important;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.4) !important;
+}
+[data-theme="winxp"] main button.bg-blue-600 * {
+  color: #ffffff !important;
+}
+
+/* Red / destructive */
+[data-theme="winxp"] main button.text-red-400,
+[data-theme="winxp"] main button.bg-red-600 {
+  color: #cc0000 !important;
+}
+
+/* ── Rounded corners — XP keeps gentle rounding ────────────────────────── */
+[data-theme="winxp"] .rounded-xl { border-radius: 4px !important; }
+[data-theme="winxp"] .rounded-lg  { border-radius: 3px !important; }
+[data-theme="winxp"] .rounded-md  { border-radius: 2px !important; }
+[data-theme="winxp"] .rounded-full { border-radius: 12px !important; }
+
+/* ── Inputs / selects ───────────────────────────────────────────────────── */
+[data-theme="winxp"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+[data-theme="winxp"] select,
+[data-theme="winxp"] textarea {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #7F9DB9 !important;
+  border-radius: 2px !important;
+  box-shadow: inset 1px 1px 2px rgba(0,0,0,0.1) !important;
+}
+[data-theme="winxp"] input::placeholder,
+[data-theme="winxp"] textarea::placeholder {
+  color: #ACA899 !important;
+}
+[data-theme="winxp"] select option {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+[data-theme="winxp"] input:focus,
+[data-theme="winxp"] select:focus,
+[data-theme="winxp"] textarea:focus {
+  border-color: #245EDC !important;
+  outline: none !important;
+}
+
+/* ── Toggle / switch ────────────────────────────────────────────────────── */
+[data-theme="winxp"] button[role="switch"] {
+  border: 1px solid #7F9DB9 !important;
+  border-radius: 10px !important;
+  box-shadow: inset 1px 1px 2px rgba(0,0,0,0.1) !important;
+}
+[data-theme="winxp"] button[role="switch"].bg-blue-600 {
+  background: linear-gradient(to bottom, #4477CC, #245EDC) !important;
+}
+[data-theme="winxp"] button[role="switch"].bg-slate-600 {
+  background: linear-gradient(to bottom, #D4D0C8, #ACA899) !important;
+}
+
+/* ── Drop zones ─────────────────────────────────────────────────────────── */
+[data-theme="winxp"] .border-dashed {
+  border-color: #7F9DB9 !important;
+  background-color: #EEF5FD !important;
+}
+
+/* ── Tables ─────────────────────────────────────────────────────────────── */
+[data-theme="winxp"] th {
+  background: linear-gradient(to bottom, #EEF5FD, #D6E8FA) !important;
+  color: #000000 !important;
+  border-bottom: 1px solid #ACA899 !important;
+}
+[data-theme="winxp"] tr:hover td {
+  background-color: #C1D8F5 !important;
+  color: #000000 !important;
+}
+[data-theme="winxp"] tr:hover td * {
+  color: #000000 !important;
+}
+[data-theme="winxp"] td {
+  border-color: #D4D0C8 !important;
+}
+
+/* ── Slide-over panels ──────────────────────────────────────────────────── */
+[data-theme="winxp"] .fixed.right-0 {
+  background-color: #ffffff !important;
+  border-left: 2px solid #0A3080 !important;
+  box-shadow: -3px 0 8px rgba(0,0,0,0.2) !important;
+}
+[data-theme="winxp"] .fixed.right-0 .bg-slate-900,
+[data-theme="winxp"] .fixed.right-0 .bg-slate-800 {
+  background-color: #ffffff !important;
+}
+[data-theme="winxp"] .fixed.right-0 > div:first-child {
+  background: linear-gradient(to bottom,
+    #9AC8FF 0%, #6AAAF0 1px,
+    #4D88D6 2px, #2060BC 12%,
+    #1659B3 45%,
+    #1D65C4 80%, #5898DC 100%
+  ) !important;
+  border-bottom: 2px solid #0A3080 !important;
+}
+[data-theme="winxp"] .fixed.right-0 > div:first-child * {
+  color: #ffffff !important;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.3) !important;
+}
+
+/* ── Tooltips ───────────────────────────────────────────────────────────── */
+[data-theme="winxp"] [role="tooltip"] {
+  background-color: #ffffe1 !important;
+  color: #000000 !important;
+  border: 1px solid #000000 !important;
+  border-radius: 0 !important;
+}
+
+/* ── Focus rings ────────────────────────────────────────────────────────── */
+[data-theme="winxp"] *:focus-visible {
+  outline: 2px solid #245EDC !important;
+  outline-offset: 1px !important;
+}
+
+/* ── `main` background — prevent desktop colour from bleeding through ─────── */
+[data-theme="winxp"] main { background-color: #ffffff !important; }
+
+/* ── text-blue-300 ────────────────────────────────────────────────────────── */
+[data-theme="winxp"] .text-blue-300 { color: #1d4ed8 !important; }
+
+/* ── Red — tool warnings, delete actions, low-stock indicators ───────────── */
+[data-theme="winxp"] .text-red-300,
+[data-theme="winxp"] .text-red-400 { color: #991b1b !important; }
+
+/* ── Amber — star icon, warnings, thread-mill type badge ────────────────── */
+[data-theme="winxp"] .text-amber-200,
+[data-theme="winxp"] .text-amber-300,
+[data-theme="winxp"] .text-amber-400,
+[data-theme="winxp"] .text-amber-400\/80,
+[data-theme="winxp"] .text-amber-500,
+[data-theme="winxp"] .text-amber-500\/60 { color: #92400e !important; }
+
+/* ── Orange — chamfer-mill type badge ───────────────────────────────────── */
+[data-theme="winxp"] .text-orange-200,
+[data-theme="winxp"] .text-orange-300,
+[data-theme="winxp"] .text-orange-500 { color: #9a3412 !important; }
+
+/* ── Yellow — spot-drill type badge ────────────────────────────────────── */
+[data-theme="winxp"] .text-yellow-300 { color: #854d0e !important; }
+
+/* ── Green — drill type badge, success states ───────────────────────────── */
+[data-theme="winxp"] .text-green-300,
+[data-theme="winxp"] .text-green-400 { color: #14532d !important; }
+
+/* ── Emerald — tag chips ────────────────────────────────────────────────── */
+[data-theme="winxp"] .text-emerald-300,
+[data-theme="winxp"] .text-emerald-400 { color: #064e3b !important; }
+
+/* ── Teal — boring-bar type badge ───────────────────────────────────────── */
+[data-theme="winxp"] .text-teal-300 { color: #134e4a !important; }
+
+/* ── Cyan — face-mill type badge ────────────────────────────────────────── */
+[data-theme="winxp"] .text-cyan-300 { color: #164e63 !important; }
+
+/* ── Purple — ball-end-mill type badge, tag chips ───────────────────────── */
+[data-theme="winxp"] .text-purple-300 { color: #581c87 !important; }
+
+/* ── Violet — bull-nose type badge, tag chips ───────────────────────────── */
+[data-theme="winxp"] .text-violet-300 { color: #5b21b6 !important; }
+
+/* ── Indigo — tag chips ─────────────────────────────────────────────────── */
+[data-theme="winxp"] .text-indigo-300 { color: #3730a3 !important; }
+
+/* ── Pink — tapered-mill type badge, tag chips ──────────────────────────── */
+[data-theme="winxp"] .text-pink-300 { color: #9d174d !important; }
+
+/* ── Rose — engraving type badge ────────────────────────────────────────── */
+[data-theme="winxp"] .text-rose-300 { color: #9f1239 !important; }
+
+/* ── Hover-state text that targets light variants ───────────────────────── */
+[data-theme="winxp"] .hover\:text-amber-300:hover,
+[data-theme="winxp"] .hover\:text-amber-200:hover { color: #b45309 !important; }
+
+/* ── Table hover row — ensure colours inside hovered rows stay readable ──── */
+[data-theme="winxp"] tr:hover td .text-amber-400,
+[data-theme="winxp"] tr:hover td .text-red-400,
+[data-theme="winxp"] tr:hover td .text-green-400 { color: #000000 !important; }
+
+/* ── Warning box backgrounds and borders ────────────────────────────────── */
+[data-theme="winxp"] .bg-amber-500\/10 { background-color: #fef3c7 !important; }
+[data-theme="winxp"] .bg-amber-500\/5  { background-color: #fffbeb !important; }
+[data-theme="winxp"] .border-amber-500\/30,
+[data-theme="winxp"] .border-amber-500\/40 { border-color: #d97706 !important; }

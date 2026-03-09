@@ -264,7 +264,7 @@ export default function ConverterPage() {
     <div className="flex flex-col h-full p-6 gap-5 overflow-auto">
 
       {/* Format selector bar */}
-      <div className="flex items-end gap-4 shrink-0 flex-wrap">
+      <div className="flex items-start gap-4 shrink-0 flex-wrap">
         <div className="flex-1 min-w-[180px] max-w-xs">
           <FormatSelector
             label="Source Format"
@@ -274,10 +274,11 @@ export default function ConverterPage() {
           />
         </div>
 
+        {/* mt aligns button with the select box (skips the label above) */}
         <button
           onClick={handleSwap}
           title="Swap source and target"
-          className="mb-1 p-2 rounded-lg bg-slate-700 border border-slate-600 hover:bg-slate-600 text-slate-300 hover:text-white transition-colors"
+          className="mt-[22px] p-2 rounded-lg bg-slate-700 border border-slate-600 hover:bg-slate-600 text-slate-300 hover:text-white transition-colors"
         >
           <ArrowLeftRight size={16} />
         </button>
@@ -295,7 +296,7 @@ export default function ConverterPage() {
           onClick={handleConvert}
           disabled={tools.length === 0 || isConverting}
           className={[
-            'mb-1 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap',
+            'mt-[22px] flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap',
             tools.length > 0 && !isConverting
               ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-sm shadow-blue-900/50'
               : 'bg-slate-700 text-slate-500 cursor-not-allowed',
@@ -315,7 +316,7 @@ export default function ConverterPage() {
               onClick={() => setShowFieldMapping(true)}
               title="Customize field mapping"
               className={[
-                'mb-1 relative p-2 rounded-lg border transition-colors',
+                'mt-[22px] relative p-2 rounded-lg border transition-colors',
                 activeRules > 0
                   ? 'bg-blue-500/10 border-blue-500/40 text-blue-400 hover:bg-blue-500/20'
                   : 'bg-slate-700 border-slate-600 hover:bg-slate-600 text-slate-300 hover:text-white',
@@ -331,7 +332,9 @@ export default function ConverterPage() {
           );
         })()}
 
-        <StatusBadge />
+        <div className="mt-[22px] flex items-center">
+          <StatusBadge />
+        </div>
       </div>
 
       {/* Data loss warning */}

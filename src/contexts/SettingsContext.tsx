@@ -57,6 +57,9 @@ export interface Settings {
 
   // Custom Tool Types
   customToolTypes: CustomToolTypeDefinition[];
+
+  // Appearance
+  theme: 'dark' | 'retro90s' | 'winxp' | 'macos9' | 'light';
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -101,6 +104,8 @@ export const DEFAULT_SETTINGS: Settings = {
   validationWarningsEnabled: true,
 
   customToolTypes: [],
+
+  theme: 'dark',
 };
 
 const STORAGE_KEY     = 'cnc-tool-converter:settings';

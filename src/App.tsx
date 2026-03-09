@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { SettingsProvider } from './contexts/SettingsContext';
+import { useState, type ReactNode } from 'react';
+import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 import { LibraryProvider } from './contexts/LibraryContext';
 import { MaterialProvider } from './contexts/MaterialContext';
 import { HolderProvider } from './contexts/HolderContext';
@@ -11,6 +11,18 @@ import SettingsPage from './components/pages/SettingsPage';
 
 export type Page = 'converter' | 'tools' | 'settings';
 
+function ThemeWrapper({ children }: { children: ReactNode }) {
+  const { settings } = useSettings();
+  return (
+    <div
+      data-theme={settings.theme}
+      className="flex flex-col h-screen bg-slate-950 text-slate-100 overflow-hidden"
+    >
+      {children}
+    </div>
+  );
+}
+
 export default function App() {
   const [activePage, setActivePage] = useState<Page>('converter');
 
@@ -19,7 +31,7 @@ export default function App() {
       <LibraryProvider>
         <MaterialProvider>
           <HolderProvider>
-            <div className="flex flex-col h-screen bg-slate-950 text-slate-100 overflow-hidden">
+            <ThemeWrapper>
               <Header />
               <div className="flex flex-1 overflow-hidden">
                 <Sidebar activePage={activePage} onNavigate={setActivePage} />
@@ -29,7 +41,7 @@ export default function App() {
                   {activePage === 'settings'  && <SettingsPage />}
                 </main>
               </div>
-            </div>
+            </ThemeWrapper>
           </HolderProvider>
         </MaterialProvider>
       </LibraryProvider>
