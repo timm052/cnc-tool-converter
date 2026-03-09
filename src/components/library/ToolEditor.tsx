@@ -420,7 +420,7 @@ export default function ToolEditor({
   const [isSaving,     setIsSaving]    = useState(false);
   const [showConfirm,  setShowConfirm] = useState(false);
   const ZOOM_LEVELS = [0.6, 1.0, 1.5, 2.1] as const;
-  const [zoomIdx,      setZoomIdx]     = useState(1); // default = 1.0×
+  const [zoomIdx,      setZoomIdx]     = useState(2); // default = 1.5×
   const [expandedMats, setExpandedMats] = useState<Set<string>>(new Set());
   const [addMatId,     setAddMatId]    = useState('');
 

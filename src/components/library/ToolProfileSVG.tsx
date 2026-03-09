@@ -755,8 +755,8 @@ export function ToolProfileSVG({
         </text>
       )}
 
-      {/* Tool type label */}
-      <text x="6" y="178" fontSize="11" fontWeight="600" fill="#64748b" fontFamily="ui-sans-serif, sans-serif">
+      {/* Tool type label — centred */}
+      <text x={CX} y="178" fontSize="11" fontWeight="600" fill="#64748b" fontFamily="ui-sans-serif, sans-serif" textAnchor="middle">
         {draft.type}
         {resolved.numberOfFlutes ? `  ·  ${resolved.numberOfFlutes} flutes` : ''}
       </text>
