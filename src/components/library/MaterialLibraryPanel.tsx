@@ -43,6 +43,7 @@ function MaterialForm({
       <input
         type="number"
         min={0}
+        title={`${label} (${unit})`}
         value={(draft[key] as number | undefined) ?? ''}
         onChange={(e) => {
           const v = parseFloat(e.target.value);
@@ -61,6 +62,7 @@ function MaterialForm({
         <input
           type="text"
           value={draft.name}
+          title="Name"
           onChange={(e) => p({ name: e.target.value })}
           placeholder="e.g. 6061-T6 Aluminum"
           autoFocus
@@ -73,6 +75,7 @@ function MaterialForm({
         <label className="block text-xs text-slate-400 mb-1">Category</label>
         <select
           value={draft.category}
+          title="Category"
           onChange={(e) => p({ category: e.target.value as MaterialCategory })}
           className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
         >
@@ -102,6 +105,7 @@ function MaterialForm({
         <label className="block text-xs text-slate-400 mb-1">Notes</label>
         <textarea
           value={draft.notes ?? ''}
+          title="Notes"
           onChange={(e) => p({ notes: e.target.value || undefined })}
           rows={2}
           className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
@@ -176,7 +180,7 @@ export default function MaterialLibraryPanel({ onClose }: { onClose: () => void 
               <span className="px-2 py-0.5 rounded-full text-xs bg-slate-700 text-slate-400">{materials.length}</span>
             )}
           </div>
-          <button onClick={onClose} className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700">
+          <button onClick={onClose} title="Close" className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700">
             <X size={16} />
           </button>
         </div>
@@ -236,12 +240,14 @@ export default function MaterialLibraryPanel({ onClose }: { onClose: () => void 
                       <>
                         <button
                           onClick={() => { setEditingId(m.id); setIsAdding(false); }}
+                          title="Edit material"
                           className="p-1.5 rounded text-slate-500 hover:text-slate-200 hover:bg-slate-700 transition-colors"
                         >
                           <Pencil size={13} />
                         </button>
                         <button
                           onClick={() => setConfirmDelete(m.id)}
+                          title="Delete material"
                           className="p-1.5 rounded text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                         >
                           <Trash2 size={13} />

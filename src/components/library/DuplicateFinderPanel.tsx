@@ -155,7 +155,7 @@ export default function DuplicateFinderPanel({ tools, onDelete, onClose }: Dupli
               </span>
             )}
           </div>
-          <button onClick={onClose} className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700">
+          <button onClick={onClose} title="Close" className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700">
             <X size={16} />
           </button>
         </div>

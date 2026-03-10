@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState, createContext, useContext, type ReactNode } from 'react';
 import { RotateCcw, Plus, Trash2 } from 'lucide-react';
 import {
   useSettings,
@@ -16,6 +16,8 @@ import {
 } from '../../lib/customToolTypes';
 
 // ── Primitives ───────────────────────────────────────────────────────────────
+
+const RowLabelCtx = createContext('');
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -49,7 +51,9 @@ function Row({
           <p className="text-xs text-slate-500 mt-0.5">{description}</p>
         )}
       </div>
-      <div className="shrink-0">{children}</div>
+      <div className="shrink-0">
+        <RowLabelCtx.Provider value={label}>{children}</RowLabelCtx.Provider>
+      </div>
     </div>
   );
 }
@@ -59,7 +63,7 @@ function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) =>
     <button
       onClick={() => onChange(!value)}
       role="switch"
-      aria-checked={value}
+      aria-checked={value ? 'true' : 'false'}
       className={[
         'relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
         value ? 'bg-blue-600' : 'bg-slate-600',
@@ -84,10 +88,12 @@ function Sel<T extends string>({
   options: { value: T; label: string }[];
   onChange: (v: T) => void;
 }) {
+  const rowLabel = useContext(RowLabelCtx);
   return (
     <select
       value={value}
       onChange={(e) => onChange(e.target.value as T)}
+      aria-label={rowLabel || undefined}
       className="text-sm bg-slate-700 border border-slate-600 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
     >
       {options.map((o) => (
@@ -108,12 +114,14 @@ function NumInput({
   max?: number;
   onChange: (v: number) => void;
 }) {
+  const rowLabel = useContext(RowLabelCtx);
   return (
     <input
       type="number"
       value={value}
       min={min}
       max={max}
+      aria-label={rowLabel || undefined}
       onChange={(e) => {
         const n = parseInt(e.target.value, 10);
         if (!isNaN(n)) onChange(n);
@@ -132,11 +140,13 @@ function TextInput({
   placeholder?: string;
   onChange: (v: string) => void;
 }) {
+  const rowLabel = useContext(RowLabelCtx);
   return (
     <input
       type="text"
       value={value}
       placeholder={placeholder}
+      aria-label={rowLabel || undefined}
       onChange={(e) => onChange(e.target.value)}
       className="w-44 text-sm bg-slate-700 border border-slate-600 rounded-lg px-2.5 py-1.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
     />
@@ -454,7 +464,7 @@ export default function SettingsPage() {
                   >
                     {p.name}
                   </button>
-                  <button onClick={() => removeProfile(p.id)} className="p-1 text-slate-500 hover:text-red-400 transition-colors">
+                  <button onClick={() => removeProfile(p.id)} title={`Delete profile "${p.name}"`} className="p-1 text-slate-500 hover:text-red-400 transition-colors">
                     <Trash2 size={12} />
                   </button>
                 </div>
@@ -699,11 +709,12 @@ export default function SettingsPage() {
                     <input
                       type="text"
                       value={ct.label}
+                      aria-label="Custom type label"
                       onChange={(e) => updateCustomType(ct.id, { label: e.target.value })}
                       className="flex-1 px-2 py-1 text-xs bg-slate-700 border border-slate-600 rounded text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
                       placeholder="Type label"
                     />
-                    <button onClick={() => removeCustomType(ct.id)} className="p-1 text-slate-500 hover:text-red-400 shrink-0">
+                    <button onClick={() => removeCustomType(ct.id)} title="Remove custom type" className="p-1 text-slate-500 hover:text-red-400 shrink-0">
                       <Trash2 size={12} />
                     </button>
                   </div>
@@ -712,6 +723,7 @@ export default function SettingsPage() {
                       <p className="text-xs text-slate-500 mb-1">Profile shape</p>
                       <select
                         value={ct.profileShape}
+                        aria-label="Profile shape"
                         onChange={(e) => updateCustomType(ct.id, { profileShape: e.target.value as CustomToolTypeDefinition['profileShape'] })}
                         className="w-full px-2 py-1 text-xs bg-slate-700 border border-slate-600 rounded text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
                       >
@@ -724,6 +736,7 @@ export default function SettingsPage() {
                       <p className="text-xs text-slate-500 mb-1">Badge colour</p>
                       <select
                         value={ct.colour}
+                        aria-label="Badge colour"
                         onChange={(e) => updateCustomType(ct.id, { colour: e.target.value })}
                         className="w-full px-2 py-1 text-xs bg-slate-700 border border-slate-600 rounded text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
                       >

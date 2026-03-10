@@ -31,6 +31,7 @@ function HolderForm({
       <input
         type="number"
         min={0}
+        title={`${label} (${unit})`}
         value={(draft[key] as number | undefined) ?? ''}
         onChange={(e) => {
           const v = parseFloat(e.target.value);
@@ -49,6 +50,7 @@ function HolderForm({
         <input
           type="text"
           value={draft.name}
+          title="Name"
           onChange={(e) => p({ name: e.target.value })}
           placeholder="e.g. ER32 Collet Chuck"
           autoFocus
@@ -61,6 +63,7 @@ function HolderForm({
         <label className="block text-xs text-slate-400 mb-1">Holder type</label>
         <select
           value={draft.type}
+          title="Holder type"
           onChange={(e) => p({ type: e.target.value as HolderType })}
           className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
         >
@@ -75,6 +78,7 @@ function HolderForm({
           <input
             type="number"
             min={0}
+            title="Gauge length (mm)"
             value={draft.gaugeLength || ''}
             onChange={(e) => {
               const v = parseFloat(e.target.value);
@@ -92,6 +96,7 @@ function HolderForm({
         <label className="block text-xs text-slate-400 mb-1">Notes</label>
         <textarea
           value={draft.notes ?? ''}
+          title="Notes"
           onChange={(e) => p({ notes: e.target.value || undefined })}
           rows={2}
           className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
@@ -166,7 +171,7 @@ export default function HolderLibraryPanel({ onClose }: { onClose: () => void })
               <span className="px-2 py-0.5 rounded-full text-xs bg-slate-700 text-slate-400">{holders.length}</span>
             )}
           </div>
-          <button onClick={onClose} className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700">
+          <button onClick={onClose} title="Close" className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700">
             <X size={16} />
           </button>
         </div>
@@ -222,12 +227,14 @@ export default function HolderLibraryPanel({ onClose }: { onClose: () => void })
                       <>
                         <button
                           onClick={() => { setEditingId(h.id); setIsAdding(false); }}
+                          title="Edit holder"
                           className="p-1.5 rounded text-slate-500 hover:text-slate-200 hover:bg-slate-700 transition-colors"
                         >
                           <Pencil size={13} />
                         </button>
                         <button
                           onClick={() => setConfirmDelete(h.id)}
+                          title="Delete holder"
                           className="p-1.5 rounded text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                         >
                           <Trash2 size={13} />

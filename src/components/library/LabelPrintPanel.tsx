@@ -199,7 +199,7 @@ export default function LabelPrintPanel({ tools, onClose }: LabelPrintPanelProps
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">{tools.length} tool{tools.length !== 1 ? 's' : ''} selected</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700">
+          <button onClick={onClose} title="Close" className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700">
             <X size={16} />
           </button>
         </div>
@@ -229,6 +229,7 @@ export default function LabelPrintPanel({ tools, onClose }: LabelPrintPanelProps
                   <label className="block text-xs font-medium text-slate-400 mb-1">QR content</label>
                   <select
                     value={opts.qrContent}
+                    aria-label="QR content"
                     onChange={(e) => patch({ qrContent: e.target.value as LabelOptions['qrContent'] })}
                     className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >

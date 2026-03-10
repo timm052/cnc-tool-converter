@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type ChangeEvent } from 'react';
+import { useState, useEffect, useRef, createContext, useContext, type ChangeEvent } from 'react';
 import { X, Trash2, Save, AlertCircle, ZoomIn, ZoomOut, Wand2, Undo2, Redo2, AlertTriangle, Copy, Plus, ChevronDown } from 'lucide-react';
 import type { LibraryTool, ToolMaterialEntry } from '../../types/libraryTool';
 import type { ToolType, ToolUnit, CoolantMode, FeedMode, ToolMaterial } from '../../types/tool';
@@ -11,6 +11,8 @@ import { useUndoRedo } from '../../hooks/useUndoRedo';
 import { validateTool, getErrors } from '../../lib/toolValidation';
 import { getAllToolTypeOptions, getFieldVisibility } from '../../lib/customToolTypes';
 import MachineGroupInput from './MachineGroupInput';
+
+const RowLabelCtx = createContext('');
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -211,6 +213,7 @@ function NumF({
   value: number | undefined; onChange: (v: number | undefined) => void;
   min?: number; step?: string | number; error?: string;
 }) {
+  const rowLabel = useContext(RowLabelCtx);
   return (
     <>
       <input
@@ -218,6 +221,7 @@ function NumF({
         value={value ?? ''}
         min={min}
         step={step}
+        aria-label={rowLabel || undefined}
         onChange={(e: ChangeEvent<HTMLInputElement>) => {
           const n = parseFloat(e.target.value);
           onChange(isNaN(n) ? undefined : n);
@@ -237,9 +241,11 @@ function SelF<T extends string>({
 }: {
   value: T; options: { value: T; label: string }[]; onChange: (v: T) => void;
 }) {
+  const rowLabel = useContext(RowLabelCtx);
   return (
     <select
       value={value}
+      aria-label={rowLabel || undefined}
       onChange={(e) => onChange(e.target.value as T)}
       className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
     >
@@ -249,11 +255,13 @@ function SelF<T extends string>({
 }
 
 function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+  const rowLabel = useContext(RowLabelCtx);
   return (
     <button
       onClick={() => onChange(!value)}
       role="switch"
-      aria-checked={value}
+      title={rowLabel || undefined}
+      aria-checked={value ? 'true' : 'false'}
       className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${value ? 'bg-blue-600' : 'bg-slate-600'}`}
     >
       <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${value ? 'translate-x-5' : 'translate-x-0.5'}`} />
@@ -265,7 +273,7 @@ function Row2({ label, children }: { label: string; children: React.ReactNode })
   return (
     <div>
       <Label>{label}</Label>
-      {children}
+      <RowLabelCtx.Provider value={label}>{children}</RowLabelCtx.Provider>
     </div>
   );
 }
@@ -273,11 +281,13 @@ function Row2({ label, children }: { label: string; children: React.ReactNode })
 function FsNum({
   value, base, onChange,
 }: { value: number | undefined; base?: number; onChange: (v: number | undefined) => void }) {
+  const rowLabel = useContext(RowLabelCtx);
   return (
     <input
       type="number"
       min={0}
       value={value ?? ''}
+      aria-label={rowLabel || undefined}
       placeholder={base !== undefined ? String(base) : '—'}
       onChange={(e) => {
         const n = parseFloat(e.target.value);
@@ -314,7 +324,7 @@ function TagInput({
         {tags.map((tag) => (
           <span key={tag} className="flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-blue-500/20 text-blue-300">
             {tag}
-            <button onClick={() => remove(tag)} className="hover:text-white"><X size={10} /></button>
+            <button onClick={() => remove(tag)} title={`Remove tag '${tag}'`} className="hover:text-white"><X size={10} /></button>
           </span>
         ))}
         <input
@@ -550,6 +560,7 @@ export default function ToolEditor({
             </span>
             <button
               onClick={onClose}
+              title="Close editor"
               className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
             >
               <X size={16} />
@@ -648,6 +659,7 @@ export default function ToolEditor({
                 <Row2 label="Material">
                   <select
                     value={draft.material ?? ''}
+                    aria-label="Material"
                     onChange={(e) =>
                       patchDraft({ material: (e.target.value as ToolMaterial) || undefined })
                     }

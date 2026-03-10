@@ -454,6 +454,7 @@ export default function ConverterPage() {
                     <span className="text-slate-600 shrink-0">{relativeTime(f.convertedAt)}</span>
                     <button
                       onClick={() => removeRecent(i)}
+                      title="Remove from history"
                       className="text-slate-600 hover:text-slate-400 transition-colors shrink-0"
                     >
                       <X size={11} />
@@ -483,12 +484,14 @@ export default function ConverterPage() {
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-slate-400">Clear all?</span>
                   <button
+                    type="button"
                     onClick={handleClear}
                     className="text-xs text-red-400 hover:text-red-300 transition-colors"
                   >
                     Yes, clear
                   </button>
                   <button
+                    type="button"
                     onClick={() => setShowClearConfirm(false)}
                     className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
                   >
@@ -497,6 +500,7 @@ export default function ConverterPage() {
                 </div>
               ) : (
                 <button
+                  type="button"
                   onClick={() => setShowClearConfirm(true)}
                   className="text-xs text-slate-500 hover:text-red-400 transition-colors"
                 >
@@ -505,8 +509,7 @@ export default function ConverterPage() {
               )}
             </div>
             <div
-              className="overflow-auto rounded-xl border border-slate-700"
-              style={{ maxHeight: '280px' }}
+              className="overflow-auto rounded-xl border border-slate-700 max-h-[280px]"
             >
               <ToolTable tools={tools} />
             </div>
@@ -527,6 +530,7 @@ export default function ConverterPage() {
                   <select
                     value={selectedResult}
                     onChange={(e) => setSelectedResult(Number(e.target.value))}
+                    aria-label="Select output file"
                     className="text-xs bg-slate-700 border border-slate-600 rounded-lg px-2 py-1 text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     {writeResults.map((r, i) => (

@@ -153,6 +153,7 @@ export default function BatchFolderDropZone({
           multiple
           // @ts-expect-error — webkitdirectory is not in React types
           webkitdirectory=""
+          aria-label="Select folder"
           onChange={handleInputChange}
           className="hidden"
         />

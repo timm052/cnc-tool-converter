@@ -117,7 +117,7 @@ function BoolToggle({ value, onChange, label }: { value: boolean; onChange: (v: 
       type="button"
       onClick={() => onChange(!value)}
       role="switch"
-      aria-checked={value ? true : false}
+      aria-checked={value ? 'true' : 'false'}
       title={label ?? (value ? 'On' : 'Off')}
       aria-label={label ?? (value ? 'On' : 'Off')}
       className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors focus:outline-none ${value ? 'bg-blue-600' : 'bg-slate-600'}`}

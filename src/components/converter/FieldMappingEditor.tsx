@@ -56,7 +56,7 @@ export default function FieldMappingEditor({
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">{sourceFormatId} → {targetFormatId}</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700">
+          <button onClick={onClose} title="Close" className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700">
             <X size={16} />
           </button>
         </div>
@@ -82,6 +82,7 @@ export default function FieldMappingEditor({
                   </span>
                   <button
                     onClick={() => removeRule(i)}
+                    title="Remove this mapping rule"
                     className="p-1 text-slate-500 hover:text-red-400 transition-colors shrink-0"
                   >
                     <Trash2 size={12} />
@@ -100,6 +101,7 @@ export default function FieldMappingEditor({
                 <select
                   value={addSrc}
                   onChange={(e) => setAddSrc(e.target.value)}
+                  aria-label="Source field for mapping"
                   className="w-full px-2 py-1.5 text-xs bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
                 >
                   {MAPPABLE_FIELDS.map((f) => (
@@ -112,6 +114,7 @@ export default function FieldMappingEditor({
                 <select
                   value={addDst}
                   onChange={(e) => setAddDst(e.target.value)}
+                  aria-label="Target field for mapping"
                   className="w-full px-2 py-1.5 text-xs bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
                 >
                   {MAPPABLE_FIELDS.map((f) => (

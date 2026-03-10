@@ -175,7 +175,7 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700 shrink-0">
           <h2 className="text-base font-semibold text-slate-100">Import Tools</h2>
-          <button onClick={onClose} className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700">
+          <button onClick={onClose} title="Close" className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700">
             <X size={16} />
           </button>
         </div>
@@ -188,6 +188,7 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
             <select
               value={formatId}
               onChange={(e) => { setFormatId(e.target.value); handleClear(); }}
+              aria-label="Source format"
               className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
             >
               {importableFormats.map((f) => (

@@ -157,7 +157,7 @@ function RenumberModal({
               Resequence {tools.length} tool{tools.length !== 1 ? 's' : ''} sorted by current T#
             </p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700">
+          <button onClick={onClose} title="Close" className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700">
             <X size={16} />
           </button>
         </div>
@@ -172,6 +172,7 @@ function RenumberModal({
                 value={start}
                 min={0}
                 step={1}
+                title="Start number"
                 onChange={(e) => setStart(Math.max(0, parseInt(e.target.value, 10) || 0))}
                 className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
               />
@@ -183,6 +184,7 @@ function RenumberModal({
                 value={step}
                 min={1}
                 step={1}
+                title="Step size"
                 onChange={(e) => setStep(Math.max(1, parseInt(e.target.value, 10) || 1))}
                 className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
               />
@@ -507,6 +509,7 @@ export default function ToolManagerPage() {
             ref={restoreInputRef}
             type="file"
             accept=".json"
+            aria-label="Restore from JSON backup"
             onChange={handleRestore}
             className="hidden"
           />
@@ -614,7 +617,7 @@ export default function ToolManagerPage() {
               className="w-full pl-8 pr-8 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
+              <button onClick={() => setSearchQuery('')} title="Clear search" className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
                 <X size={13} />
               </button>
             )}
@@ -689,7 +692,7 @@ export default function ToolManagerPage() {
           {tagFilter.map((tag) => (
             <span key={tag} className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-blue-500/20 text-blue-300">
               {tag}
-              <button onClick={() => toggleTagFilter(tag)} className="hover:text-white"><X size={10} /></button>
+              <button onClick={() => toggleTagFilter(tag)} title={`Remove '${tag}' filter`} className="hover:text-white"><X size={10} /></button>
             </span>
           ))}
 
@@ -823,7 +826,7 @@ export default function ToolManagerPage() {
                 <Keyboard size={14} className="text-slate-400" />
                 Keyboard Shortcuts
               </h3>
-              <button onClick={() => setShowShortcuts(false)} className="p-1 rounded text-slate-500 hover:text-white hover:bg-slate-700">
+              <button onClick={() => setShowShortcuts(false)} title="Close" className="p-1 rounded text-slate-500 hover:text-white hover:bg-slate-700">
                 <X size={14} />
               </button>
             </div>

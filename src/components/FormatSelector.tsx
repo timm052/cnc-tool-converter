@@ -28,6 +28,7 @@ export default function FormatSelector({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
+          aria-label={label}
           className={[
             'w-full appearance-none pl-3 pr-8 py-2.5 rounded-lg text-sm font-medium',
             'bg-slate-700 border border-slate-600 text-slate-100',

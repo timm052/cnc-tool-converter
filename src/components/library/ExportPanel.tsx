@@ -207,7 +207,7 @@ export default function ExportPanel({ selectedTools, allMaterials, onClose }: Ex
                 <button
                   type="button"
                   role="switch"
-                  aria-checked={splitByMaterial}
+                  aria-checked={splitByMaterial ? 'true' : 'false'}
                   title="Toggle split by material"
                   onClick={() => setSplitByMaterial((v) => !v)}
                   className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${splitByMaterial ? 'bg-blue-600' : 'bg-slate-600'}`}

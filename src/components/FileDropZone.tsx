@@ -136,6 +136,7 @@ export default function FileDropZone({
           type="file"
           multiple
           accept={acceptedExtensions.join(',')}
+          aria-label="Select files"
           className="hidden"
           onChange={onInputChange}
         />
@@ -197,6 +198,7 @@ export default function FileDropZone({
         type="file"
         multiple
         accept={acceptedExtensions.join(',')}
+        aria-label="Select files"
         className="hidden"
         onChange={onInputChange}
         disabled={!format}

@@ -138,7 +138,7 @@ export default function ToolTable({ tools, title }: ToolTableProps) {
             className="w-full pl-8 pr-8 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
           {query && (
-            <button onClick={() => setQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
+            <button onClick={() => setQuery('')} title="Clear filter" className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
               <X size={13} />
             </button>
           )}
