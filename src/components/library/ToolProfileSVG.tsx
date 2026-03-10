@@ -153,21 +153,33 @@ function buildProfilePath(type: ToolType, geo: ResolvedGeometry, s: number): str
   const FL = fluteLength;
   const OL = overallLength;
 
-  const shoulderTS = FL;   // tool-space Y where shank meets flute zone
+  // taperBottomTS: where the 45° taper meets the flute/shoulder diameter.
+  // shoulderLength is measured from the tip (= fluteLength + non-fluted relief).
+  const taperBottomTS = (geo.shoulderLength !== undefined && geo.shoulderLength >= FL)
+    ? geo.shoulderLength
+    : FL;
 
-  // Shared preamble: top-left shank → top-right shank → down right shank → shoulder step
+  // The taper is 30° from horizontal: height = radiusDiff / tan(30°)
+  // shoulderTopTS: where the shank diameter begins above the taper.
+  const taperHeight   = Math.abs(sR - fR) / Math.tan(30 * Math.PI / 180);
+  const shoulderTopTS = Math.min(OL, taperBottomTS + taperHeight);
+
+  // Shared preamble: top-left shank → top-right shank → down right shank → taper → shoulder
   const preamble = [
-    `M${tx(-sR, s)},${ty(OL, s)}`,           // top-left shank
-    `L${tx(sR, s)},${ty(OL, s)}`,            // top-right shank
-    `L${tx(sR, s)},${ty(shoulderTS, s)}`,    // down right shank
-    // Step to flute radius regardless of direction (in OR out)
-    ...(sR !== fR ? [`L${tx(fR, s)},${ty(shoulderTS, s)}`] : []),
+    `M${tx(-sR, s)},${ty(OL, s)}`,               // top-left shank
+    `L${tx(sR, s)},${ty(OL, s)}`,                // top-right shank
+    `L${tx(sR, s)},${ty(shoulderTopTS, s)}`,     // down right shank to taper start
+    // Diagonal taper to flute radius at taperBottomTS
+    ...(sR !== fR ? [`L${tx(fR, s)},${ty(taperBottomTS, s)}`] : []),
+    // Straight shoulder zone at flute diameter (only when it's separate from the taper)
+    ...(taperBottomTS > FL ? [`L${tx(fR, s)},${ty(FL, s)}`] : []),
   ].join(' ');
 
-  // Shared close: left flute top → step back to shank → Z closes to top-left
+  // Shared close: left flute top → shoulder zone → taper → Z closes to top-left
   const close = [
-    `L${tx(-fR, s)},${ty(shoulderTS, s)}`,   // left flute top
-    ...(sR !== fR ? [`L${tx(-sR, s)},${ty(shoulderTS, s)}`] : []),
+    `L${tx(-fR, s)},${ty(FL, s)}`,               // left flute top
+    ...(taperBottomTS > FL ? [`L${tx(-fR, s)},${ty(taperBottomTS, s)}`] : []),
+    ...(sR !== fR ? [`L${tx(-sR, s)},${ty(shoulderTopTS, s)}`] : []),
     'Z',
   ].join(' ');
 
@@ -476,7 +488,7 @@ export function ToolProfileSVG({
 
   const scale = computeScale(resolved, assemblyTotalH, holderBarrelMm / 2);
 
-  if (!isFinite(scale) || resolved.diameter * scale < 3) {
+  if (!isFinite(scale) || Math.max(resolved.diameter, resolved.shaftDiameter) * scale < 3) {
     return (
       <svg viewBox={viewBoxAttr} width="100%" height={svgH} className="block">
         <rect x={vbX} y="0" width={vbW} height="185" fill="#0f172a" />
@@ -503,20 +515,18 @@ export function ToolProfileSVG({
   const flArrH  = TIP_Y - flY1;
   const flLabel = `Flute ${fmt(resolved.fluteLength)} ${unit}`;
 
-  // Body / shoulder zone — body length measured from tip, shoulder is the non-fluted band above flutes
-  // Body line y (body/shank boundary): prefer bodyLength; fall back to fluteLength+shoulderLength
-  const rawBodyLen = resolved.bodyLength
-    ?? (resolved.shoulderLength !== undefined
-          ? resolved.fluteLength + resolved.shoulderLength
-          : undefined);
-  const showBody  = rawBodyLen !== undefined && rawBodyLen > resolved.fluteLength;
-  const blY1      = showBody ? ty(rawBodyLen!, scale) : null;
-  const blLabel   = showBody ? `Body ${fmt(rawBodyLen!)} ${unit}` : '';
+  // Body line y — bodyLength is distance from tip to shank face (top of taper).
+  const rawBodyLen = resolved.bodyLength;
+  const showBody   = rawBodyLen !== undefined && rawBodyLen > (resolved.shoulderLength ?? resolved.fluteLength);
+  const blY1       = showBody ? ty(rawBodyLen!, scale) : null;
+  const blLabel    = showBody ? `Body ${fmt(rawBodyLen!)} ${unit}` : '';
 
-  // Shoulder span shown if the zone is tall enough to annotate
-  const rawShoulderLen = resolved.shoulderLength
-    ?? (showBody ? rawBodyLen! - resolved.fluteLength : undefined);
-  const shLabel = rawShoulderLen !== undefined ? `Shldr ${fmt(rawShoulderLen)} ${unit}` : '';
+  // Shoulder boundary — shoulderLength is distance from tip to bottom of taper.
+  // A shoulder zone (non-fluted relief) exists when shoulderLength > fluteLength.
+  const slY1    = (resolved.shoulderLength !== undefined && resolved.shoulderLength > resolved.fluteLength)
+    ? ty(resolved.shoulderLength, scale)
+    : null;
+  const shLabel = resolved.shoulderLength !== undefined ? `Shldr ${fmt(resolved.shoulderLength)} ${unit}` : '';
 
   // ── Holder geometry (computed early so barrel width can inform extX) ──────────
   const holderEntryY   = showHolder ? ty(stickOut!, scale) : null;
@@ -540,7 +550,7 @@ export function ToolProfileSVG({
   const oalAnnX  = r1(extX + (showBody ? DIM_STEP * 2 : DIM_STEP));
   const blAnnX   = r1(extX + DIM_STEP);
   // Left side: shoulder inner, FL outer (FL pushed out only when shoulder is also visible)
-  const showShoulder = showBody && rawShoulderLen !== undefined;
+  const showShoulder = showBody && slY1 !== null;
   const flAnnX   = r1(leftExtX - (showShoulder ? DIM_STEP * 2 : DIM_STEP));
   const shAnnX   = r1(leftExtX - DIM_STEP);
 
@@ -626,12 +636,12 @@ export function ToolProfileSVG({
       {/* Profile fill — dark gunmetal steel */}
       <path d={profileD} fill="#1c2e3e" />
 
-      {/* Shoulder zone — violet tint between flute top and body/shank boundary */}
-      {showBody && (
+      {/* Shoulder zone — violet tint between shoulderLength and fluteLength (non-fluted relief) */}
+      {slY1 !== null && (
         <g clipPath={`url(#${clipId})`}>
           <rect
-            x={r1(CX - maxRpx - 2)} y={blY1!}
-            width={r1((maxRpx + 2) * 2)} height={r1(flzTop - blY1!)}
+            x={r1(CX - maxRpx - 2)} y={slY1}
+            width={r1((maxRpx + 2) * 2)} height={r1(flzTop - slY1)}
             fill="#7c3aed" fillOpacity="0.18"
           />
         </g>
@@ -719,12 +729,12 @@ export function ToolProfileSVG({
         />
       )}
 
-      {/* Shoulder annotation — left side inner slot */}
-      {showShoulder && (flzTop - blY1!) >= 18 && (
+      {/* Shoulder annotation — left side inner slot (shoulderLength = distance from tip) */}
+      {showShoulder && slY1 !== null && (TIP_Y - slY1) >= 18 && (
         <VertDimLine
           x={shAnnX}
-          y1={blY1!}
-          y2={flzTop}
+          y1={slY1}
+          y2={TIP_Y}
           label={shLabel}
           extLeft={leftExtX}
         />

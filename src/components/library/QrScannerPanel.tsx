@@ -109,7 +109,7 @@ export default function QrScannerPanel({
 
   // ── Overlay drawing ─────────────────────────────────────────────────────────
 
-  function drawOverlay(loc: ReturnType<typeof jsQR>['location'] | null, colour = '#4ade80') {
+  function drawOverlay(loc: NonNullable<ReturnType<typeof jsQR>>['location'] | null, colour = '#4ade80') {
     const canvas = overlayRef.current;
     const video  = videoRef.current;
     if (!canvas || !video) return;

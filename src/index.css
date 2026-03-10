@@ -43,6 +43,7 @@
   .font-mono {
     font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
   }
+
 }
 
 /* Theme files are imported in main.tsx as JS module imports (Vite-friendly). */

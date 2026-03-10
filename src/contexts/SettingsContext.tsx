@@ -2,15 +2,31 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 import type { CustomToolTypeDefinition } from '../lib/customToolTypes';
 
 export interface TableColumnVisibility {
-  type:        boolean;
-  description: boolean;
-  diameter:    boolean;
-  length:      boolean;
-  flutes:      boolean;
-  rpm:         boolean;
-  feed:        boolean;
-  material:    boolean;
-  qty:         boolean;
+  // Identity
+  type:         boolean;
+  description:  boolean;
+  manufacturer: boolean;
+  // Geometry
+  diameter:     boolean;
+  length:       boolean;    // overallLength
+  fluteLength:  boolean;
+  shaftDia:     boolean;    // shaftDiameter
+  flutes:       boolean;    // numberOfFlutes
+  cornerRadius: boolean;
+  taperAngle:   boolean;
+  // Cutting
+  rpm:          boolean;    // spindleRpm
+  feed:         boolean;    // feedCutting
+  feedPlunge:   boolean;
+  coolant:      boolean;
+  // Library / Crib
+  material:     boolean;
+  machineGroup: boolean;
+  qty:          boolean;    // quantity
+  reorderPoint: boolean;
+  supplier:     boolean;
+  unitCost:     boolean;
+  location:     boolean;
 }
 
 export interface Settings {
@@ -52,6 +68,9 @@ export interface Settings {
   librarySortDir: 'asc' | 'desc';
   libraryMaxTagsShown: number;
 
+  // Table — custom field columns (keys from tool.customFields shown as columns)
+  customFieldColumns: string[];
+
   // Validation
   validationWarningsEnabled: boolean;
 
@@ -78,15 +97,31 @@ export const DEFAULT_SETTINGS: Settings = {
   tableDecimalPrecision: 3,
   tableRowDensity:       'comfortable',
   tableColumnVisibility: {
-    type:        true,
-    description: true,
-    diameter:    true,
-    length:      true,
-    flutes:      true,
-    rpm:         true,
-    feed:        true,
-    material:    true,
-    qty:         false,
+    // Identity
+    type:         true,
+    description:  true,
+    manufacturer: false,
+    // Geometry
+    diameter:     true,
+    length:       true,
+    fluteLength:  false,
+    shaftDia:     false,
+    flutes:       true,
+    cornerRadius: false,
+    taperAngle:   false,
+    // Cutting
+    rpm:          true,
+    feed:         true,
+    feedPlunge:   false,
+    coolant:      false,
+    // Library / Crib
+    material:     true,
+    machineGroup: false,
+    qty:          false,
+    reorderPoint: false,
+    supplier:     false,
+    unitCost:     false,
+    location:     false,
   },
 
   mergeBehavior:  'merge',
@@ -100,6 +135,8 @@ export const DEFAULT_SETTINGS: Settings = {
   librarySortKey:                   'addedAt',
   librarySortDir:                   'desc',
   libraryMaxTagsShown:              3,
+
+  customFieldColumns: [],
 
   validationWarningsEnabled: true,
 

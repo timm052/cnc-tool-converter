@@ -34,20 +34,19 @@ export function validateTool(
   // Length hierarchy
   const { overallLength: ol, bodyLength: bl, fluteLength: fl, shoulderLength: sl } = geo;
 
-  if (bl !== undefined && fl !== undefined && bl < fl)
+  // shoulderLength is measured from tip (= fluteLength + non-fluted relief),
+  // so bodyLength only needs to exceed shoulderLength.
+  if (bl !== undefined && sl !== undefined && bl <= sl)
+    issues.push({ field: 'bodyLength', severity: 'error', message: `Must be > shoulder length (${fmt(sl)}).` });
+  else if (bl !== undefined && fl !== undefined && sl === undefined && bl < fl)
     issues.push({ field: 'bodyLength', severity: 'error', message: `Must be ≥ flute length (${fmt(fl)}).` });
-
-  if (bl !== undefined && fl !== undefined && sl !== undefined && bl < fl + sl)
-    issues.push({ field: 'bodyLength', severity: 'error', message: `Must be ≥ flute + shoulder (${fmt(fl + sl)}).` });
 
   if (ol !== undefined && bl !== undefined && ol < bl)
     issues.push({ field: 'overallLength', severity: 'error', message: `Must be ≥ body length (${fmt(bl)}).` });
-
-  if (ol !== undefined && fl !== undefined && bl === undefined && ol < fl)
+  else if (ol !== undefined && sl !== undefined && bl === undefined && ol < sl)
+    issues.push({ field: 'overallLength', severity: 'error', message: `Must be ≥ shoulder length (${fmt(sl)}).` });
+  else if (ol !== undefined && fl !== undefined && sl === undefined && bl === undefined && ol < fl)
     issues.push({ field: 'overallLength', severity: 'error', message: `Must be ≥ flute length (${fmt(fl)}).` });
-
-  if (ol !== undefined && fl !== undefined && sl !== undefined && bl === undefined && ol < fl + sl)
-    issues.push({ field: 'overallLength', severity: 'error', message: `Must be ≥ flute + shoulder (${fmt(fl + sl)}).` });
 
   // ── Warnings ─────────────────────────────────────────────────────────────────
 

@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useCallback } from 'react';
 import {
   Library, Plus, Upload, Download, Search, Star, X,
   ChevronDown, Layers, Tag, RotateCcw, Keyboard, SlidersHorizontal, Columns2, Hash,
-  Printer, QrCode, FlaskConical, Wrench, ScanLine,
+  Printer, QrCode, FlaskConical, Wrench, ScanLine, Copy, Package,
 } from 'lucide-react';
 import { useLibrary } from '../../contexts/LibraryContext';
 import { useHolders } from '../../contexts/HolderContext';
@@ -256,6 +256,7 @@ export default function ToolManagerPage() {
   const [searchQuery,     setSearchQuery]     = useState('');
   const [machineFilter,   setMachineFilter]   = useState<string | null>(null);
   const [starredOnly,     setStarredOnly]     = useState(false);
+  const [lowStockOnly,    setLowStockOnly]    = useState(false);
   const [tagFilter,       setTagFilter]       = useState<string[]>([]);
   const [tagDropdownOpen, setTagDropdownOpen] = useState(false);
   const [selectedIds,     setSelectedIds]     = useState<Set<string>>(new Set());
@@ -268,6 +269,7 @@ export default function ToolManagerPage() {
     let list = tools;
     if (machineFilter !== null) list = list.filter((t) => t.machineGroup === machineFilter);
     if (starredOnly)            list = list.filter((t) => t.starred);
+    if (lowStockOnly)           list = list.filter((t) => t.reorderPoint != null && t.quantity != null && t.quantity <= t.reorderPoint);
     if (tagFilter.length > 0)   list = list.filter((t) => tagFilter.every((tag) => t.tags.includes(tag)));
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -280,7 +282,7 @@ export default function ToolManagerPage() {
       );
     }
     return list;
-  }, [tools, machineFilter, starredOnly, tagFilter, searchQuery]);
+  }, [tools, machineFilter, starredOnly, lowStockOnly, tagFilter, searchQuery]);
 
   const toolCountByGroup = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -291,7 +293,7 @@ export default function ToolManagerPage() {
   }, [tools]);
 
   const selectedTools = filteredTools.filter((t) => selectedIds.has(t.id));
-  const hasFilters    = starredOnly || tagFilter.length > 0 || searchQuery.trim() !== '' || machineFilter !== null;
+  const hasFilters    = starredOnly || lowStockOnly || tagFilter.length > 0 || searchQuery.trim() !== '' || machineFilter !== null;
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -368,6 +370,7 @@ export default function ToolManagerPage() {
   function clearFilters() {
     setSearchQuery('');
     setStarredOnly(false);
+    setLowStockOnly(false);
     setTagFilter([]);
     setMachineFilter(null);
   }
@@ -408,6 +411,7 @@ export default function ToolManagerPage() {
     { key: ' ',         callback: toggleFocusedSelect },
     { key: '/',         callback: () => { searchInputRef.current?.focus(); searchInputRef.current?.select(); } },
     { key: '?',         callback: () => setShowShortcuts((s) => !s) },
+    { key: 'q',         ctrl: true, callback: () => { if (tools.length > 0) setActivePanel('qr-scan'); } },
     { key: 'Escape',    callback: () => {
       if (activePanel !== null) { closePanel(); return; }
       if (searchQuery)          { setSearchQuery(''); return; }
@@ -442,6 +446,16 @@ export default function ToolManagerPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          {selectedIds.size === 1 && selectedTools.length === 1 && (
+            <button
+              onClick={() => handleDuplicate({ ...selectedTools[0], id: crypto.randomUUID(), toolNumber: selectedTools[0].toolNumber + 1000, description: `${selectedTools[0].description} (copy)`, addedAt: Date.now(), updatedAt: Date.now() })}
+              title="Duplicate selected tool"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
+            >
+              <Copy size={14} />
+              Duplicate
+            </button>
+          )}
           {selectedIds.size >= 2 && (
             <button
               onClick={() => setActivePanel('compare')}
@@ -619,6 +633,20 @@ export default function ToolManagerPage() {
             Starred
           </button>
 
+          <button
+            onClick={() => setLowStockOnly((s) => !s)}
+            title="Show only tools below reorder point"
+            className={[
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors border',
+              lowStockOnly
+                ? 'bg-red-500/10 text-red-400 border-red-500/40'
+                : 'text-slate-400 hover:text-slate-200 border-slate-700 hover:border-slate-600 bg-slate-800',
+            ].join(' ')}
+          >
+            <Package size={13} />
+            Low Stock
+          </button>
+
           {allTags.length > 0 && (
             <div className="relative">
               <button
@@ -699,6 +727,7 @@ export default function ToolManagerPage() {
               onSelectAll={handleSelectAll}
               onToggleStar={handleToggleStar}
               onEdit={openEdit}
+              onPatchTool={updateTool}
               showMachineCol={machineFilter === null && allMachineGroups.length > 0}
               focusedId={focusedId ?? undefined}
               onFocusId={setFocusedId}
@@ -806,6 +835,7 @@ export default function ToolManagerPage() {
                 ['Space',         'Toggle selection'],
                 ['/',             'Focus search'],
                 ['Esc',           'Clear search / close panel'],
+                ['Ctrl+Q',        'Open QR scanner'],
                 ['Ctrl+Enter',    'Convert (Converter page)'],
                 ['Ctrl+Z',        'Undo (Tool Editor)'],
                 ['Ctrl+Shift+Z',  'Redo (Tool Editor)'],

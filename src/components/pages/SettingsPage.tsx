@@ -146,15 +146,31 @@ function TextInput({
 // ── Column labels ─────────────────────────────────────────────────────────────
 
 const COL_LABELS: Record<keyof TableColumnVisibility, string> = {
-  type:        'Type',
-  description: 'Description',
-  diameter:    'Ø Diameter',
-  length:      'Length',
-  flutes:      'Flutes',
-  rpm:         'RPM',
-  feed:        'Feed rate',
-  material:    'Material',
-  qty:         'Quantity (Crib)',
+  // Identity
+  type:         'Type',
+  description:  'Description',
+  manufacturer: 'Manufacturer',
+  // Geometry
+  diameter:     'Ø Diameter',
+  length:       'OAL Length',
+  fluteLength:  'Flute Length',
+  shaftDia:     'Shaft Ø',
+  flutes:       'Flutes',
+  cornerRadius: 'Corner Radius',
+  taperAngle:   'Taper Angle',
+  // Cutting
+  rpm:          'RPM',
+  feed:         'Feed rate',
+  feedPlunge:   'Feed Plunge',
+  coolant:      'Coolant',
+  // Library / Crib
+  material:     'Material',
+  machineGroup: 'Machine Group',
+  qty:          'Quantity',
+  reorderPoint: 'Reorder Point',
+  supplier:     'Supplier',
+  unitCost:     'Unit Cost',
+  location:     'Location',
 };
 
 // ── Page ─────────────────────────────────────────────────────────────────────
