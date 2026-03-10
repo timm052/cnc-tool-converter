@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useCallback } from 'react';
 import {
   Library, Plus, Upload, Download, Search, Star, X,
   ChevronDown, Layers, Tag, RotateCcw, Keyboard, SlidersHorizontal, Columns2, Hash,
-  Printer, QrCode, FlaskConical, Wrench,
+  Printer, QrCode, FlaskConical, Wrench, ScanLine,
 } from 'lucide-react';
 import { useLibrary } from '../../contexts/LibraryContext';
 import { useHolders } from '../../contexts/HolderContext';
@@ -20,10 +20,11 @@ import LabelPrintPanel from '../library/LabelPrintPanel';
 import ToolSheetPanel from '../library/ToolSheetPanel';
 import MaterialLibraryPanel from '../library/MaterialLibraryPanel';
 import HolderLibraryPanel from '../library/HolderLibraryPanel';
+import QrScannerPanel from '../library/QrScannerPanel';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Panel = 'import' | 'export' | 'edit' | 'bulk-edit' | 'compare' | 'renumber' | 'label-print' | 'sheet-print' | 'materials' | 'holders' | 'duplicates' | null;
+type Panel = 'import' | 'export' | 'edit' | 'bulk-edit' | 'compare' | 'renumber' | 'label-print' | 'sheet-print' | 'materials' | 'holders' | 'duplicates' | 'qr-scan' | null;
 
 // ── Machine group sidebar ─────────────────────────────────────────────────────
 
@@ -548,6 +549,16 @@ export default function ToolManagerPage() {
               Print Sheet
             </button>
           )}
+          {tools.length > 0 && (
+            <button
+              onClick={() => setActivePanel('qr-scan')}
+              title="Scan a tool QR code to open it"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
+            >
+              <ScanLine size={14} />
+              Scan QR
+            </button>
+          )}
           {filteredTools.length > 0 && (
             <button
               onClick={() => setActivePanel('label-print')}
@@ -761,6 +772,13 @@ export default function ToolManagerPage() {
         <DuplicateFinderPanel
           tools={tools}
           onDelete={async (ids) => { await deleteTools(ids); }}
+          onClose={closePanel}
+        />
+      )}
+      {activePanel === 'qr-scan' && (
+        <QrScannerPanel
+          tools={tools}
+          onFound={(tool) => { closePanel(); openEdit(tool); }}
           onClose={closePanel}
         />
       )}

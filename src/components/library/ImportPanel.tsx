@@ -86,6 +86,7 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
     const now = Date.now();
     return {
       ...tool,
+      id:           crypto.randomUUID(),   // always assign a fresh UUID in the library
       machineGroup: settings.libraryImportDefaultMachineGroup || undefined,
       tags:         [],
       starred:      false,

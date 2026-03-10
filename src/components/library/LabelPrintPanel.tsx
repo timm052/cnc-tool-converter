@@ -33,6 +33,9 @@ function FieldToggle({
 }
 
 // ── Numeric input ─────────────────────────────────────────────────────────────
+// Uses a local string state so the user can freely type intermediate values
+// (e.g. "1", "10", "1.5") without the clamped number snapping the field mid-entry.
+// Clamping only happens on blur or when the spinner arrows are used.
 
 function NumInput({
   label, value, min, max, step = 1, suffix, onChange,
@@ -40,20 +43,32 @@ function NumInput({
   label: string; value: number; min: number; max: number;
   step?: number; suffix?: string; onChange: (v: number) => void;
 }) {
+  const [raw, setRaw] = useState(String(value));
+
+  // Keep raw in sync when the parent value changes externally
+  useEffect(() => { setRaw(String(value)); }, [value]);
+
+  function commit(str: string) {
+    const n = parseFloat(str);
+    const clamped = isNaN(n) ? value : Math.min(max, Math.max(min, n));
+    onChange(clamped);
+    setRaw(String(clamped));
+  }
+
   return (
     <div>
       <label className="block text-xs font-medium text-slate-400 mb-1">{label}</label>
       <div className="flex items-center gap-1">
         <input
           type="number"
-          value={value}
+          value={raw}
           min={min}
           max={max}
           step={step}
-          onChange={(e) => {
-            const n = parseFloat(e.target.value);
-            if (!isNaN(n)) onChange(Math.min(max, Math.max(min, n)));
-          }}
+          onChange={(e) => setRaw(e.target.value)}
+          onBlur={(e) => commit(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+          title={label}
           className="w-20 px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
         />
         {suffix && <span className="text-xs text-slate-500">{suffix}</span>}
@@ -62,33 +77,49 @@ function NumInput({
   );
 }
 
-// ── Label preview (CSS mock at ~3px/mm) ──────────────────────────────────────
+// ── Label preview ─────────────────────────────────────────────────────────────
+// Scales the label so it always fits inside the panel (max ~350px wide).
+// Font sizes track the scale so the preview stays proportional to a real print.
 
-const PX_PER_MM = 2.8;
+const BASE_PX_PER_MM = 2.8;   // ~96dpi equivalent scale
+const PREVIEW_MAX_PX  = 350;  // max preview label width in pixels
 
 function LabelPreview({
   tool, opts, qrDataUrl,
 }: { tool: LibraryTool; opts: LabelOptions; qrDataUrl: string }) {
-  const w = opts.widthMm  * PX_PER_MM;
-  const h = opts.heightMm * PX_PER_MM;
-  const qrSize = (opts.heightMm - 5) * PX_PER_MM;
+  // Scale down if the label is wider than PREVIEW_MAX_PX
+  const scale   = Math.min(BASE_PX_PER_MM, PREVIEW_MAX_PX / opts.widthMm);
+  const w       = opts.widthMm  * scale;
+  const h       = opts.heightMm * scale;
+  // Mirror the print sizing: QR capped by both height and width
+  const qrMm    = Math.max(4, Math.min(opts.heightMm - 5, opts.widthMm * 0.45 - 3));
+  const qrSize  = qrMm * scale;
+  const pad     = Math.max(2, 4  * scale / BASE_PX_PER_MM);
+  const gap     = Math.max(2, 4  * scale / BASE_PX_PER_MM);
 
-  const lines: { text: string; bold?: boolean; mono?: boolean; dim?: boolean }[] = [];
+  // Font sizes scale with rendered label HEIGHT (matching print behaviour).
+  // Reference: 29mm tall label → ratio 1.0, giving ~8-9px for the tool number line.
+  const ratio   = h / (29 * BASE_PX_PER_MM);
+  const fTnum   = Math.max(5,  Math.round(8.5 * ratio));
+  const fDesc   = Math.max(4,  Math.round(7.5 * ratio));
+  const fField  = Math.max(3.5,Math.round(6.5 * ratio));
+
+  const lines: { text: string; bold?: boolean; mono?: boolean }[] = [];
   if (opts.showTNumber)  lines.push({ text: `T${tool.toolNumber}`, bold: true, mono: true });
   if (opts.showDesc)     lines.push({ text: tool.description, bold: true });
-  if (opts.showType)     lines.push({ text: tool.type, dim: true });
-  if (opts.showDiameter) lines.push({ text: `Ø${tool.geometry.diameter} ${tool.unit}`, mono: true, dim: true });
+  if (opts.showType)     lines.push({ text: tool.type });
+  if (opts.showDiameter) lines.push({ text: `Ø${tool.geometry.diameter} ${tool.unit}`, mono: true });
   if (opts.showFlutes && tool.geometry.numberOfFlutes)
-                         lines.push({ text: `${tool.geometry.numberOfFlutes} flutes`, dim: true });
+                         lines.push({ text: `${tool.geometry.numberOfFlutes} flutes` });
   if (opts.showMachine && tool.machineGroup)
-                         lines.push({ text: tool.machineGroup, dim: true });
+                         lines.push({ text: tool.machineGroup });
   if (opts.showTags && tool.tags.length)
-                         lines.push({ text: tool.tags.join(' · '), dim: true });
+                         lines.push({ text: tool.tags.join(' · ') });
 
   return (
     <div
-      className="border border-slate-500 rounded overflow-hidden flex items-center bg-white shrink-0"
-      style={{ width: w, height: h, padding: 4, gap: 4 }}
+      className="border border-slate-400 rounded overflow-hidden flex items-center bg-white shrink-0"
+      style={{ width: w, height: h, padding: pad, gap }}
     >
       {opts.showQr && qrDataUrl && (
         <img
@@ -98,23 +129,26 @@ function LabelPreview({
         />
       )}
       <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-        {lines.map((l, i) => (
-          <div
-            key={i}
-            style={{
-              fontSize: 6,
-              lineHeight: 1.3,
-              fontWeight: l.bold ? 700 : 400,
-              fontFamily: l.mono ? 'monospace' : 'sans-serif',
-              color: l.bold ? '#111' : '#555',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {l.text}
-          </div>
-        ))}
+        {lines.map((l, i) => {
+          const fs = i === 0 ? fTnum : i === 1 ? fDesc : fField;
+          return (
+            <div
+              key={i}
+              style={{
+                fontSize: fs,
+                lineHeight: 1.25,
+                fontWeight: l.bold ? 700 : 400,
+                fontFamily: l.mono ? 'monospace' : 'sans-serif',
+                color: l.bold ? '#111' : '#555',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {l.text}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

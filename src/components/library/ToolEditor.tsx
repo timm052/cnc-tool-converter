@@ -125,6 +125,43 @@ function makeBlankTool(unit: ToolUnit, settings: Settings): LibraryTool {
   };
 }
 
+// ── UUID display row ──────────────────────────────────────────────────────────
+
+function UuidRow({ id }: { id: string }) {
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    navigator.clipboard.writeText(id).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  }
+
+  return (
+    <div>
+      <label className="block text-xs font-medium text-slate-400 mb-1">Library UUID</label>
+      <div className="flex items-center gap-1">
+        <input
+          readOnly
+          value={id}
+          title="Library UUID"
+          className="flex-1 min-w-0 px-2.5 py-1.5 text-xs font-mono bg-slate-900 border border-slate-700 rounded-lg text-slate-400 select-all cursor-text"
+        />
+        <button
+          type="button"
+          onClick={handleCopy}
+          title="Copy UUID"
+          className="shrink-0 flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-700 border border-slate-700 transition-colors"
+        >
+          <Copy size={11} />
+          {copied ? 'Copied!' : 'Copy'}
+        </button>
+      </div>
+      <p className="mt-1 text-xs text-slate-600">Read-only · used as QR code identifier</p>
+    </div>
+  );
+}
+
 // ── Validation delegated to src/lib/toolValidation.ts ────────────────────────
 type Errors = Partial<Record<string, string>>;
 
@@ -597,6 +634,8 @@ export default function ToolEditor({
                   />
                 </Row2>
               </div>
+
+              <UuidRow id={draft.id} />
 
               <div className="grid grid-cols-2 gap-3">
                 <Row2 label="Unit">

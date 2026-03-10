@@ -26,7 +26,7 @@ export const DEFAULT_LABEL_OPTIONS: LabelOptions = {
   columns:       3,
   gapMm:         2,
   showQr:       true,
-  qrContent:    'full',
+  qrContent:    'id',
   showTNumber:  true,
   showDesc:     true,
   showType:     true,
@@ -67,7 +67,16 @@ export async function printLabels(tools: LibraryTool[], opts: LabelOptions): Pro
   win.document.write('<html><head><title>Tool Labels</title></head><body style="font-family:sans-serif;padding:8mm">Generating labels…</body></html>');
   win.document.close();
 
-  const qrSizePx = Math.round((opts.heightMm - 6) * 3.78); // mm → px at 96dpi
+  // Font sizes scale with label height (29mm is the reference at 7/6/5.5pt)
+  const fontScale  = opts.heightMm / 29;
+  const fTnum  = (7   * fontScale).toFixed(1);
+  const fDesc  = (6   * fontScale).toFixed(1);
+  const fField = (5.5 * fontScale).toFixed(1);
+
+  // QR display size: fit within both label dimensions (leave ~3mm padding on each axis)
+  const qrDisplayMm = Math.max(4, Math.min(opts.heightMm - 5, opts.widthMm * 0.45 - 3));
+  // Generate at ≥180px so the QR is always scannable regardless of label size
+  const qrSizePx = Math.max(180, Math.round(qrDisplayMm * 3.78));
 
   const qrUrls = opts.showQr
     ? await Promise.all(tools.map((t) => generateQrDataUrl(buildQrText(t, opts.qrContent), qrSizePx)))
@@ -116,11 +125,11 @@ body { font-family: Arial, Helvetica, sans-serif; background: #fff; }
   overflow: hidden;
   page-break-inside: avoid;
 }
-.qr  { width: ${opts.heightMm - 5}mm; height: ${opts.heightMm - 5}mm; flex-shrink: 0; image-rendering: pixelated; }
+.qr  { width: ${qrDisplayMm}mm; height: ${qrDisplayMm}mm; flex-shrink: 0; image-rendering: crisp-edges; }
 .info { flex: 1; min-width: 0; overflow: hidden; }
-.tnum { font-size: 7pt; font-weight: bold; color: #1a4db8; font-family: monospace; white-space: nowrap; }
-.desc { font-size: 6pt; font-weight: 600; color: #111; line-height: 1.25; margin: 0.4mm 0; word-break: break-word; }
-.field { font-size: 5.5pt; color: #444; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tnum { font-size: ${fTnum}pt; font-weight: bold; color: #1a4db8; font-family: monospace; white-space: nowrap; }
+.desc { font-size: ${fDesc}pt; font-weight: 600; color: #111; line-height: 1.25; margin: 0.4mm 0; word-break: break-word; }
+.field { font-size: ${fField}pt; color: #444; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tags { color: #666; }
 @media print {
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
