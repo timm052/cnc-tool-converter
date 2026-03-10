@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { X, Plus, Trash2, Pencil, Check, Wrench } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { X, Plus, Trash2, Pencil, Check, Wrench, Search } from 'lucide-react';
 import { useHolders } from '../../contexts/HolderContext';
 import type { ToolHolder, HolderType } from '../../types/holder';
 import { HOLDER_TYPES } from '../../types/holder';
@@ -128,12 +128,23 @@ function HolderForm({
 // ── Main panel ────────────────────────────────────────────────────────────────
 
 export default function HolderLibraryPanel({ onClose }: { onClose: () => void }) {
-  const { holders, addHolder, updateHolder, deleteHolder } = useHolders();
+  const { holders, isLoading, addHolder, updateHolder, deleteHolder } = useHolders();
 
   const [editingId,     setEditingId]     = useState<string | null>(null);
   const [isAdding,      setIsAdding]      = useState(false);
   const [newDraft,      setNewDraft]      = useState<ToolHolder>(blank);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [search,        setSearch]        = useState('');
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return holders;
+    return holders.filter((h) =>
+      h.name.toLowerCase().includes(q) ||
+      h.type.toLowerCase().includes(q) ||
+      h.notes?.toLowerCase().includes(q)
+    );
+  }, [holders, search]);
 
   async function handleAdd(h: ToolHolder) {
     await addHolder(h);
@@ -176,10 +187,33 @@ export default function HolderLibraryPanel({ onClose }: { onClose: () => void })
           </button>
         </div>
 
+        {/* Search */}
+        {holders.length > 0 && (
+          <div className="px-4 py-2 border-b border-slate-700 shrink-0">
+            <div className="relative">
+              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search holders…"
+                aria-label="Search holders"
+                className="w-full pl-8 pr-3 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+        )}
+
         {/* List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
 
-          {holders.length === 0 && !isAdding && (
+          {isLoading && (
+            <div className="flex items-center justify-center py-16">
+              <span className="text-sm text-slate-500">Loading…</span>
+            </div>
+          )}
+
+          {!isLoading && holders.length === 0 && !isAdding && (
             <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
               <Wrench size={32} className="text-slate-600" />
               <p className="text-sm text-slate-400">No holders yet.</p>
@@ -187,7 +221,11 @@ export default function HolderLibraryPanel({ onClose }: { onClose: () => void })
             </div>
           )}
 
-          {holders.map((h) => (
+          {!isLoading && filtered.length === 0 && holders.length > 0 && (
+            <p className="text-sm text-slate-500 text-center py-8">No holders match "{search}"</p>
+          )}
+
+          {filtered.map((h) => (
             <div key={h.id}>
               {editingId === h.id ? (
                 <HolderForm

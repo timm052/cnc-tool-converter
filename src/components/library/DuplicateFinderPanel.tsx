@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { X, Copy, Trash2, ChevronDown, ChevronRight, AlertTriangle, CheckSquare, Square } from 'lucide-react';
 import type { LibraryTool } from '../../types/libraryTool';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -88,8 +88,8 @@ export default function DuplicateFinderPanel({ tools, onDelete, onClose }: Dupli
     setExpanded(new Set(buildGroups(tools, next).map((g) => g.key)));
   }
 
-  // On first render, auto-expand all groups and auto-mark all non-first tools
-  useMemo(() => {
+  // When criteria changes, auto-expand all groups and auto-mark all non-first tools
+  useEffect(() => {
     const newExpanded = new Set(groups.map((g) => g.key));
     setExpanded(newExpanded);
     // Auto-mark all tools except the first in each group (the "keep" candidate)

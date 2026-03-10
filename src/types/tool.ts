@@ -8,17 +8,40 @@
  */
 
 export type ToolType =
+  // Milling
   | 'flat end mill'
   | 'ball end mill'
   | 'bull nose end mill'
   | 'chamfer mill'
   | 'face mill'
-  | 'spot drill'
-  | 'drill'
   | 'tapered mill'
-  | 'boring bar'
-  | 'thread mill'
+  | 'dovetail mill'
+  | 'slot mill'
+  | 'lollipop mill'
+  | 'form mill'
   | 'engraving'
+  // Circle segment (barrel / lens / oval)
+  | 'circle segment barrel'
+  | 'circle segment lens'
+  | 'circle segment oval'
+  // Hole making
+  | 'drill'
+  | 'center drill'
+  | 'spot drill'
+  | 'counter bore'
+  | 'counter sink'
+  | 'reamer'
+  | 'boring bar'
+  // Threading
+  | 'thread mill'
+  | 'tap right hand'
+  | 'tap left hand'
+  // Special
+  | 'probe'
+  | 'laser cutter'
+  | 'plasma cutter'
+  | 'waterjet'
+  | 'holder'
   | 'custom'
   | (string & {});  // allows user-defined custom type IDs
 
@@ -57,6 +80,18 @@ export interface ToolGeometry {
   numberOfTeeth?: number;
   /** Whether the tool has internal coolant channels */
   coolantSupport?: boolean;
+  /** Included point angle in degrees (drills, center drills, counter sinks — Fusion 360 "SIG") */
+  pointAngle?: number;
+  /** Shoulder / neck diameter (slot mills, dovetail mills, lollipop mills) */
+  shoulderDiameter?: number;
+  /** Length of the pointed tip section (drills, center drills) */
+  tipLength?: number;
+  /** Axial offset of the tip (form mills) */
+  tipOffset?: number;
+  /** Large radius of the circle-segment cutting arc (barrel / lens / oval mills) */
+  profileRadius?: number;
+  /** Nozzle/kerf diameter (laser, plasma, waterjet cutters) */
+  nozzleDiameter?: number;
 }
 
 /** Tool offset values along machine axes */
@@ -126,6 +161,8 @@ export interface Tool {
   manufacturer?: string;
   /** URL or part number */
   productId?: string;
+  /** Link to product page or datasheet */
+  productLink?: string;
   unit: ToolUnit;
   geometry: ToolGeometry;
   offsets?: ToolOffsets;

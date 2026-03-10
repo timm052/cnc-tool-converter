@@ -431,6 +431,15 @@
 /* ── Rose — engraving type badge ────────────────────────────────────────── */
 [data-theme="winxp"] .text-rose-300 { color: #9f1239 !important; }
 
+/* ── Fuchsia — dovetail mill, circle segment oval type badges ───────────── */
+[data-theme="winxp"] .text-fuchsia-300 { color: #86198f !important; }
+
+/* ── Sky — slot mill, probe type badges ─────────────────────────────────── */
+[data-theme="winxp"] .text-sky-300 { color: #0369a1 !important; }
+
+/* ── Lime — lollipop mill, reamer type badges ───────────────────────────── */
+[data-theme="winxp"] .text-lime-300 { color: #3f6212 !important; }
+
 /* ── Hover-state text that targets light variants ───────────────────────── */
 [data-theme="winxp"] .hover\:text-amber-300:hover,
 [data-theme="winxp"] .hover\:text-amber-200:hover { color: #b45309 !important; }

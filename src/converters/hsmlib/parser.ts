@@ -1,8 +1,9 @@
 /**
- * Autodesk Inventor CAM / HSMWorks Tool Library (.hsmlib) Parser
+ * Autodesk Inventor CAM / HSMWorks / Fusion 360 Tool Library (.hsmlib) Parser
  *
  * File format: UTF-16 encoded XML
- * Schema: http://www.hsmworks.com/xml/2004/cnc/tool-library (version 14)
+ * Schema: http://www.hsmworks.com/xml/2004/cnc/tool-library (version 14 / 36)
+ * Compatible with: Inventor CAM, Fusion 360, HSMWorks
  */
 
 import type { Tool, ToolType, ToolMaterial, CoolantMode, FeedMode } from '../../types/tool';
@@ -35,16 +36,40 @@ function firstChild(parent: Element | null | undefined, tagName: string): Elemen
 // ── Tool type mapping ──────────────────────────────────────────────────────
 
 const TOOL_TYPE_MAP: Record<string, ToolType> = {
-  'flat end mill':    'flat end mill',
-  'ball end mill':    'ball end mill',
-  'bull nose end mill': 'bull nose end mill',
-  'chamfer mill':     'chamfer mill',
-  'face mill':        'face mill',
-  'spot drill':       'spot drill',
-  'drill':            'drill',
-  'tapered mill':     'tapered mill',
-  'boring bar':       'boring bar',
-  'thread mill':      'thread mill',
+  // Milling
+  'flat end mill':         'flat end mill',
+  'ball end mill':         'ball end mill',
+  'bull nose end mill':    'bull nose end mill',
+  'chamfer mill':          'chamfer mill',
+  'face mill':             'face mill',
+  'tapered mill':          'tapered mill',
+  'dovetail mill':         'dovetail mill',
+  'slot mill':             'slot mill',
+  'lollipop mill':         'lollipop mill',
+  'form mill':             'form mill',
+  'engraving':             'engraving',
+  // Circle segment
+  'circle segment barrel': 'circle segment barrel',
+  'circle segment lens':   'circle segment lens',
+  'circle segment oval':   'circle segment oval',
+  // Hole making
+  'drill':                 'drill',
+  'center drill':          'center drill',
+  'spot drill':            'spot drill',
+  'counter bore':          'counter bore',
+  'counter sink':          'counter sink',
+  'reamer':                'reamer',
+  'boring bar':            'boring bar',
+  // Threading
+  'thread mill':           'thread mill',
+  'tap right hand':        'tap right hand',
+  'tap left hand':         'tap left hand',
+  // Special
+  'probe':                 'probe',
+  'laser cutter':          'laser cutter',
+  'plasma cutter':         'plasma cutter',
+  'waterjet':              'waterjet',
+  'holder':                'holder',
 };
 
 function mapToolType(hsmlibType: string): ToolType {
@@ -120,14 +145,18 @@ export async function parseHSMLib(
       const commentEl   = firstChild(toolEl, 'comment');
       const mfgEl       = firstChild(toolEl, 'manufacturer');
       const pidEl       = firstChild(toolEl, 'product-id');
+      const plinkEl     = firstChild(toolEl, 'product-link');
       const ncEl        = firstChild(toolEl, 'nc');
       const coolantEl   = firstChild(toolEl, 'coolant');
       const materialEl  = firstChild(toolEl, 'material');
       const bodyEl      = firstChild(toolEl, 'body');
       const motionEl    = firstChild(toolEl, 'motion');
+      const holderEl    = firstChild(toolEl, 'holder');
 
       const toolNumber = parseInt(getAttr(ncEl, 'number') ?? '0', 10);
-      const description = descEl?.textContent?.trim() || `Tool ${index + 1}`;
+      // Fallback: use type+diameter when description tag is absent
+      const description = descEl?.textContent?.trim() ||
+        `${mapToolType(typeStr)} Ø${getNumAttr(bodyEl, 'diameter') ?? 0}`;
 
       const tool: Tool = {
         id:           guid,
@@ -137,6 +166,7 @@ export async function parseHSMLib(
         comment:      commentEl?.textContent?.trim() || undefined,
         manufacturer: mfgEl?.textContent?.trim()     || undefined,
         productId:    pidEl?.textContent?.trim()      || undefined,
+        productLink:  plinkEl?.textContent?.trim()    || undefined,
         unit,
 
         geometry: {
@@ -181,6 +211,19 @@ export async function parseHSMLib(
 
         material: (getAttr(materialEl, 'name') as ToolMaterial) || undefined,
       };
+
+      // Preserve Fusion 360 / HSMWorks extended fields in sourceData
+      const assemblyGL  = getNumAttr(bodyEl, 'assembly-gauge-length');
+      const holderGL    = getNumAttr(holderEl, 'gauge-length');
+      if (assemblyGL !== undefined || holderGL !== undefined) {
+        tool.sourceData = {
+          ...tool.sourceData,
+          assemblyGaugeLength: assemblyGL,
+          holderGaugeLength:   holderGL,
+          holderDescription:   getAttr(holderEl, 'description') || undefined,
+          holderGuid:          getAttr(holderEl, 'guid')        || undefined,
+        };
+      }
 
       // Parse presets
       const presetEls = toolEl.getElementsByTagName('preset');

@@ -34,12 +34,17 @@ interface ResolvedGeometry {
 
 function defaultTaperAngle(type: ToolType): number {
   switch (type) {
-    case 'drill':        return 59;
-    case 'spot drill':   return 45;
-    case 'chamfer mill': return 45;
-    case 'tapered mill': return 5;
-    case 'engraving':    return 15;
-    default:             return 30;
+    case 'drill':
+    case 'center drill':  return 59;   // 118° included → 59° half-angle
+    case 'spot drill':    return 45;
+    case 'chamfer mill':  return 45;
+    case 'counter sink':  return 45;   // 90° included countersink
+    case 'tapered mill':
+    case 'dovetail mill': return 5;
+    case 'engraving':     return 15;
+    case 'tap right hand':
+    case 'tap left hand': return 30;
+    default:              return 30;
   }
 }
 
@@ -51,7 +56,13 @@ function resolveGeometry(type: ToolType, geo: ToolGeometry): ResolvedGeometry {
     : (geo.overallLength ?? d * 5);
   const fl = geo.fluteLength ?? ol * 0.4;
   const cr = Math.min(geo.cornerRadius ?? 0, d / 2 - 0.001);
-  const ta = Math.max(1, Math.min(89, geo.taperAngle ?? defaultTaperAngle(type)));
+  // Use pointAngle (SIG, included angle) / 2 as the taper half-angle when TA is
+  // absent or set to an implausible value (≥ 80° from axis = nearly flat).
+  let rawTA = geo.taperAngle;
+  if ((rawTA === undefined || rawTA >= 80) && geo.pointAngle !== undefined) {
+    rawTA = geo.pointAngle / 2;
+  }
+  const ta = Math.max(1, Math.min(89, rawTA ?? defaultTaperAngle(type)));
   const td = geo.tipDiameter ?? 0;
   const tp = geo.threadPitch ?? d * 0.15;
   const nt = geo.numberOfTeeth ?? Math.min(20, Math.max(1, Math.floor(fl / tp)));
@@ -190,11 +201,18 @@ function buildProfilePath(type: ToolType, geo: ResolvedGeometry, s: number): str
     case 'flat end mill':
     case 'face mill':
     case 'boring bar':
+    case 'counter bore':
+    case 'reamer':
+    case 'form mill':
+    case 'slot mill':
+    case 'holder':
     case 'custom':
       tip = `${L(fR, 0, s)} ${L(-fR, 0, s)}`;
       break;
 
-    case 'ball end mill': {
+    case 'ball end mill':
+    case 'lollipop mill':  // hemispherical tip (RE = D/2)
+    case 'probe': {        // spherical probe ball
       const rPx = r1(fR * s);
       tip = [
         `L${tx(fR, s)},${ty(fR, s)}`,
@@ -204,7 +222,12 @@ function buildProfilePath(type: ToolType, geo: ResolvedGeometry, s: number): str
       break;
     }
 
-    case 'bull nose end mill': {
+    case 'bull nose end mill':
+    case 'circle segment barrel':
+    case 'circle segment lens':
+    case 'circle segment oval': {
+      // Circle segment tools approximate as bull-nose; cornerRadius (RE) may be small
+      // so fall back to flat if effectively zero.
       const crPx = r1(Math.min(cornerRadius, fR) * s);
       if (crPx < 1) {
         tip = `${L(fR, 0, s)} ${L(-fR, 0, s)}`;
@@ -220,9 +243,13 @@ function buildProfilePath(type: ToolType, geo: ResolvedGeometry, s: number): str
     }
 
     case 'drill':
+    case 'center drill':
     case 'spot drill': {
-      const tipR   = tipDiameter / 2;
-      const coneH  = (fR - tipR) / Math.tan((taperAngle * Math.PI) / 180);
+      const tipR      = tipDiameter / 2;
+      const rawConeH  = (fR - tipR) / Math.tan((taperAngle * Math.PI) / 180);
+      // Enforce a minimum of 12 SVG pixels so the cone is always distinguishable
+      // at any zoom level. This is a schematic view, not an engineering drawing.
+      const coneH     = Math.max(rawConeH, 12 / s);
       tip = [
         `L${tx(fR, s)},${ty(coneH, s)}`,
         `L${tx(tipR, s)},${TIP_Y}`,
@@ -234,9 +261,9 @@ function buildProfilePath(type: ToolType, geo: ResolvedGeometry, s: number): str
 
     case 'chamfer mill':
     case 'tapered mill':
-    case 'engraving': {
+    case 'engraving':
+    case 'counter sink': {
       const tipR = tipDiameter / 2;
-      // Preamble already at (fR, FL); diagonal faces to tip then back to (-fR, FL)
       tip = [
         `L${tx(tipR, s)},${TIP_Y}`,
         ...(tipR > 0 ? [`L${tx(-tipR, s)},${TIP_Y}`] : []),
@@ -245,12 +272,37 @@ function buildProfilePath(type: ToolType, geo: ResolvedGeometry, s: number): str
       break;
     }
 
+    case 'dovetail mill': {
+      // Wider at cutting end than shaft. Preamble already flares outward since fR > sR.
+      // Bottom: optional corner radius rounding the outer edge, then flat inner face.
+      const tipR = tipDiameter / 2;
+      const cr   = Math.min(cornerRadius, Math.max(0, fR - tipR - 0.001));
+      const crPx = r1(cr * s);
+      if (crPx < 1) {
+        tip = [
+          `L${tx(fR, s)},${TIP_Y}`,
+          `L${tx(tipR, s)},${TIP_Y}`,
+          ...(tipR > 0 ? [`L${tx(-tipR, s)},${TIP_Y}`] : []),
+          `L${tx(-fR, s)},${TIP_Y}`,
+        ].join(' ');
+      } else {
+        tip = [
+          `L${tx(fR, s)},${ty(cr, s)}`,
+          `A${crPx},${crPx} 0 0 1 ${tx(fR - cr, s)},${TIP_Y}`,
+          ...(fR - cr > tipR + 0.3 ? [`L${tx(tipR, s)},${TIP_Y}`] : []),
+          ...(tipR > 0 ? [`L${tx(-tipR, s)},${TIP_Y}`] : []),
+          ...(fR - cr > tipR + 0.3 ? [`L${tx(-(fR - cr), s)},${TIP_Y}`] : []),
+          `A${crPx},${crPx} 0 0 1 ${tx(-fR, s)},${ty(cr, s)}`,
+        ].join(' ');
+      }
+      break;
+    }
+
     case 'thread mill': {
       const pitch  = geo.threadPitch;
       const nTeeth = geo.numberOfTeeth;
       const notchD = fR * 0.2;
 
-      // Collect tooth positions bottom-up (first tooth nearest tip)
       const teeth: { crestY: number; rootY: number }[] = [];
       for (let i = 0; i < nTeeth; i++) {
         const crestY = (i + 1) * pitch;
@@ -259,13 +311,10 @@ function buildProfilePath(type: ToolType, geo: ResolvedGeometry, s: number): str
         teeth.push({ crestY, rootY });
       }
 
-      // Right side: traverse top → bottom (reversed)
       const rightPts = teeth.slice().reverse().flatMap(({ crestY, rootY }) => [
         `L${tx(fR, s)},${ty(crestY, s)}`,
         `L${tx(fR - notchD, s)},${ty(rootY, s)}`,
       ]);
-
-      // Left side: traverse bottom → top (root before crest for correct notch direction)
       const leftPts = teeth.flatMap(({ crestY, rootY }) => [
         `L${tx(-(fR - notchD), s)},${ty(rootY, s)}`,
         `L${tx(-fR, s)},${ty(crestY, s)}`,
@@ -276,6 +325,53 @@ function buildProfilePath(type: ToolType, geo: ResolvedGeometry, s: number): str
         `L${tx(fR, s)},${TIP_Y}`,
         `L${tx(-fR, s)},${TIP_Y}`,
         ...leftPts,
+      ].join(' ');
+      break;
+    }
+
+    case 'tap right hand':
+    case 'tap left hand': {
+      // Like thread mill but number of turns = FL / pitch (not stored NT which is starts)
+      const pitch  = geo.threadPitch;
+      const nTeeth = Math.min(30, Math.max(1, Math.floor(FL / pitch)));
+      const notchD = fR * 0.15;   // shallower notch than thread mill
+
+      const teeth: { crestY: number; rootY: number }[] = [];
+      for (let i = 0; i < nTeeth; i++) {
+        const crestY = (i + 1) * pitch;
+        const rootY  = i * pitch + pitch * 0.5;
+        if (crestY > FL) break;
+        teeth.push({ crestY, rootY });
+      }
+
+      const rightPts = teeth.slice().reverse().flatMap(({ crestY, rootY }) => [
+        `L${tx(fR, s)},${ty(crestY, s)}`,
+        `L${tx(fR - notchD, s)},${ty(rootY, s)}`,
+      ]);
+      const leftPts = teeth.flatMap(({ crestY, rootY }) => [
+        `L${tx(-(fR - notchD), s)},${ty(rootY, s)}`,
+        `L${tx(-fR, s)},${ty(crestY, s)}`,
+      ]);
+
+      tip = [
+        ...rightPts,
+        `L${tx(fR, s)},${TIP_Y}`,
+        `L${tx(-fR, s)},${TIP_Y}`,
+        ...leftPts,
+      ].join(' ');
+      break;
+    }
+
+    case 'laser cutter':
+    case 'plasma cutter':
+    case 'waterjet': {
+      // Converging nozzle shape
+      const orificeR = r1(fR * 0.12);
+      tip = [
+        `L${tx(fR * 0.55, s)},${ty(FL * 0.18, s)}`,
+        `L${tx(orificeR, s)},${TIP_Y}`,
+        `L${tx(-orificeR, s)},${TIP_Y}`,
+        `L${tx(-fR * 0.55, s)},${ty(FL * 0.18, s)}`,
       ].join(' ');
       break;
     }

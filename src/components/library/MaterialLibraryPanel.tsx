@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { X, Plus, Trash2, Pencil, Check, FlaskConical } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { X, Plus, Trash2, Pencil, Check, FlaskConical, Search } from 'lucide-react';
 import { useMaterials } from '../../contexts/MaterialContext';
 import type { WorkMaterial, MaterialCategory } from '../../types/material';
 import {
@@ -137,12 +137,23 @@ function MaterialForm({
 // ── Main panel ────────────────────────────────────────────────────────────────
 
 export default function MaterialLibraryPanel({ onClose }: { onClose: () => void }) {
-  const { materials, addMaterial, updateMaterial, deleteMaterial } = useMaterials();
+  const { materials, isLoading, addMaterial, updateMaterial, deleteMaterial } = useMaterials();
 
-  const [editingId,    setEditingId]    = useState<string | null>(null);
-  const [isAdding,     setIsAdding]     = useState(false);
-  const [newDraft,     setNewDraft]     = useState<WorkMaterial>(blank);
+  const [editingId,     setEditingId]     = useState<string | null>(null);
+  const [isAdding,      setIsAdding]      = useState(false);
+  const [newDraft,      setNewDraft]      = useState<WorkMaterial>(blank);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [search,        setSearch]        = useState('');
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return materials;
+    return materials.filter((m) =>
+      m.name.toLowerCase().includes(q) ||
+      m.category.toLowerCase().includes(q) ||
+      m.notes?.toLowerCase().includes(q)
+    );
+  }, [materials, search]);
 
   async function handleAdd(m: WorkMaterial) {
     await addMaterial(m);
@@ -185,10 +196,33 @@ export default function MaterialLibraryPanel({ onClose }: { onClose: () => void 
           </button>
         </div>
 
+        {/* Search */}
+        {materials.length > 0 && (
+          <div className="px-4 py-2 border-b border-slate-700 shrink-0">
+            <div className="relative">
+              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search materials…"
+                aria-label="Search materials"
+                className="w-full pl-8 pr-3 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+        )}
+
         {/* List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
 
-          {materials.length === 0 && !isAdding && (
+          {isLoading && (
+            <div className="flex items-center justify-center py-16">
+              <span className="text-sm text-slate-500">Loading…</span>
+            </div>
+          )}
+
+          {!isLoading && materials.length === 0 && !isAdding && (
             <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
               <FlaskConical size={32} className="text-slate-600" />
               <p className="text-sm text-slate-400">No materials yet.</p>
@@ -196,7 +230,11 @@ export default function MaterialLibraryPanel({ onClose }: { onClose: () => void 
             </div>
           )}
 
-          {materials.map((m) => (
+          {!isLoading && filtered.length === 0 && materials.length > 0 && (
+            <p className="text-sm text-slate-500 text-center py-8">No materials match "{search}"</p>
+          )}
+
+          {filtered.map((m) => (
             <div key={m.id}>
               {editingId === m.id ? (
                 <MaterialForm

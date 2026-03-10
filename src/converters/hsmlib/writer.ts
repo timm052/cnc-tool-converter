@@ -64,6 +64,7 @@ function serialiseTool(tool: Tool): string {
     tool.comment      ? `    <comment>${esc(tool.comment)}</comment>` : '',
     tool.manufacturer ? `    <manufacturer>${esc(tool.manufacturer)}</manufacturer>` : '',
     tool.productId    ? `    <product-id>${esc(tool.productId)}</product-id>` : '',
+    tool.productLink  ? `    <product-link>${esc(tool.productLink)}</product-link>` : '',
     // NC
     `    <nc` +
       ` break-control="${bool01(nc.breakControl)}"` +

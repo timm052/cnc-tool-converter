@@ -6,6 +6,7 @@ import type { WorkMaterial } from '../../types/material';
 import { useSettings } from '../../contexts/SettingsContext';
 import FormatSelector from '../FormatSelector';
 import { toolsToCsv } from '../../lib/csvLibrary';
+import { triggerDownload } from '../../lib/downloadUtils';
 
 interface ExportPanelProps {
   selectedTools: LibraryTool[];
@@ -14,16 +15,6 @@ interface ExportPanelProps {
 }
 
 const CSV_FORMAT_ID = 'csv';
-
-function triggerDownload(content: string, mimeType: string, filename: string) {
-  const blob = new Blob([content], { type: mimeType });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
 
 export default function ExportPanel({ selectedTools, allMaterials, onClose }: ExportPanelProps) {
   const { settings } = useSettings();

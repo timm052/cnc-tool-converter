@@ -6,26 +6,11 @@ import {
   type SheetOptions,
   generateToolSheetPdf,
 } from '../../lib/printUtils';
+import FieldToggle from '../ui/FieldToggle';
 
 interface ToolSheetPanelProps {
   tools:   LibraryTool[];
   onClose: () => void;
-}
-
-function FieldToggle({
-  label, checked, onChange,
-}: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <label className="flex items-center gap-2 cursor-pointer select-none">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="w-3.5 h-3.5 rounded border-slate-500 bg-slate-700 text-blue-500"
-      />
-      <span className="text-xs text-slate-300">{label}</span>
-    </label>
-  );
 }
 
 export default function ToolSheetPanel({ tools, onClose }: ToolSheetPanelProps) {
