@@ -1,0 +1,4524 @@
+{
+    "data": [
+        {
+            "BMC": "hss",
+            "GRADE": "Mill Generic",
+            "description": "Example Bit",
+            "geometry": {
+                "CSP": false,
+                "DC": 2,
+                "HAND": true,
+                "LB": 24,
+                "LCF": 18,
+                "NOF": 4,
+                "NT": 1,
+                "OAL": 36,
+                "RE": 1,
+                "SFDM": 6,
+                "TA": 0,
+                "TP": 0,
+                "assemblyGaugeLength": 180.286,
+                "shoulder-diameter": 2,
+                "shoulder-length": 21,
+                "thread-profile-angle": 60,
+                "tip-diameter": 0,
+                "tip-length": 0,
+                "tip-offset": 0
+            },
+            "guid": "78c47213-a6cb-4bd1-8fd9-6b03bdb6b568",
+            "holder": {
+                "description": "BT40 - B4C5-0020",
+                "gaugeLength": 156.286,
+                "guid": "a3934d27-ea38-4325-a524-bccb45b5f2b6",
+                "product-id": "ID",
+                "product-link": "link",
+                "segments": [
+                    {
+                        "height": 2.7178,
+                        "lower-diameter": 22.479,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 14.8844,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 1.016,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 29.845
+                    },
+                    {
+                        "height": 7.797800000000001,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 24.892
+                    },
+                    {
+                        "height": 3.302,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 86.10600000000002,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 13.462,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 50.546
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 61,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 4.4,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 63,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 4.226,
+                        "lower-diameter": 53,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 53,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 8.6,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 63,
+                        "upper-diameter": 61
+                    },
+                    {
+                        "height": 2,
+                        "lower-diameter": 44.45,
+                        "upper-diameter": 44.45
+                    }
+                ],
+                "type": "holder",
+                "unit": "millimeters",
+                "vendor": "Vevor"
+            },
+            "post-process": {
+                "break-control": false,
+                "comment": "",
+                "diameter-offset": 1,
+                "length-offset": 1,
+                "live": true,
+                "manual-tool-change": false,
+                "number": 1,
+                "turret": 0
+            },
+            "product-id": "1654156454",
+            "product-link": "https://www.aliexpress.com/",
+            "shaft": {
+                "segments": [
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    },
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    }
+                ],
+                "type": "shaft"
+            },
+            "start-values": {
+                "presets": [
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "8c3d4d5b-87b4-464d-9b45-52fd416ce810",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Wood",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "2f0ac670-b418-48d3-9a5d-67ad52a449e9",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Metal",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "expressions": {
+                            "use_tool_stepdown": "true"
+                        },
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "730b5f02-f93f-4a72-a8e0-5b9829b95395",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Cork",
+                        "ramp-angle": 2,
+                        "stepdown": 16.2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": true,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    }
+                ]
+            },
+            "type": "ball end mill",
+            "unit": "millimeters",
+            "vendor": "manufacturer "
+        },
+        {
+            "BMC": "hss",
+            "GRADE": "Mill Generic",
+            "description": "Example Bit",
+            "geometry": {
+                "CSP": false,
+                "DC": 2,
+                "HAND": true,
+                "LB": 24,
+                "LCF": 18,
+                "NOF": 4,
+                "NT": 1,
+                "OAL": 36,
+                "RE": 0.75,
+                "SFDM": 6,
+                "TA": 0,
+                "TP": 0,
+                "assemblyGaugeLength": 180.286,
+                "shoulder-diameter": 2,
+                "shoulder-length": 21,
+                "thread-profile-angle": 60,
+                "tip-diameter": 0.5,
+                "tip-length": 0,
+                "tip-offset": 0
+            },
+            "guid": "c3a3f90a-8a51-44cf-acc3-39735af89e2c",
+            "holder": {
+                "description": "BT40 - B4C5-0020",
+                "gaugeLength": 156.286,
+                "guid": "a3934d27-ea38-4325-a524-bccb45b5f2b6",
+                "product-id": "ID",
+                "product-link": "link",
+                "segments": [
+                    {
+                        "height": 2.7178,
+                        "lower-diameter": 22.479,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 14.8844,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 1.016,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 29.845
+                    },
+                    {
+                        "height": 7.797800000000001,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 24.892
+                    },
+                    {
+                        "height": 3.302,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 86.10600000000002,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 13.462,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 50.546
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 61,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 4.4,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 63,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 4.226,
+                        "lower-diameter": 53,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 53,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 8.6,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 63,
+                        "upper-diameter": 61
+                    },
+                    {
+                        "height": 2,
+                        "lower-diameter": 44.45,
+                        "upper-diameter": 44.45
+                    }
+                ],
+                "type": "holder",
+                "unit": "millimeters",
+                "vendor": "Vevor"
+            },
+            "post-process": {
+                "break-control": false,
+                "comment": "",
+                "diameter-offset": 1,
+                "length-offset": 1,
+                "live": true,
+                "manual-tool-change": false,
+                "number": 1,
+                "turret": 0
+            },
+            "product-id": "1654156454",
+            "product-link": "https://www.aliexpress.com/",
+            "shaft": {
+                "segments": [
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    },
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    }
+                ],
+                "type": "shaft"
+            },
+            "start-values": {
+                "presets": [
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "8c3d4d5b-87b4-464d-9b45-52fd416ce810",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Wood",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "2f0ac670-b418-48d3-9a5d-67ad52a449e9",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Metal",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "expressions": {
+                            "use_tool_stepdown": "true"
+                        },
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "730b5f02-f93f-4a72-a8e0-5b9829b95395",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Cork",
+                        "ramp-angle": 2,
+                        "stepdown": 16.2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": true,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    }
+                ]
+            },
+            "type": "bull nose end mill",
+            "unit": "millimeters",
+            "vendor": "manufacturer "
+        },
+        {
+            "BMC": "hss",
+            "GRADE": "Mill Generic",
+            "description": "Example Bit",
+            "expressions": {
+                "tool_diameter": "7 mm",
+                "tool_lowerRadius": "0.5 mm"
+            },
+            "geometry": {
+                "CSP": false,
+                "DC": 7,
+                "HAND": true,
+                "LB": 24,
+                "LCF": 18,
+                "NOF": 4,
+                "NT": 1,
+                "OAL": 36,
+                "RE": 0,
+                "SFDM": 6,
+                "TA": 0,
+                "TP": 0,
+                "assemblyGaugeLength": 180.286,
+                "axial-distance": 12,
+                "lower-radius": 0.5,
+                "profile-radius": 48,
+                "shoulder-diameter": 2,
+                "shoulder-length": 21,
+                "thread-profile-angle": 60,
+                "tip-diameter": 7,
+                "tip-length": 0,
+                "tip-offset": 0,
+                "upper-radius": 1
+            },
+            "guid": "9909db66-e931-46f5-aaf1-10b57d72c4ca",
+            "holder": {
+                "description": "BT40 - B4C5-0020",
+                "gaugeLength": 156.286,
+                "guid": "a3934d27-ea38-4325-a524-bccb45b5f2b6",
+                "product-id": "ID",
+                "product-link": "link",
+                "segments": [
+                    {
+                        "height": 2.7178,
+                        "lower-diameter": 22.479,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 14.8844,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 1.016,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 29.845
+                    },
+                    {
+                        "height": 7.797800000000001,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 24.892
+                    },
+                    {
+                        "height": 3.302,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 86.10600000000002,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 13.462,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 50.546
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 61,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 4.4,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 63,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 4.226,
+                        "lower-diameter": 53,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 53,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 8.6,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 63,
+                        "upper-diameter": 61
+                    },
+                    {
+                        "height": 2,
+                        "lower-diameter": 44.45,
+                        "upper-diameter": 44.45
+                    }
+                ],
+                "type": "holder",
+                "unit": "millimeters",
+                "vendor": "Vevor"
+            },
+            "post-process": {
+                "break-control": false,
+                "comment": "",
+                "diameter-offset": 1,
+                "length-offset": 1,
+                "live": true,
+                "manual-tool-change": false,
+                "number": 1,
+                "turret": 0
+            },
+            "product-id": "1654156454",
+            "product-link": "https://www.aliexpress.com/",
+            "shaft": {
+                "segments": [
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    },
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    }
+                ],
+                "type": "shaft"
+            },
+            "start-values": {
+                "presets": [
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "8c3d4d5b-87b4-464d-9b45-52fd416ce810",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Wood",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 109.95574287564276,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "2f0ac670-b418-48d3-9a5d-67ad52a449e9",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Metal",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 109.95574287564276,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "expressions": {
+                            "use_tool_stepdown": "true"
+                        },
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "730b5f02-f93f-4a72-a8e0-5b9829b95395",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Cork",
+                        "ramp-angle": 2,
+                        "stepdown": 16.2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": true,
+                        "use-stepover": false,
+                        "v_c": 109.95574287564276,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    }
+                ]
+            },
+            "type": "circle segment barrel",
+            "unit": "millimeters",
+            "vendor": "manufacturer "
+        },
+        {
+            "BMC": "hss",
+            "GRADE": "Mill Generic",
+            "description": "Example Bit",
+            "geometry": {
+                "CSP": false,
+                "DC": 2,
+                "HAND": true,
+                "LB": 24,
+                "LCF": 18,
+                "NOF": 4,
+                "NT": 1,
+                "OAL": 36,
+                "RE": 0,
+                "SFDM": 6,
+                "TA": 45,
+                "TP": 0,
+                "assemblyGaugeLength": 180.286,
+                "shoulder-diameter": 2,
+                "shoulder-length": 21,
+                "thread-profile-angle": 60,
+                "tip-diameter": 0,
+                "tip-length": 0,
+                "tip-offset": 0
+            },
+            "guid": "d4bbb9d1-f9f9-4998-8e17-05b278964b29",
+            "holder": {
+                "description": "BT40 - B4C5-0020",
+                "gaugeLength": 156.286,
+                "guid": "a3934d27-ea38-4325-a524-bccb45b5f2b6",
+                "product-id": "ID",
+                "product-link": "link",
+                "segments": [
+                    {
+                        "height": 2.7178,
+                        "lower-diameter": 22.479,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 14.8844,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 1.016,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 29.845
+                    },
+                    {
+                        "height": 7.797800000000001,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 24.892
+                    },
+                    {
+                        "height": 3.302,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 86.10600000000002,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 13.462,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 50.546
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 61,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 4.4,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 63,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 4.226,
+                        "lower-diameter": 53,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 53,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 8.6,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 63,
+                        "upper-diameter": 61
+                    },
+                    {
+                        "height": 2,
+                        "lower-diameter": 44.45,
+                        "upper-diameter": 44.45
+                    }
+                ],
+                "type": "holder",
+                "unit": "millimeters",
+                "vendor": "Vevor"
+            },
+            "post-process": {
+                "break-control": false,
+                "comment": "",
+                "diameter-offset": 1,
+                "length-offset": 1,
+                "live": true,
+                "manual-tool-change": false,
+                "number": 1,
+                "turret": 0
+            },
+            "product-id": "1654156454",
+            "product-link": "https://www.aliexpress.com/",
+            "shaft": {
+                "segments": [
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    },
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    }
+                ],
+                "type": "shaft"
+            },
+            "start-values": {
+                "presets": [
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "8c3d4d5b-87b4-464d-9b45-52fd416ce810",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Wood",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "2f0ac670-b418-48d3-9a5d-67ad52a449e9",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Metal",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "expressions": {
+                            "use_tool_stepdown": "true"
+                        },
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "730b5f02-f93f-4a72-a8e0-5b9829b95395",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Cork",
+                        "ramp-angle": 2,
+                        "stepdown": 16.2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": true,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    }
+                ]
+            },
+            "type": "chamfer mill",
+            "unit": "millimeters",
+            "vendor": "manufacturer "
+        },
+        {
+            "BMC": "hss",
+            "GRADE": "Mill Generic",
+            "description": "Example Bit",
+            "expressions": {
+                "tool_cornerRadius": "2 mm",
+                "tool_diameter": "6 mm"
+            },
+            "geometry": {
+                "CSP": false,
+                "DC": 6,
+                "HAND": true,
+                "LB": 24,
+                "LCF": 18,
+                "NOF": 4,
+                "NT": 1,
+                "OAL": 36,
+                "RE": 2,
+                "SFDM": 6,
+                "TA": 0,
+                "TP": 0,
+                "assemblyGaugeLength": 180.286,
+                "axial-distance": 1,
+                "lower-radius": 10,
+                "profile-radius": 100,
+                "shoulder-diameter": 6,
+                "shoulder-length": 21,
+                "thread-profile-angle": 60,
+                "tip-diameter": 2,
+                "tip-length": 0,
+                "tip-offset": 0,
+                "upper-radius": 1
+            },
+            "guid": "bbd46fde-2b6e-4251-86ce-3a47b5e3b529",
+            "holder": {
+                "description": "BT40 - B4C5-0020",
+                "gaugeLength": 156.286,
+                "guid": "a3934d27-ea38-4325-a524-bccb45b5f2b6",
+                "product-id": "ID",
+                "product-link": "link",
+                "segments": [
+                    {
+                        "height": 2.7178,
+                        "lower-diameter": 22.479,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 14.8844,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 1.016,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 29.845
+                    },
+                    {
+                        "height": 7.797800000000001,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 24.892
+                    },
+                    {
+                        "height": 3.302,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 86.10600000000002,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 13.462,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 50.546
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 61,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 4.4,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 63,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 4.226,
+                        "lower-diameter": 53,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 53,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 8.6,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 63,
+                        "upper-diameter": 61
+                    },
+                    {
+                        "height": 2,
+                        "lower-diameter": 44.45,
+                        "upper-diameter": 44.45
+                    }
+                ],
+                "type": "holder",
+                "unit": "millimeters",
+                "vendor": "Vevor"
+            },
+            "post-process": {
+                "break-control": false,
+                "comment": "",
+                "diameter-offset": 1,
+                "length-offset": 1,
+                "live": true,
+                "manual-tool-change": false,
+                "number": 1,
+                "turret": 0
+            },
+            "product-id": "1654156454",
+            "product-link": "https://www.aliexpress.com/",
+            "shaft": {
+                "segments": [
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    },
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    }
+                ],
+                "type": "shaft"
+            },
+            "start-values": {
+                "presets": [
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "8c3d4d5b-87b4-464d-9b45-52fd416ce810",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Wood",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 94.2477796076938,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "2f0ac670-b418-48d3-9a5d-67ad52a449e9",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Metal",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 94.2477796076938,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "expressions": {
+                            "use_tool_stepdown": "true"
+                        },
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "730b5f02-f93f-4a72-a8e0-5b9829b95395",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Cork",
+                        "ramp-angle": 2,
+                        "stepdown": 16.2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": true,
+                        "use-stepover": false,
+                        "v_c": 94.2477796076938,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    }
+                ]
+            },
+            "type": "circle segment lens",
+            "unit": "millimeters",
+            "vendor": "manufacturer "
+        },
+        {
+            "BMC": "hss",
+            "GRADE": "Mill Generic",
+            "description": "Example Bit",
+            "expressions": {
+                "tool_diameter": "6 mm",
+                "tool_lowerRadius": "2 mm"
+            },
+            "geometry": {
+                "CSP": false,
+                "DC": 6,
+                "HAND": true,
+                "LB": 24,
+                "LCF": 18,
+                "NOF": 4,
+                "NT": 1,
+                "OAL": 36,
+                "RE": 0,
+                "SFDM": 6,
+                "TA": 0,
+                "TP": 0,
+                "assemblyGaugeLength": 180.286,
+                "axial-distance": 1,
+                "lower-radius": 2,
+                "profile-radius": 90,
+                "shoulder-diameter": 6,
+                "shoulder-length": 21,
+                "thread-profile-angle": 60,
+                "tip-diameter": 6,
+                "tip-length": 0,
+                "tip-offset": 0,
+                "upper-radius": 1
+            },
+            "guid": "5de9a5d2-5e3b-48a9-aeb9-cd2ff20db2c5",
+            "holder": {
+                "description": "BT40 - B4C5-0020",
+                "gaugeLength": 156.286,
+                "guid": "a3934d27-ea38-4325-a524-bccb45b5f2b6",
+                "product-id": "ID",
+                "product-link": "link",
+                "segments": [
+                    {
+                        "height": 2.7178,
+                        "lower-diameter": 22.479,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 14.8844,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 1.016,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 29.845
+                    },
+                    {
+                        "height": 7.797800000000001,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 24.892
+                    },
+                    {
+                        "height": 3.302,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 86.10600000000002,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 13.462,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 50.546
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 61,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 4.4,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 63,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 4.226,
+                        "lower-diameter": 53,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 53,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 8.6,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 63,
+                        "upper-diameter": 61
+                    },
+                    {
+                        "height": 2,
+                        "lower-diameter": 44.45,
+                        "upper-diameter": 44.45
+                    }
+                ],
+                "type": "holder",
+                "unit": "millimeters",
+                "vendor": "Vevor"
+            },
+            "post-process": {
+                "break-control": false,
+                "comment": "",
+                "diameter-offset": 1,
+                "length-offset": 1,
+                "live": true,
+                "manual-tool-change": false,
+                "number": 1,
+                "turret": 0
+            },
+            "product-id": "1654156454",
+            "product-link": "https://www.aliexpress.com/",
+            "shaft": {
+                "segments": [
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    },
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    }
+                ],
+                "type": "shaft"
+            },
+            "start-values": {
+                "presets": [
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "8c3d4d5b-87b4-464d-9b45-52fd416ce810",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Wood",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 94.2477796076938,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "2f0ac670-b418-48d3-9a5d-67ad52a449e9",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Metal",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 94.2477796076938,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "expressions": {
+                            "use_tool_stepdown": "true"
+                        },
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "730b5f02-f93f-4a72-a8e0-5b9829b95395",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Cork",
+                        "ramp-angle": 2,
+                        "stepdown": 16.2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": true,
+                        "use-stepover": false,
+                        "v_c": 94.2477796076938,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    }
+                ]
+            },
+            "type": "circle segment oval",
+            "unit": "millimeters",
+            "vendor": "manufacturer "
+        },
+        {
+            "BMC": "hss",
+            "GRADE": "Mill Generic",
+            "description": "Example Bit",
+            "expressions": {
+                "tool_bodyLength": "35 mm",
+                "tool_cornerRadius": "3 mm",
+                "tool_diameter": "10 mm",
+                "tool_fluteLength": "25 mm",
+                "tool_shaftDiameter": "8 mm",
+                "tool_shoulderLength": "30 mm",
+                "tool_taperAngle": "3 degrees"
+            },
+            "geometry": {
+                "CSP": false,
+                "DC": 10,
+                "HAND": true,
+                "LB": 35,
+                "LCF": 25,
+                "NOF": 4,
+                "NT": 1,
+                "OAL": 36,
+                "RE": 3,
+                "SFDM": 8,
+                "TA": 3,
+                "TP": 0,
+                "assemblyGaugeLength": 191.286,
+                "shoulder-diameter": 2,
+                "shoulder-length": 30,
+                "thread-profile-angle": 60,
+                "tip-diameter": 4,
+                "tip-length": 0,
+                "tip-offset": 0
+            },
+            "guid": "59242dda-e0f9-42cc-9653-098dfbc3259d",
+            "holder": {
+                "description": "BT40 - B4C5-0020",
+                "gaugeLength": 156.286,
+                "guid": "a3934d27-ea38-4325-a524-bccb45b5f2b6",
+                "product-id": "ID",
+                "product-link": "link",
+                "segments": [
+                    {
+                        "height": 2.7178,
+                        "lower-diameter": 22.479,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 14.8844,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 1.016,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 29.845
+                    },
+                    {
+                        "height": 7.797800000000001,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 24.892
+                    },
+                    {
+                        "height": 3.302,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 86.10600000000002,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 13.462,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 50.546
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 61,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 4.4,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 63,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 4.226,
+                        "lower-diameter": 53,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 53,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 8.6,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 63,
+                        "upper-diameter": 61
+                    },
+                    {
+                        "height": 2,
+                        "lower-diameter": 44.45,
+                        "upper-diameter": 44.45
+                    }
+                ],
+                "type": "holder",
+                "unit": "millimeters",
+                "vendor": "Vevor"
+            },
+            "post-process": {
+                "break-control": false,
+                "comment": "",
+                "diameter-offset": 1,
+                "length-offset": 1,
+                "live": true,
+                "manual-tool-change": false,
+                "number": 1,
+                "turret": 0
+            },
+            "product-id": "1654156454",
+            "product-link": "https://www.aliexpress.com/",
+            "shaft": {
+                "segments": [
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    },
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    }
+                ],
+                "type": "shaft"
+            },
+            "start-values": {
+                "presets": [
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "8c3d4d5b-87b4-464d-9b45-52fd416ce810",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Wood",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 157.07963267948963,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "2f0ac670-b418-48d3-9a5d-67ad52a449e9",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Metal",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 157.07963267948963,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "expressions": {
+                            "use_tool_stepdown": "true"
+                        },
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "730b5f02-f93f-4a72-a8e0-5b9829b95395",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Cork",
+                        "ramp-angle": 2,
+                        "stepdown": 22.5,
+                        "tool-coolant": "flood",
+                        "use-stepdown": true,
+                        "use-stepover": false,
+                        "v_c": 157.07963267948963,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    }
+                ]
+            },
+            "type": "dovetail mill",
+            "unit": "millimeters",
+            "vendor": "manufacturer "
+        },
+        {
+            "BMC": "hss",
+            "GRADE": "Mill Generic",
+            "description": "Example Bit",
+            "expressions": {
+                "tool_maximumCuttingDiameter": "tool_diameter + 2*tool_fluteLength*Math.tan(tool_taperAngle)"
+            },
+            "geometry": {
+                "CSP": false,
+                "DC": 2,
+                "DCX": 2,
+                "HAND": true,
+                "LB": 24,
+                "LCF": 18,
+                "NOF": 4,
+                "NT": 1,
+                "OAL": 36,
+                "RE": 0,
+                "SFDM": 6,
+                "TA": 0,
+                "TP": 0,
+                "assemblyGaugeLength": 180.286,
+                "shoulder-diameter": 2,
+                "shoulder-length": 21,
+                "thread-profile-angle": 60,
+                "tip-diameter": 2,
+                "tip-length": 0,
+                "tip-offset": 0,
+                "upper-radius": 0
+            },
+            "guid": "9c3027a3-503f-4a5c-813f-7eb3e4b086ea",
+            "holder": {
+                "description": "BT40 - B4C5-0020",
+                "gaugeLength": 156.286,
+                "guid": "a3934d27-ea38-4325-a524-bccb45b5f2b6",
+                "product-id": "ID",
+                "product-link": "link",
+                "segments": [
+                    {
+                        "height": 2.7178,
+                        "lower-diameter": 22.479,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 14.8844,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 1.016,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 29.845
+                    },
+                    {
+                        "height": 7.797800000000001,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 24.892
+                    },
+                    {
+                        "height": 3.302,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 86.10600000000002,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 13.462,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 50.546
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 61,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 4.4,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 63,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 4.226,
+                        "lower-diameter": 53,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 53,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 8.6,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 63,
+                        "upper-diameter": 61
+                    },
+                    {
+                        "height": 2,
+                        "lower-diameter": 44.45,
+                        "upper-diameter": 44.45
+                    }
+                ],
+                "type": "holder",
+                "unit": "millimeters",
+                "vendor": "Vevor"
+            },
+            "post-process": {
+                "break-control": false,
+                "comment": "",
+                "diameter-offset": 1,
+                "length-offset": 1,
+                "live": true,
+                "manual-tool-change": false,
+                "number": 1,
+                "turret": 0
+            },
+            "product-id": "1654156454",
+            "product-link": "https://www.aliexpress.com/",
+            "shaft": {
+                "segments": [
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    },
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    }
+                ],
+                "type": "shaft"
+            },
+            "start-values": {
+                "presets": [
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "8c3d4d5b-87b4-464d-9b45-52fd416ce810",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Wood",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "2f0ac670-b418-48d3-9a5d-67ad52a449e9",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Metal",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "expressions": {
+                            "use_tool_stepdown": "true"
+                        },
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "730b5f02-f93f-4a72-a8e0-5b9829b95395",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Cork",
+                        "ramp-angle": 2,
+                        "stepdown": 16.2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": true,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    }
+                ]
+            },
+            "type": "face mill",
+            "unit": "millimeters",
+            "vendor": "manufacturer "
+        },
+        {
+            "BMC": "hss",
+            "GRADE": "Mill Generic",
+            "description": "Example Bit",
+            "expressions": {
+                "tool_diameter": "8 mm",
+                "tool_tipOffset": "5 mm"
+            },
+            "geometry": {
+                "CSP": false,
+                "DC": 8,
+                "HAND": true,
+                "LB": 24,
+                "LCF": 18,
+                "NOF": 4,
+                "NT": 1,
+                "OAL": 36,
+                "RE": 0,
+                "SFDM": 8,
+                "TA": 0,
+                "TP": 0,
+                "assemblyGaugeLength": 180.286,
+                "profile": [
+                ],
+                "shoulder-length": 18,
+                "thread-profile-angle": 60,
+                "tip-diameter": 8,
+                "tip-length": 0,
+                "tip-offset": 5
+            },
+            "guid": "bd96fd84-776a-4e34-8042-c8aca52a0d79",
+            "holder": {
+                "description": "BT40 - B4C5-0020",
+                "gaugeLength": 156.286,
+                "guid": "a3934d27-ea38-4325-a524-bccb45b5f2b6",
+                "product-id": "ID",
+                "product-link": "link",
+                "segments": [
+                    {
+                        "height": 2.7178,
+                        "lower-diameter": 22.479,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 14.8844,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 1.016,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 29.845
+                    },
+                    {
+                        "height": 7.797800000000001,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 24.892
+                    },
+                    {
+                        "height": 3.302,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 86.10600000000002,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 13.462,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 50.546
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 61,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 4.4,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 63,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 4.226,
+                        "lower-diameter": 53,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 53,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 8.6,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 63,
+                        "upper-diameter": 61
+                    },
+                    {
+                        "height": 2,
+                        "lower-diameter": 44.45,
+                        "upper-diameter": 44.45
+                    }
+                ],
+                "type": "holder",
+                "unit": "millimeters",
+                "vendor": "Vevor"
+            },
+            "post-process": {
+                "break-control": false,
+                "comment": "",
+                "diameter-offset": 1,
+                "length-offset": 1,
+                "live": true,
+                "manual-tool-change": false,
+                "number": 1,
+                "turret": 0
+            },
+            "product-id": "1654156454",
+            "product-link": "https://www.aliexpress.com/",
+            "shaft": {
+                "segments": [
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    }
+                ],
+                "type": "shaft"
+            },
+            "start-values": {
+                "presets": [
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "8c3d4d5b-87b4-464d-9b45-52fd416ce810",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Wood",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 125.66370614359172,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "2f0ac670-b418-48d3-9a5d-67ad52a449e9",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Metal",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 125.66370614359172,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "expressions": {
+                            "use_tool_stepdown": "true"
+                        },
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "730b5f02-f93f-4a72-a8e0-5b9829b95395",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Cork",
+                        "ramp-angle": 2,
+                        "stepdown": 16.2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": true,
+                        "use-stepover": false,
+                        "v_c": 125.66370614359172,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    }
+                ]
+            },
+            "type": "form mill",
+            "unit": "millimeters",
+            "vendor": "manufacturer "
+        },
+        {
+            "BMC": "hss",
+            "GRADE": "Mill Generic",
+            "description": "Example Bit",
+            "geometry": {
+                "CSP": false,
+                "DC": 2,
+                "HAND": true,
+                "LB": 24,
+                "LCF": 18,
+                "NOF": 4,
+                "NT": 1,
+                "OAL": 36,
+                "RE": 1,
+                "SFDM": 6,
+                "TA": 0,
+                "TP": 0,
+                "assemblyGaugeLength": 180.286,
+                "shoulder-diameter": 2,
+                "shoulder-length": 21,
+                "thread-profile-angle": 60,
+                "tip-diameter": 0,
+                "tip-length": 0,
+                "tip-offset": 0
+            },
+            "guid": "d213031d-8f18-47f8-9fcf-576315488654",
+            "holder": {
+                "description": "BT40 - B4C5-0020",
+                "gaugeLength": 156.286,
+                "guid": "a3934d27-ea38-4325-a524-bccb45b5f2b6",
+                "product-id": "ID",
+                "product-link": "link",
+                "segments": [
+                    {
+                        "height": 2.7178,
+                        "lower-diameter": 22.479,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 14.8844,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 1.016,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 29.845
+                    },
+                    {
+                        "height": 7.797800000000001,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 24.892
+                    },
+                    {
+                        "height": 3.302,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 86.10600000000002,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 13.462,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 50.546
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 61,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 4.4,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 63,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 4.226,
+                        "lower-diameter": 53,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 53,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 8.6,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 63,
+                        "upper-diameter": 61
+                    },
+                    {
+                        "height": 2,
+                        "lower-diameter": 44.45,
+                        "upper-diameter": 44.45
+                    }
+                ],
+                "type": "holder",
+                "unit": "millimeters",
+                "vendor": "Vevor"
+            },
+            "post-process": {
+                "break-control": false,
+                "comment": "",
+                "diameter-offset": 1,
+                "length-offset": 1,
+                "live": true,
+                "manual-tool-change": false,
+                "number": 1,
+                "turret": 0
+            },
+            "product-id": "1654156454",
+            "product-link": "https://www.aliexpress.com/",
+            "shaft": {
+                "segments": [
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    },
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    }
+                ],
+                "type": "shaft"
+            },
+            "start-values": {
+                "presets": [
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "8c3d4d5b-87b4-464d-9b45-52fd416ce810",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Wood",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "2f0ac670-b418-48d3-9a5d-67ad52a449e9",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Metal",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "expressions": {
+                            "use_tool_stepdown": "true"
+                        },
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "730b5f02-f93f-4a72-a8e0-5b9829b95395",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Cork",
+                        "ramp-angle": 2,
+                        "stepdown": 16.2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": true,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    }
+                ]
+            },
+            "type": "lollipop mill",
+            "unit": "millimeters",
+            "vendor": "manufacturer "
+        },
+        {
+            "BMC": "hss",
+            "GRADE": "Mill Generic",
+            "description": "Example Bit",
+            "geometry": {
+                "CSP": false,
+                "DC": 2,
+                "HAND": true,
+                "LB": 24,
+                "LCF": 18,
+                "NOF": 4,
+                "NT": 1,
+                "OAL": 36,
+                "RE": 0,
+                "SFDM": 6,
+                "TA": 0,
+                "TP": 0,
+                "assemblyGaugeLength": 180.286,
+                "shoulder-diameter": 2,
+                "shoulder-length": 21,
+                "thread-profile-angle": 60,
+                "tip-diameter": 2,
+                "tip-length": 0,
+                "tip-offset": 0
+            },
+            "guid": "0b677d66-5d97-435d-88f3-90bdfa1728bb",
+            "holder": {
+                "description": "BT40 - B4C5-0020",
+                "gaugeLength": 156.286,
+                "guid": "a3934d27-ea38-4325-a524-bccb45b5f2b6",
+                "product-id": "ID",
+                "product-link": "link",
+                "segments": [
+                    {
+                        "height": 2.7178,
+                        "lower-diameter": 22.479,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 14.8844,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 1.016,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 29.845
+                    },
+                    {
+                        "height": 7.797800000000001,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 24.892
+                    },
+                    {
+                        "height": 3.302,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 86.10600000000002,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 13.462,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 50.546
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 61,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 4.4,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 63,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 4.226,
+                        "lower-diameter": 53,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 53,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 8.6,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 63,
+                        "upper-diameter": 61
+                    },
+                    {
+                        "height": 2,
+                        "lower-diameter": 44.45,
+                        "upper-diameter": 44.45
+                    }
+                ],
+                "type": "holder",
+                "unit": "millimeters",
+                "vendor": "Vevor"
+            },
+            "post-process": {
+                "break-control": false,
+                "comment": "",
+                "diameter-offset": 1,
+                "length-offset": 1,
+                "live": true,
+                "manual-tool-change": false,
+                "number": 1,
+                "turret": 0
+            },
+            "product-id": "1654156454",
+            "product-link": "https://www.aliexpress.com/",
+            "shaft": {
+                "segments": [
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    },
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    }
+                ],
+                "type": "shaft"
+            },
+            "start-values": {
+                "presets": [
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "8c3d4d5b-87b4-464d-9b45-52fd416ce810",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Wood",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "2f0ac670-b418-48d3-9a5d-67ad52a449e9",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Metal",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "expressions": {
+                            "use_tool_stepdown": "true"
+                        },
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "730b5f02-f93f-4a72-a8e0-5b9829b95395",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Cork",
+                        "ramp-angle": 2,
+                        "stepdown": 16.2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": true,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    }
+                ]
+            },
+            "type": "slot mill",
+            "unit": "millimeters",
+            "vendor": "manufacturer "
+        },
+        {
+            "BMC": "hss",
+            "GRADE": "Mill Generic",
+            "description": "Example Bit",
+            "geometry": {
+                "CSP": false,
+                "DC": 2,
+                "HAND": true,
+                "LB": 24,
+                "LCF": 18,
+                "NOF": 4,
+                "NT": 1,
+                "OAL": 36,
+                "RE": 0,
+                "SFDM": 6,
+                "TA": 10,
+                "TP": 0,
+                "assemblyGaugeLength": 180.286,
+                "shoulder-diameter": 2,
+                "shoulder-length": 21,
+                "thread-profile-angle": 60,
+                "tip-diameter": 2,
+                "tip-length": 0,
+                "tip-offset": 0
+            },
+            "guid": "8d9cd560-b67c-4a56-8929-911809a79677",
+            "holder": {
+                "description": "BT40 - B4C5-0020",
+                "gaugeLength": 156.286,
+                "guid": "a3934d27-ea38-4325-a524-bccb45b5f2b6",
+                "product-id": "ID",
+                "product-link": "link",
+                "segments": [
+                    {
+                        "height": 2.7178,
+                        "lower-diameter": 22.479,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 14.8844,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 1.016,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 29.845
+                    },
+                    {
+                        "height": 7.797800000000001,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 24.892
+                    },
+                    {
+                        "height": 3.302,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 86.10600000000002,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 13.462,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 50.546
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 61,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 4.4,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 63,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 4.226,
+                        "lower-diameter": 53,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 53,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 8.6,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 63,
+                        "upper-diameter": 61
+                    },
+                    {
+                        "height": 2,
+                        "lower-diameter": 44.45,
+                        "upper-diameter": 44.45
+                    }
+                ],
+                "type": "holder",
+                "unit": "millimeters",
+                "vendor": "Vevor"
+            },
+            "post-process": {
+                "break-control": false,
+                "comment": "",
+                "diameter-offset": 1,
+                "length-offset": 1,
+                "live": true,
+                "manual-tool-change": false,
+                "number": 1,
+                "turret": 0
+            },
+            "product-id": "1654156454",
+            "product-link": "https://www.aliexpress.com/",
+            "shaft": {
+                "segments": [
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    },
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    }
+                ],
+                "type": "shaft"
+            },
+            "start-values": {
+                "presets": [
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "8c3d4d5b-87b4-464d-9b45-52fd416ce810",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Wood",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "2f0ac670-b418-48d3-9a5d-67ad52a449e9",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Metal",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "expressions": {
+                            "use_tool_stepdown": "true"
+                        },
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "730b5f02-f93f-4a72-a8e0-5b9829b95395",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Cork",
+                        "ramp-angle": 2,
+                        "stepdown": 16.2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": true,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    }
+                ]
+            },
+            "tapered-type": "tapered_bull_nose",
+            "type": "tapered mill",
+            "unit": "millimeters",
+            "vendor": "manufacturer "
+        },
+        {
+            "BMC": "hss",
+            "GRADE": "Mill Generic",
+            "description": "Example Bit",
+            "expressions": {
+                "holder_productId": "'ID'",
+                "holder_productLink": "'link'",
+                "holder_vendor": "'Vevor'",
+                "tool_clockwise": "true",
+                "tool_description": "'Example Bit'",
+                "tool_diameter": "2 mm",
+                "tool_productId": "'1654156454'",
+                "tool_productLink": "'https://www.aliexpress.com/'",
+                "tool_shaftDiameter": "6 mm",
+                "tool_vendor": "'manufacturer '"
+            },
+            "geometry": {
+                "CSP": false,
+                "DC": 2,
+                "HAND": true,
+                "LB": 24,
+                "LCF": 18,
+                "NOF": 4,
+                "NT": 1,
+                "OAL": 36,
+                "RE": 0,
+                "SFDM": 6,
+                "TA": 0,
+                "TP": 0,
+                "assemblyGaugeLength": 180.286,
+                "shoulder-diameter": 2,
+                "shoulder-length": 21,
+                "thread-profile-angle": 60,
+                "tip-diameter": 2,
+                "tip-length": 0,
+                "tip-offset": 0
+            },
+            "guid": "e6931124-006e-428d-a083-bd57feb00ebc",
+            "holder": {
+                "description": "BT40 - B4C5-0020",
+                "gaugeLength": 156.286,
+                "guid": "a3934d27-ea38-4325-a524-bccb45b5f2b6",
+                "product-id": "ID",
+                "product-link": "link",
+                "segments": [
+                    {
+                        "height": 2.7178,
+                        "lower-diameter": 22.479,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 14.8844,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 1.016,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 29.845
+                    },
+                    {
+                        "height": 7.797800000000001,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 24.892
+                    },
+                    {
+                        "height": 3.302,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 86.10600000000002,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 13.462,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 50.546
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 61,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 4.4,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 63,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 4.226,
+                        "lower-diameter": 53,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 53,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 8.6,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 63,
+                        "upper-diameter": 61
+                    },
+                    {
+                        "height": 2,
+                        "lower-diameter": 44.45,
+                        "upper-diameter": 44.45
+                    }
+                ],
+                "type": "holder",
+                "unit": "millimeters",
+                "vendor": "Vevor"
+            },
+            "post-process": {
+                "break-control": false,
+                "comment": "",
+                "diameter-offset": 1,
+                "length-offset": 1,
+                "live": true,
+                "manual-tool-change": false,
+                "number": 1,
+                "turret": 0
+            },
+            "product-id": "1654156454",
+            "product-link": "https://www.aliexpress.com/",
+            "shaft": {
+                "segments": [
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    },
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    }
+                ],
+                "type": "shaft"
+            },
+            "start-values": {
+                "presets": [
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "8c3d4d5b-87b4-464d-9b45-52fd416ce810",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Wood",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "2f0ac670-b418-48d3-9a5d-67ad52a449e9",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Metal",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "expressions": {
+                            "use_tool_stepdown": "true"
+                        },
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "730b5f02-f93f-4a72-a8e0-5b9829b95395",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Cork",
+                        "ramp-angle": 2,
+                        "stepdown": 16.2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": true,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    }
+                ]
+            },
+            "type": "flat end mill",
+            "unit": "millimeters",
+            "vendor": "manufacturer "
+        },
+        {
+            "BMC": "hss",
+            "GRADE": "Mill Generic",
+            "description": "Example Bit",
+            "expressions": {
+                "holder_productId": "'ID'",
+                "holder_productLink": "'link'",
+                "holder_vendor": "'Vevor'",
+                "tool_clockwise": "true",
+                "tool_description": "'Example Bit'",
+                "tool_diameter": "2 mm",
+                "tool_productId": "'1654156454'",
+                "tool_productLink": "'https://www.aliexpress.com/'",
+                "tool_shaftDiameter": "6 mm",
+                "tool_vendor": "'manufacturer '"
+            },
+            "geometry": {
+                "CSP": false,
+                "DC": 2,
+                "HAND": true,
+                "LB": 24,
+                "LCF": 18,
+                "NOF": 4,
+                "NT": 1,
+                "OAL": 36,
+                "RE": 0,
+                "SFDM": 6,
+                "TA": 0,
+                "TP": 0,
+                "assemblyGaugeLength": 180.286,
+                "shoulder-diameter": 2,
+                "shoulder-length": 21,
+                "thread-profile-angle": 60,
+                "tip-diameter": 2,
+                "tip-length": 0,
+                "tip-offset": 0
+            },
+            "guid": "7bcd2e6f-865f-4197-bb68-845ceb1bc07b",
+            "holder": {
+                "description": "BT40 - B4C5-0020",
+                "gaugeLength": 156.286,
+                "guid": "a3934d27-ea38-4325-a524-bccb45b5f2b6",
+                "product-id": "ID",
+                "product-link": "link",
+                "segments": [
+                    {
+                        "height": 2.7178,
+                        "lower-diameter": 22.479,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 14.8844,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 1.016,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 29.845
+                    },
+                    {
+                        "height": 7.797800000000001,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 24.892
+                    },
+                    {
+                        "height": 3.302,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 86.10600000000002,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 13.462,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 50.546
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 61,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 4.4,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 63,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 4.226,
+                        "lower-diameter": 53,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 53,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 8.6,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 63,
+                        "upper-diameter": 61
+                    },
+                    {
+                        "height": 2,
+                        "lower-diameter": 44.45,
+                        "upper-diameter": 44.45
+                    }
+                ],
+                "type": "holder",
+                "unit": "millimeters",
+                "vendor": "Vevor"
+            },
+            "post-process": {
+                "break-control": false,
+                "comment": "",
+                "diameter-offset": 1,
+                "length-offset": 1,
+                "live": true,
+                "manual-tool-change": false,
+                "number": 1,
+                "turret": 0
+            },
+            "product-id": "1654156454",
+            "product-link": "https://www.aliexpress.com/",
+            "shaft": {
+                "segments": [
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    },
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    }
+                ],
+                "type": "shaft"
+            },
+            "start-values": {
+                "presets": [
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "8c3d4d5b-87b4-464d-9b45-52fd416ce810",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Wood",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "2f0ac670-b418-48d3-9a5d-67ad52a449e9",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Metal",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "expressions": {
+                            "use_tool_stepdown": "true"
+                        },
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "730b5f02-f93f-4a72-a8e0-5b9829b95395",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Cork",
+                        "ramp-angle": 2,
+                        "stepdown": 16.2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": true,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    }
+                ]
+            },
+            "type": "flat end mill",
+            "unit": "millimeters",
+            "vendor": "manufacturer "
+        },
+        {
+            "BMC": "hss",
+            "description": "",
+            "geometry": {
+                "CW": 2,
+                "JET_HEAD_CLEARANCE": 1,
+                "JET_NOZZLE_DIAMETER": 1
+            },
+            "guid": "55c24181-f64b-4ce0-8675-9d2ef73ef7f8",
+            "post-process": {
+                "comment": "",
+                "diameter-offset": 2,
+                "length-offset": 2,
+                "manual-tool-change": false,
+                "number": 2
+            },
+            "product-id": "",
+            "product-link": "",
+            "start-values": {
+                "presets": [
+                    {
+                        "abrasiveFlowRate": 1,
+                        "cutHeight": 3,
+                        "description": "",
+                        "guid": "2787c0de-ce7e-434b-a324-1ad6d8517cfe",
+                        "machineQualityControl": "manual",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "name": "Default preset",
+                        "pierceTime": 1,
+                        "pressure": 4000,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000
+                    }
+                ]
+            },
+            "type": "waterjet",
+            "unit": "millimeters",
+            "vendor": ""
+        },
+        {
+            "BMC": "hss",
+            "description": "",
+            "geometry": {
+                "CW": 2,
+                "JET_HEAD_CLEARANCE": 1,
+                "JET_NOZZLE_DIAMETER": 1
+            },
+            "guid": "c2d1ab93-5062-4ebc-bf26-c372818062ff",
+            "post-process": {
+                "comment": "",
+                "diameter-offset": 2,
+                "length-offset": 2,
+                "manual-tool-change": false,
+                "number": 2
+            },
+            "product-id": "",
+            "product-link": "",
+            "start-values": {
+                "presets": [
+                    {
+                        "assistGas": "Air",
+                        "cutHeight": 3,
+                        "cutPower": 30,
+                        "description": "",
+                        "guid": "2787c0de-ce7e-434b-a324-1ad6d8517cfe",
+                        "machineQualityControl": "manual",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "name": "Default preset",
+                        "pierceHeight": 4,
+                        "piercePower": 30,
+                        "pierceTime": 1,
+                        "pressure": 4000,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000
+                    }
+                ]
+            },
+            "type": "plasma cutter",
+            "unit": "millimeters",
+            "vendor": ""
+        },
+        {
+            "BMC": "hss",
+            "description": "",
+            "geometry": {
+                "CW": 2,
+                "JET_HEAD_CLEARANCE": 1,
+                "JET_NOZZLE_DIAMETER": 1
+            },
+            "guid": "63f6bf71-f50a-4921-b707-19aa65ff8d6c",
+            "post-process": {
+                "comment": "",
+                "diameter-offset": 2,
+                "length-offset": 2,
+                "manual-tool-change": false,
+                "number": 2
+            },
+            "product-id": "",
+            "product-link": "",
+            "start-values": {
+                "presets": [
+                    {
+                        "assistGas": "Oxygen",
+                        "cutHeight": 3,
+                        "cutPower": 800,
+                        "description": "",
+                        "guid": "2787c0de-ce7e-434b-a324-1ad6d8517cfe",
+                        "machineQualityControl": "manual",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "name": "Default preset",
+                        "pierceHeight": 3.5,
+                        "piercePower": 800,
+                        "pierceTime": 1,
+                        "pressure": 4000,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000
+                    }
+                ]
+            },
+            "type": "laser cutter",
+            "unit": "millimeters",
+            "vendor": ""
+        },
+        {
+            "BMC": "hss",
+            "GRADE": "Mill Generic",
+            "description": "Example Bit",
+            "geometry": {
+                "CSP": false,
+                "DC": 2,
+                "HAND": true,
+                "LB": 24,
+                "LCF": 18,
+                "NOF": 4,
+                "NT": 1,
+                "OAL": 36,
+                "RE": 0,
+                "SFDM": 6,
+                "TA": 0,
+                "TP": 1,
+                "TPN": 1,
+                "TPX": 1,
+                "assemblyGaugeLength": 180.286,
+                "shoulder-diameter": 2,
+                "shoulder-length": 21,
+                "thread-profile-angle": 60,
+                "thread-tip-type": "point",
+                "tip-diameter": 2,
+                "tip-length": 0,
+                "tip-offset": 0
+            },
+            "guid": "2e46a9b2-d555-4a36-8690-17657ac046a7",
+            "holder": {
+                "description": "BT40 - B4C5-0020",
+                "gaugeLength": 156.286,
+                "guid": "a3934d27-ea38-4325-a524-bccb45b5f2b6",
+                "product-id": "ID",
+                "product-link": "link",
+                "segments": [
+                    {
+                        "height": 2.7178,
+                        "lower-diameter": 22.479,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 14.8844,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 1.016,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 29.845
+                    },
+                    {
+                        "height": 7.797800000000001,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 24.892
+                    },
+                    {
+                        "height": 3.302,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 86.10600000000002,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 13.462,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 50.546
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 61,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 4.4,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 63,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 4.226,
+                        "lower-diameter": 53,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 53,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 8.6,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 63,
+                        "upper-diameter": 61
+                    },
+                    {
+                        "height": 2,
+                        "lower-diameter": 44.45,
+                        "upper-diameter": 44.45
+                    }
+                ],
+                "type": "holder",
+                "unit": "millimeters",
+                "vendor": "Vevor"
+            },
+            "post-process": {
+                "break-control": false,
+                "comment": "",
+                "diameter-offset": 1,
+                "length-offset": 1,
+                "live": true,
+                "manual-tool-change": false,
+                "number": 1,
+                "turret": 0
+            },
+            "product-id": "1654156454",
+            "product-link": "https://www.aliexpress.com/",
+            "shaft": {
+                "segments": [
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    },
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    }
+                ],
+                "type": "shaft"
+            },
+            "start-values": {
+                "presets": [
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "8c3d4d5b-87b4-464d-9b45-52fd416ce810",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Wood",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "2f0ac670-b418-48d3-9a5d-67ad52a449e9",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Metal",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "expressions": {
+                            "use_tool_stepdown": "true"
+                        },
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "730b5f02-f93f-4a72-a8e0-5b9829b95395",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Cork",
+                        "ramp-angle": 2,
+                        "stepdown": 16.2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": true,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    }
+                ]
+            },
+            "type": "thread mill",
+            "unit": "millimeters",
+            "vendor": "manufacturer "
+        },
+        {
+            "BMC": "hss",
+            "GRADE": "Mill Generic",
+            "description": "Example Bit",
+            "geometry": {
+                "CSP": false,
+                "DC": 2,
+                "HAND": true,
+                "LB": 24,
+                "LCF": 18,
+                "NOF": 4,
+                "NT": 1,
+                "OAL": 36,
+                "RE": 1,
+                "SFDM": 6,
+                "TA": 0,
+                "TP": 0,
+                "assemblyGaugeLength": 180.286,
+                "shoulder-diameter": 2,
+                "shoulder-length": 21,
+                "thread-profile-angle": 60,
+                "tip-diameter": 0,
+                "tip-length": 0,
+                "tip-offset": 0
+            },
+            "guid": "7f7f3d30-356a-4ccc-9bf6-99366d19f8a5",
+            "holder": {
+                "description": "BT40 - B4C5-0020",
+                "gaugeLength": 156.286,
+                "guid": "a3934d27-ea38-4325-a524-bccb45b5f2b6",
+                "product-id": "ID",
+                "product-link": "link",
+                "segments": [
+                    {
+                        "height": 2.7178,
+                        "lower-diameter": 22.479,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 14.8844,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 31.877
+                    },
+                    {
+                        "height": 1.016,
+                        "lower-diameter": 31.877,
+                        "upper-diameter": 29.845
+                    },
+                    {
+                        "height": 7.797800000000001,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 24.892
+                    },
+                    {
+                        "height": 3.302,
+                        "lower-diameter": 24.892,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 86.10600000000002,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 31.496
+                    },
+                    {
+                        "height": 13.462,
+                        "lower-diameter": 31.496,
+                        "upper-diameter": 50.546
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 61,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 4.4,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 63,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 4.226,
+                        "lower-diameter": 53,
+                        "upper-diameter": 53
+                    },
+                    {
+                        "height": 2.887,
+                        "lower-diameter": 53,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 8.6,
+                        "lower-diameter": 63,
+                        "upper-diameter": 63
+                    },
+                    {
+                        "height": 1,
+                        "lower-diameter": 63,
+                        "upper-diameter": 61
+                    },
+                    {
+                        "height": 2,
+                        "lower-diameter": 44.45,
+                        "upper-diameter": 44.45
+                    }
+                ],
+                "type": "holder",
+                "unit": "millimeters",
+                "vendor": "Vevor"
+            },
+            "post-process": {
+                "break-control": false,
+                "comment": "",
+                "diameter-offset": 1,
+                "length-offset": 1,
+                "live": true,
+                "manual-tool-change": false,
+                "number": 1,
+                "turret": 0
+            },
+            "product-id": "1654156454",
+            "product-link": "https://www.aliexpress.com/",
+            "shaft": {
+                "segments": [
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    },
+                    {
+                        "height": 10,
+                        "lower-diameter": 10,
+                        "upper-diameter": 10
+                    }
+                ],
+                "type": "shaft"
+            },
+            "start-values": {
+                "presets": [
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "8c3d4d5b-87b4-464d-9b45-52fd416ce810",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Wood",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "2f0ac670-b418-48d3-9a5d-67ad52a449e9",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Metal",
+                        "ramp-angle": 2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": false,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    },
+                    {
+                        "description": "",
+                        "expressions": {
+                            "use_tool_stepdown": "true"
+                        },
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "730b5f02-f93f-4a72-a8e0-5b9829b95395",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "n_ramp": 5000,
+                        "name": "Cork",
+                        "ramp-angle": 2,
+                        "stepdown": 16.2,
+                        "tool-coolant": "flood",
+                        "use-stepdown": true,
+                        "use-stepover": false,
+                        "v_c": 31.41592653589793,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_transition": 1000
+                    }
+                ]
+            },
+            "type": "ball end mill",
+            "unit": "millimeters",
+            "vendor": "manufacturer "
+        },
+        {
+            "BMC": "hss",
+            "description": "",
+            "geometry": {
+                "CSP": false,
+                "DC": 5,
+                "HAND": true,
+                "LB": 20,
+                "LCF": 10,
+                "NOF": 0,
+                "NT": 1,
+                "OAL": 20,
+                "RE": 2.5,
+                "SFDM": 4,
+                "TA": 0,
+                "TP": 0,
+                "assemblyGaugeLength": 20,
+                "shoulder-length": 10,
+                "thread-profile-angle": 60,
+                "tip-diameter": 0,
+                "tip-length": 0,
+                "tip-offset": 0
+            },
+            "guid": "c88a1aa2-1480-4fe3-8587-4c7acb30c990",
+            "post-process": {
+                "break-control": false,
+                "comment": "",
+                "diameter-offset": 3,
+                "length-offset": 3,
+                "live": true,
+                "manual-tool-change": false,
+                "number": 3,
+                "turret": 0
+            },
+            "product-id": "",
+            "product-link": "",
+            "start-values": {
+                "presets": [
+                    {
+                        "description": "",
+                        "guid": "72fd4cc6-b294-4ef2-af14-14cd8a4945d9",
+                        "name": "Default preset",
+                        "v_f_leadIn": 1000,
+                        "v_f_link": 3000,
+                        "v_f_measure": 102
+                    }
+                ]
+            },
+            "type": "probe",
+            "unit": "millimeters",
+            "vendor": ""
+        },
+        {
+            "description": "",
+            "expressions": {
+                "tool_holderGaugeLength": "segment_2_height"
+            },
+            "gaugeLength": 5,
+            "guid": "1d3ef0a2-b8bd-4df1-a6bf-b4a2074321d6",
+            "product-id": "",
+            "product-link": "",
+            "segments": [
+                {
+                    "height": 5,
+                    "lower-diameter": 5,
+                    "upper-diameter": 5
+                },
+                {
+                    "height": 10,
+                    "lower-diameter": 10,
+                    "upper-diameter": 10
+                }
+            ],
+            "type": "holder",
+            "unit": "millimeters",
+            "vendor": ""
+        },
+        {
+            "BMC": "hss",
+            "GRADE": "generic",
+            "description": "",
+            "geometry": {
+                "CSP": false,
+                "DC": 10,
+                "HAND": true,
+                "LB": 50,
+                "LCF": 20,
+                "NOF": 1,
+                "NT": 1,
+                "OAL": 60,
+                "RE": 0,
+                "SFDM": 10,
+                "SIG": 0,
+                "TP": 0,
+                "assemblyGaugeLength": 50,
+                "shoulder-length": 30,
+                "thread-profile-angle": 60,
+                "tip-diameter": 0,
+                "tip-length": 0,
+                "tip-offset": 0
+            },
+            "guid": "e723a334-ead3-4bce-8ef4-fa1d866d36f1",
+            "post-process": {
+                "break-control": false,
+                "comment": "",
+                "diameter-offset": 4,
+                "length-offset": 4,
+                "live": true,
+                "manual-tool-change": false,
+                "number": 4,
+                "turret": 0
+            },
+            "product-id": "",
+            "product-link": "",
+            "start-values": {
+                "presets": [
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.2,
+                        "guid": "b1ad3448-0ae0-416b-8edf-73a4c740f342",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "name": "Default preset",
+                        "tool-coolant": "flood",
+                        "use-feed-per-revolution": false,
+                        "v_c": 157.07963267948963,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_retract": 0,
+                        "v_f_transition": 1000
+                    }
+                ]
+            },
+            "type": "boring bar",
+            "unit": "millimeters",
+            "vendor": ""
+        },
+        {
+            "BMC": "hss",
+            "GRADE": "generic",
+            "description": "",
+            "geometry": {
+                "CSP": false,
+                "DC": 6,
+                "HAND": true,
+                "LB": 24,
+                "LCF": 12,
+                "NOF": 4,
+                "NT": 1,
+                "OAL": 36,
+                "RE": 0,
+                "SFDM": 4.8,
+                "SIG": 0,
+                "TP": 0,
+                "assemblyGaugeLength": 24,
+                "shoulder-length": 12,
+                "thread-profile-angle": 60,
+                "tip-diameter": 0,
+                "tip-length": 0,
+                "tip-offset": 0
+            },
+            "guid": "8eec9d0d-46c4-4c82-81e6-beb16e708c48",
+            "post-process": {
+                "break-control": false,
+                "comment": "",
+                "diameter-offset": 5,
+                "length-offset": 5,
+                "live": true,
+                "manual-tool-change": false,
+                "number": 5,
+                "turret": 0
+            },
+            "product-id": "",
+            "product-link": "",
+            "start-values": {
+                "presets": [
+                    {
+                        "description": "",
+                        "f_n": 0.06666666666666667,
+                        "f_z": 0.05,
+                        "guid": "f48a685a-d393-4380-a669-96d9a3f61652",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "name": "Default preset",
+                        "tool-coolant": "flood",
+                        "use-feed-per-revolution": false,
+                        "v_c": 94.2477796076938,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_retract": 0,
+                        "v_f_transition": 1000
+                    }
+                ]
+            },
+            "type": "counter bore",
+            "unit": "millimeters",
+            "vendor": ""
+        },
+        {
+            "BMC": "hss",
+            "GRADE": "generic",
+            "description": "",
+            "geometry": {
+                "CSP": false,
+                "DC": 10,
+                "HAND": true,
+                "LB": 100,
+                "LCF": 80,
+                "NOF": 2,
+                "NT": 1,
+                "OAL": 130,
+                "RE": 0,
+                "SFDM": 10,
+                "SIG": 118,
+                "TP": 0,
+                "assemblyGaugeLength": 100,
+                "shoulder-length": 90,
+                "thread-profile-angle": 60,
+                "tip-diameter": 0,
+                "tip-length": 0,
+                "tip-offset": 0
+            },
+            "guid": "53436187-8b8a-4bb4-ba24-005b6df8739c",
+            "post-process": {
+                "break-control": false,
+                "comment": "",
+                "diameter-offset": 6,
+                "length-offset": 6,
+                "live": true,
+                "manual-tool-change": false,
+                "number": 6,
+                "turret": 0
+            },
+            "product-id": "",
+            "product-link": "",
+            "start-values": {
+                "presets": [
+                    {
+                        "description": "",
+                        "f_z": 0,
+                        "guid": "3644b169-62bb-4380-b152-6d058b8b8c7f",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "name": "Default preset",
+                        "tool-coolant": "flood",
+                        "use-feed-per-revolution": false,
+                        "v_c": 157.07963267948963,
+                        "v_f": 0,
+                        "v_f_leadIn": 0,
+                        "v_f_leadOut": 0,
+                        "v_f_plunge": 1000,
+                        "v_f_ramp": 0,
+                        "v_f_retract": 1000,
+                        "v_f_transition": 0
+                    }
+                ]
+            },
+            "type": "drill",
+            "unit": "millimeters",
+            "vendor": ""
+        },
+        {
+            "BMC": "hss",
+            "GRADE": "generic",
+            "description": "",
+            "geometry": {
+                "CSP": false,
+                "DC": 6,
+                "HAND": true,
+                "LB": 18,
+                "LCF": 12,
+                "NOF": 2,
+                "NT": 1,
+                "OAL": 36,
+                "RE": 0,
+                "SFDM": 6,
+                "SIG": 118,
+                "TA": 90,
+                "TP": 0,
+                "assemblyGaugeLength": 18,
+                "shoulder-length": 15,
+                "thread-profile-angle": 60,
+                "tip-diameter": 2,
+                "tip-length": 2,
+                "tip-offset": 0
+            },
+            "guid": "d56caf73-e0d5-4530-aefe-70e6d31fe05f",
+            "post-process": {
+                "break-control": false,
+                "comment": "",
+                "diameter-offset": 7,
+                "length-offset": 7,
+                "live": true,
+                "manual-tool-change": false,
+                "number": 7,
+                "turret": 0
+            },
+            "product-id": "",
+            "product-link": "",
+            "start-values": {
+                "presets": [
+                    {
+                        "description": "",
+                        "f_z": 0.1,
+                        "guid": "19e4d712-c653-44d0-92c2-47c2c92f7775",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "name": "Default preset",
+                        "tool-coolant": "flood",
+                        "use-feed-per-revolution": false,
+                        "v_c": 94.2477796076938,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_retract": 333.3333333333333,
+                        "v_f_transition": 1000
+                    }
+                ]
+            },
+            "type": "center drill",
+            "unit": "millimeters",
+            "vendor": ""
+        },
+        {
+            "BMC": "hss",
+            "GRADE": "generic",
+            "description": "",
+            "geometry": {
+                "CSP": false,
+                "DC": 6,
+                "HAND": true,
+                "LB": 18,
+                "LCF": 12,
+                "NOF": 2,
+                "NT": 1,
+                "OAL": 36,
+                "RE": 0,
+                "SFDM": 6,
+                "SIG": 120,
+                "TP": 0,
+                "assemblyGaugeLength": 18,
+                "shoulder-length": 15,
+                "thread-profile-angle": 60,
+                "tip-diameter": 0,
+                "tip-length": 0,
+                "tip-offset": 0
+            },
+            "guid": "49c6a103-b986-4963-9705-c8bcefdeaa3d",
+            "post-process": {
+                "break-control": false,
+                "comment": "",
+                "diameter-offset": 8,
+                "length-offset": 8,
+                "live": true,
+                "manual-tool-change": false,
+                "number": 8,
+                "turret": 0
+            },
+            "product-id": "",
+            "product-link": "",
+            "start-values": {
+                "presets": [
+                    {
+                        "description": "",
+                        "f_z": 0.1,
+                        "guid": "ee320cf8-c78c-453b-a4b2-9147005921de",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "name": "Default preset",
+                        "tool-coolant": "flood",
+                        "use-feed-per-revolution": false,
+                        "v_c": 94.2477796076938,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_retract": 333.3333333333333,
+                        "v_f_transition": 1000
+                    }
+                ]
+            },
+            "type": "spot drill",
+            "unit": "millimeters",
+            "vendor": ""
+        },
+        {
+            "BMC": "hss",
+            "GRADE": "generic",
+            "description": "",
+            "geometry": {
+                "CSP": false,
+                "DC": 6,
+                "HAND": true,
+                "LB": 48,
+                "LCF": 18,
+                "NOF": 6,
+                "NT": 1,
+                "OAL": 60,
+                "RE": 0,
+                "SFDM": 5.4,
+                "SIG": 0,
+                "TP": 0,
+                "assemblyGaugeLength": 48,
+                "shoulder-length": 18,
+                "thread-profile-angle": 60,
+                "tip-diameter": 0,
+                "tip-length": 0,
+                "tip-offset": 0
+            },
+            "guid": "7eb5aa8f-4bd2-4203-aa42-57c476801169",
+            "post-process": {
+                "break-control": false,
+                "comment": "",
+                "diameter-offset": 9,
+                "length-offset": 9,
+                "live": true,
+                "manual-tool-change": false,
+                "number": 9,
+                "turret": 0
+            },
+            "product-id": "",
+            "product-link": "",
+            "start-values": {
+                "presets": [
+                    {
+                        "description": "",
+                        "f_z": 0,
+                        "guid": "94cae20a-af7e-438f-b81c-41201e664917",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "name": "Default preset",
+                        "tool-coolant": "flood",
+                        "use-feed-per-revolution": false,
+                        "v_c": 94.2477796076938,
+                        "v_f": 0,
+                        "v_f_leadIn": 0,
+                        "v_f_leadOut": 0,
+                        "v_f_plunge": 1000,
+                        "v_f_ramp": 0,
+                        "v_f_retract": 1000,
+                        "v_f_transition": 0
+                    }
+                ]
+            },
+            "type": "reamer",
+            "unit": "millimeters",
+            "vendor": ""
+        },
+        {
+            "BMC": "hss",
+            "GRADE": "generic",
+            "description": "",
+            "geometry": {
+                "CSP": false,
+                "DC": 12,
+                "HAND": true,
+                "LB": 24,
+                "LCF": 5.4,
+                "NOF": 3,
+                "NT": 1,
+                "OAL": 96,
+                "RE": 0,
+                "SFDM": 7.2,
+                "SIG": 90,
+                "TP": 0,
+                "assemblyGaugeLength": 24,
+                "shoulder-length": 8.1,
+                "thread-profile-angle": 60,
+                "tip-diameter": 1.2,
+                "tip-length": 0,
+                "tip-offset": 0
+            },
+            "guid": "f5603b0b-7a65-47ea-99c0-ed6ae89c5b6b",
+            "post-process": {
+                "break-control": false,
+                "comment": "",
+                "diameter-offset": 10,
+                "length-offset": 10,
+                "live": true,
+                "manual-tool-change": false,
+                "number": 10,
+                "turret": 0
+            },
+            "product-id": "",
+            "product-link": "",
+            "start-values": {
+                "presets": [
+                    {
+                        "description": "",
+                        "f_z": 0.06666666666666667,
+                        "guid": "219c529a-b2d3-459e-8bd0-4ec105f5f8d4",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 5000,
+                        "name": "Default preset",
+                        "tool-coolant": "flood",
+                        "use-feed-per-revolution": false,
+                        "v_c": 188.4955592153876,
+                        "v_f": 1000,
+                        "v_f_leadIn": 1000,
+                        "v_f_leadOut": 1000,
+                        "v_f_plunge": 333.3333333333333,
+                        "v_f_ramp": 333.3333333333333,
+                        "v_f_retract": 333.3333333333333,
+                        "v_f_transition": 1000
+                    }
+                ]
+            },
+            "type": "counter sink",
+            "unit": "millimeters",
+            "vendor": ""
+        },
+        {
+            "BMC": "hss",
+            "GRADE": "generic",
+            "description": "",
+            "geometry": {
+                "CSP": false,
+                "DC": 10,
+                "HAND": false,
+                "LB": 50,
+                "LCF": 20,
+                "NOF": 3,
+                "NT": 1,
+                "OAL": 50,
+                "RE": 0,
+                "SFDM": 10,
+                "SIG": 0,
+                "TP": 1,
+                "assemblyGaugeLength": 50,
+                "shoulder-length": 30,
+                "thread-profile-angle": 60,
+                "tip-diameter": 0,
+                "tip-length": 0,
+                "tip-offset": 0
+            },
+            "guid": "1870118c-087e-421e-a44c-9ef193b4e8bb",
+            "post-process": {
+                "break-control": false,
+                "comment": "",
+                "diameter-offset": 11,
+                "length-offset": 11,
+                "live": true,
+                "manual-tool-change": false,
+                "number": 11,
+                "turret": 0
+            },
+            "product-id": "",
+            "product-link": "",
+            "start-values": {
+                "presets": [
+                    {
+                        "description": "",
+                        "f_z": 0,
+                        "guid": "5ff7eae1-1494-451c-8585-4b67d6a25a8a",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 500,
+                        "name": "Default preset",
+                        "tool-coolant": "flood",
+                        "use-feed-per-revolution": false,
+                        "v_c": 15.707963267948966,
+                        "v_f": 0,
+                        "v_f_leadIn": 0,
+                        "v_f_leadOut": 0,
+                        "v_f_plunge": 0,
+                        "v_f_ramp": 0,
+                        "v_f_retract": 0,
+                        "v_f_transition": 0
+                    }
+                ]
+            },
+            "type": "tap left hand",
+            "unit": "millimeters",
+            "vendor": ""
+        },
+        {
+            "BMC": "hss",
+            "GRADE": "generic",
+            "description": "",
+            "geometry": {
+                "CSP": false,
+                "DC": 10,
+                "HAND": true,
+                "LB": 50,
+                "LCF": 20,
+                "NOF": 3,
+                "NT": 1,
+                "OAL": 50,
+                "RE": 0,
+                "SFDM": 10,
+                "SIG": 0,
+                "TP": 1,
+                "assemblyGaugeLength": 50,
+                "shoulder-length": 30,
+                "thread-profile-angle": 60,
+                "tip-diameter": 0,
+                "tip-length": 0,
+                "tip-offset": 0
+            },
+            "guid": "23fd4ae5-7e8a-4a08-80b3-a82ed1e451be",
+            "post-process": {
+                "break-control": false,
+                "comment": "",
+                "diameter-offset": 12,
+                "length-offset": 12,
+                "live": true,
+                "manual-tool-change": false,
+                "number": 12,
+                "turret": 0
+            },
+            "product-id": "",
+            "product-link": "",
+            "start-values": {
+                "presets": [
+                    {
+                        "description": "",
+                        "f_z": 0,
+                        "guid": "af535962-fc78-4101-8042-c93df1ba5024",
+                        "material": {
+                            "category": "all",
+                            "query": "",
+                            "use-hardness": false
+                        },
+                        "n": 500,
+                        "name": "Default preset",
+                        "tool-coolant": "flood",
+                        "use-feed-per-revolution": false,
+                        "v_c": 15.707963267948966,
+                        "v_f": 0,
+                        "v_f_leadIn": 0,
+                        "v_f_leadOut": 0,
+                        "v_f_plunge": 0,
+                        "v_f_ramp": 0,
+                        "v_f_retract": 0,
+                        "v_f_transition": 0
+                    }
+                ]
+            },
+            "type": "tap right hand",
+            "unit": "millimeters",
+            "vendor": ""
+        }
+    ],
+    "version": 36
+}
