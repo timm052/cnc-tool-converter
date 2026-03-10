@@ -779,6 +779,7 @@ export default function ToolManagerPage() {
         <QrScannerPanel
           tools={tools}
           onFound={(tool) => { closePanel(); openEdit(tool); }}
+          onUpdateTool={updateTool}
           onClose={closePanel}
         />
       )}

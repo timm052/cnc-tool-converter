@@ -1,41 +1,170 @@
 import { useEffect, useRef, useState } from 'react';
-import { X, Camera, AlertCircle, CheckCircle } from 'lucide-react';
+import { X, Camera, AlertCircle, CheckCircle, RotateCcw, Search, Archive, Plus, Minus } from 'lucide-react';
 import jsQR from 'jsqr';
 import type { LibraryTool } from '../../types/libraryTool';
 
+// ── Types ──────────────────────────────────────────────────────────────────────
+
 interface QrScannerPanelProps {
-  tools:   LibraryTool[];
-  onFound: (tool: LibraryTool) => void;
-  onClose: () => void;
+  tools:        LibraryTool[];
+  onFound:      (tool: LibraryTool) => void;
+  onUpdateTool: (id: string, patch: Partial<LibraryTool>) => Promise<void>;
+  onClose:      () => void;
 }
 
-type Status = 'starting' | 'scanning' | 'found' | 'error';
+type ScanMode  = 'find' | 'stock';
+type StockDir  = 'in'   | 'out';
+type Status    = 'starting' | 'scanning' | 'found' | 'error';
 
-export default function QrScannerPanel({ tools, onFound, onClose }: QrScannerPanelProps) {
+interface StockEntry {
+  toolNumber:  number;
+  description: string;
+  delta:       number;
+  newQty:      number;
+  time:        number;
+}
+
+// ── Constants ──────────────────────────────────────────────────────────────────
+
+const SCAN_INTERVAL_MS  = 66;    // ~15 fps
+const RESCAN_DEBOUNCE   = 1500;  // ms before same QR can be acted on again
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+/** Map a jsQR video-pixel point to overlay-canvas CSS-pixel space (object-cover aware). */
+function toCanvasPt(
+  p: { x: number; y: number },
+  vw: number, vh: number,
+  cw: number, ch: number,
+): { x: number; y: number } {
+  const videoAspect     = vw / vh;
+  const containerAspect = cw / ch;
+  let drawX: number, drawY: number, drawW: number, drawH: number;
+  if (videoAspect > containerAspect) {
+    drawH = ch; drawW = ch * videoAspect;
+    drawX = (cw - drawW) / 2; drawY = 0;
+  } else {
+    drawW = cw; drawH = cw / videoAspect;
+    drawX = 0;  drawY = (ch - drawH) / 2;
+  }
+  return { x: drawX + (p.x / vw) * drawW, y: drawY + (p.y / vh) * drawH };
+}
+
+// ── Component ──────────────────────────────────────────────────────────────────
+
+export default function QrScannerPanel({
+  tools, onFound, onUpdateTool, onClose,
+}: QrScannerPanelProps) {
+
+  // ── DOM refs ────────────────────────────────────────────────────────────────
   const videoRef    = useRef<HTMLVideoElement>(null);
-  const canvasRef   = useRef<HTMLCanvasElement>(null);
+  const decodeRef   = useRef<HTMLCanvasElement>(null);   // hidden, full res
+  const overlayRef  = useRef<HTMLCanvasElement>(null);   // visible, CSS res
   const rafRef      = useRef<number | null>(null);
   const streamRef   = useRef<MediaStream | null>(null);
 
-  // Use refs for tools/onFound so the scan loop never goes stale
-  const toolsRef   = useRef(tools);
-  const onFoundRef = useRef(onFound);
-  useEffect(() => { toolsRef.current   = tools;   }, [tools]);
-  useEffect(() => { onFoundRef.current = onFound; }, [onFound]);
+  // ── Scan-loop live refs (avoid stale closures without restarting camera) ────
+  const toolsRef       = useRef(tools);
+  const onFoundRef     = useRef(onFound);
+  const onUpdateRef    = useRef(onUpdateTool);
+  const modeRef        = useRef<ScanMode>('find');
+  const stockDirRef    = useRef<StockDir>('in');
+  const stockAmountRef = useRef(1);
+  const lastScanMs     = useRef(0);
+  const lastActedId    = useRef('');   // debounce
 
-  const [status,      setStatus]      = useState<Status>('starting');
-  const [errorMsg,    setErrorMsg]    = useState('');
-  const [unknownText, setUnknownText] = useState('');
-  const [foundTool,   setFoundTool]   = useState<LibraryTool | null>(null);
+  useEffect(() => { toolsRef.current    = tools;         }, [tools]);
+  useEffect(() => { onFoundRef.current  = onFound;       }, [onFound]);
+  useEffect(() => { onUpdateRef.current = onUpdateTool;  }, [onUpdateTool]);
+
+  // ── UI state ────────────────────────────────────────────────────────────────
+  const [status,       setStatus]       = useState<Status>('starting');
+  const [errorMsg,     setErrorMsg]     = useState('');
+  const [unknownText,  setUnknownText]  = useState('');
+  const [foundTool,    setFoundTool]    = useState<LibraryTool | null>(null);
+  const [mode,         setMode]         = useState<ScanMode>('find');
+  const [stockDir,     setStockDir]     = useState<StockDir>('in');
+  const [stockAmount,  setStockAmount]  = useState(1);
+  const [stockLog,     setStockLog]     = useState<StockEntry[]>([]);
+  const [cameras,      setCameras]      = useState<MediaDeviceInfo[]>([]);
+  const [activeCamId,  setActiveCamId]  = useState('');
+  const [manualUuid,   setManualUuid]   = useState('');
+  const [manualError,  setManualError]  = useState('');
+  const [isHttpWarn,   setIsHttpWarn]   = useState(false);
+
+  // Keep mode/dir/amount refs in sync with state
+  useEffect(() => { modeRef.current        = mode;        }, [mode]);
+  useEffect(() => { stockDirRef.current    = stockDir;    }, [stockDir]);
+  useEffect(() => { stockAmountRef.current = stockAmount; }, [stockAmount]);
+
+  // Detect non-HTTPS context (getUserMedia requires secure context)
+  useEffect(() => {
+    if (
+      typeof window !== 'undefined' &&
+      location.protocol !== 'https:' &&
+      location.hostname !== 'localhost' &&
+      location.hostname !== '127.0.0.1'
+    ) setIsHttpWarn(true);
+  }, []);
+
+  // ── Overlay drawing ─────────────────────────────────────────────────────────
+
+  function drawOverlay(loc: ReturnType<typeof jsQR>['location'] | null, colour = '#4ade80') {
+    const canvas = overlayRef.current;
+    const video  = videoRef.current;
+    if (!canvas || !video) return;
+
+    canvas.width  = video.clientWidth;
+    canvas.height = video.clientHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (!loc) return;
+
+    const vw = video.videoWidth, vh = video.videoHeight;
+    const cw = canvas.width,    ch = canvas.height;
+    const corners = [
+      toCanvasPt(loc.topLeftCorner,     vw, vh, cw, ch),
+      toCanvasPt(loc.topRightCorner,    vw, vh, cw, ch),
+      toCanvasPt(loc.bottomRightCorner, vw, vh, cw, ch),
+      toCanvasPt(loc.bottomLeftCorner,  vw, vh, cw, ch),
+    ];
+    ctx.beginPath();
+    ctx.moveTo(corners[0].x, corners[0].y);
+    corners.slice(1).forEach((c) => ctx.lineTo(c.x, c.y));
+    ctx.closePath();
+    ctx.strokeStyle = colour;
+    ctx.lineWidth   = 3;
+    ctx.stroke();
+    ctx.fillStyle = colour.replace(')', ',0.15)').replace('rgb(', 'rgba(').replace('#', 'rgba(').replace(/^rgba\((.{6})/, (_,h) => `rgba(${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)}`);
+    // Simpler fill: just use a semi-transparent overlay
+    ctx.globalAlpha = 0.15;
+    ctx.fillStyle   = colour;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  // ── Camera start / restart ──────────────────────────────────────────────────
 
   useEffect(() => {
     let mounted = true;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    setStatus('starting');
 
-    function scan() {
+    function tick() {
       if (!mounted) return;
+      const now    = Date.now();
       const video  = videoRef.current;
-      const canvas = canvasRef.current;
-      if (!video || !canvas) return;
+      const canvas = decodeRef.current;
+      if (!video || !canvas) { rafRef.current = requestAnimationFrame(tick); return; }
+
+      // Throttle to ~15 fps
+      if (now - lastScanMs.current < SCAN_INTERVAL_MS) {
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+      lastScanMs.current = now;
 
       if (video.readyState === video.HAVE_ENOUGH_DATA) {
         canvas.width  = video.videoWidth;
@@ -45,49 +174,74 @@ export default function QrScannerPanel({ tools, onFound, onClose }: QrScannerPan
           ctx.drawImage(video, 0, 0);
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           const code = jsQR(imageData.data, imageData.width, imageData.height, {
-            inversionAttempts: 'dontInvert',
+            inversionAttempts: 'attemptBoth',   // handles dark/inverted QR codes too
           });
+
           if (code?.data) {
-            const tool = toolsRef.current.find((t) => t.id === code.data);
-            if (tool) {
-              setFoundTool(tool);
-              setStatus('found');
-              // Brief success flash, then open editor
-              setTimeout(() => {
-                if (mounted) onFoundRef.current(tool);
-              }, 600);
-              return; // stop scanning
+            const highlightColour = modeRef.current === 'stock'
+              ? (stockDirRef.current === 'in' ? '#4ade80' : '#f87171')
+              : '#60a5fa';
+            drawOverlay(code.location, highlightColour);
+            setUnknownText('');
+
+            // Debounce: don't act on the same QR twice in quick succession
+            if (code.data !== lastActedId.current) {
+              const tool = toolsRef.current.find((t) => t.id === code.data);
+              if (tool) {
+                lastActedId.current = code.data;
+                setTimeout(() => { lastActedId.current = ''; }, RESCAN_DEBOUNCE);
+
+                if (modeRef.current === 'find') {
+                  setFoundTool(tool);
+                  setStatus('found');
+                  setTimeout(() => { if (mounted) onFoundRef.current(tool); }, 600);
+                  return; // stop scanning for find mode
+                } else {
+                  // Stock mode: adjust qty and log it
+                  const delta  = stockDirRef.current === 'in' ? stockAmountRef.current : -stockAmountRef.current;
+                  const newQty = Math.max(0, (tool.quantity ?? 0) + delta);
+                  onUpdateRef.current(tool.id, { quantity: newQty });
+                  setStockLog((prev) => [
+                    { toolNumber: tool.toolNumber, description: tool.description, delta, newQty, time: Date.now() },
+                    ...prev.slice(0, 19),
+                  ]);
+                }
+              } else {
+                setUnknownText(code.data.length > 46 ? code.data.slice(0, 46) + '…' : code.data);
+              }
             }
-            setUnknownText(
-              code.data.length > 48 ? code.data.slice(0, 48) + '…' : code.data,
-            );
+          } else {
+            drawOverlay(null);
           }
         }
       }
-      rafRef.current = requestAnimationFrame(scan);
+      rafRef.current = requestAnimationFrame(tick);
     }
 
     async function start() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
-        });
+        const videoConstraints: MediaTrackConstraints = activeCamId
+          ? { deviceId: { exact: activeCamId }, width: { ideal: 1280 }, height: { ideal: 720 } }
+          : { facingMode: 'environment',         width: { ideal: 1280 }, height: { ideal: 720 } };
+
+        const stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
         if (!mounted) { stream.getTracks().forEach((t) => t.stop()); return; }
         streamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           await videoRef.current.play();
         }
+
+        // Enumerate cameras once permission is granted
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        if (mounted) setCameras(devices.filter((d) => d.kind === 'videoinput'));
+
         setStatus('scanning');
-        rafRef.current = requestAnimationFrame(scan);
+        rafRef.current = requestAnimationFrame(tick);
       } catch (err) {
         if (!mounted) return;
         setStatus('error');
-        setErrorMsg(
-          err instanceof Error
-            ? err.message
-            : 'Could not access camera',
-        );
+        setErrorMsg(err instanceof Error ? err.message : 'Could not access camera');
       }
     }
 
@@ -98,126 +252,297 @@ export default function QrScannerPanel({ tools, onFound, onClose }: QrScannerPan
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       streamRef.current?.getTracks().forEach((t) => t.stop());
     };
-  }, []); // intentionally empty — uses refs for live data
+  }, [activeCamId]); // restart when user switches camera
+
+  // ── Manual UUID lookup ──────────────────────────────────────────────────────
+
+  function handleManualLookup() {
+    setManualError('');
+    const uuid = manualUuid.trim();
+    if (!uuid) return;
+    const tool = tools.find((t) => t.id === uuid);
+    if (!tool) { setManualError('No tool found with this UUID'); return; }
+
+    if (mode === 'find') {
+      onFound(tool);
+    } else {
+      const delta  = stockDir === 'in' ? stockAmount : -stockAmount;
+      const newQty = Math.max(0, (tool.quantity ?? 0) + delta);
+      onUpdateTool(tool.id, { quantity: newQty });
+      setStockLog((prev) => [
+        { toolNumber: tool.toolNumber, description: tool.description, delta, newQty, time: Date.now() },
+        ...prev.slice(0, 19),
+      ]);
+      setManualUuid('');
+    }
+  }
+
+  // ── Render ──────────────────────────────────────────────────────────────────
+
+  const isStock = mode === 'stock';
 
   return (
     <>
       <div className="fixed inset-0 bg-black/60 z-50" onClick={onClose} />
 
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[500px] bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden">
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[520px] max-h-[90vh] flex flex-col bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden">
 
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700">
-          <h2 className="text-base font-semibold text-slate-100 flex items-center gap-2">
-            <Camera size={15} className="text-slate-400" />
-            Scan Tool QR Code
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            title="Close scanner"
-            className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
-          >
+        {/* ── Header ─────────────────────────────────────────────────────── */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 shrink-0">
+          {/* Mode tabs */}
+          <div className="flex items-center gap-0.5 bg-slate-700/60 rounded-lg p-0.5">
+            {([
+              { id: 'find',  icon: <Search  size={11} />, label: 'Find Tool'   },
+              { id: 'stock', icon: <Archive size={11} />, label: 'Stock Mode'  },
+            ] as { id: ScanMode; icon: React.ReactNode; label: string }[]).map(({ id, icon, label }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setMode(id)}
+                className={[
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
+                  mode === id ? 'bg-slate-600 text-slate-100 shadow' : 'text-slate-400 hover:text-slate-200',
+                ].join(' ')}
+              >
+                {icon}{label}
+              </button>
+            ))}
+          </div>
+          <button type="button" onClick={onClose} title="Close scanner"
+            className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700 transition-colors">
             <X size={16} />
           </button>
         </div>
 
-        {/* Camera viewport */}
-        <div className="relative bg-black" style={{ aspectRatio: '16/9' }}>
+        {/* ── HTTPS warning ───────────────────────────────────────────────── */}
+        {isHttpWarn && (
+          <div className="mx-4 mt-3 flex items-start gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs shrink-0">
+            <AlertCircle size={12} className="shrink-0 mt-0.5" />
+            Camera requires HTTPS — this page is served over HTTP so scanning may be blocked.
+          </div>
+        )}
+
+        {/* ── Camera viewport ─────────────────────────────────────────────── */}
+        <div className="relative bg-black shrink-0 aspect-video">
           {status === 'error' ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
               <AlertCircle size={36} className="text-red-400" />
               <p className="text-sm font-medium text-red-300">Camera unavailable</p>
               <p className="text-xs text-slate-400">{errorMsg}</p>
               <p className="text-xs text-slate-500">
-                Make sure your browser has permission to access the camera and that no other app is using it.
+                Check browser camera permissions and make sure the page is on HTTPS.
               </p>
             </div>
           ) : (
             <>
-              <video
-                ref={videoRef}
-                className="w-full h-full object-cover"
-                muted
-                playsInline
-              />
+              <video ref={videoRef} className="w-full h-full object-cover" muted playsInline />
 
-              {/* Dimmed surround + viewfinder cut-out using box-shadow */}
-              <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                <div
-                  className="relative"
-                  style={{ width: 200, height: 200, boxShadow: '0 0 0 9999px rgba(0,0,0,0.45)' }}
-                >
-                  {/* Corner brackets */}
-                  {(['tl','tr','bl','br'] as const).map((corner) => (
-                    <div
-                      key={corner}
-                      className={[
-                        'absolute w-8 h-8',
-                        corner === 'tl' ? 'top-0 left-0 border-t-2 border-l-2 rounded-tl' : '',
-                        corner === 'tr' ? 'top-0 right-0 border-t-2 border-r-2 rounded-tr' : '',
-                        corner === 'bl' ? 'bottom-0 left-0 border-b-2 border-l-2 rounded-bl' : '',
-                        corner === 'br' ? 'bottom-0 right-0 border-b-2 border-r-2 rounded-br' : '',
-                        status === 'found' ? 'border-green-400' : 'border-blue-400',
-                      ].join(' ')}
-                    />
-                  ))}
+              {/* QR highlight overlay canvas */}
+              <canvas ref={overlayRef} className="absolute inset-0 w-full h-full pointer-events-none" />
 
-                  {/* Found flash */}
-                  {status === 'found' && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-green-500/20 rounded">
-                      <CheckCircle size={48} className="text-green-400" />
-                    </div>
-                  )}
+              {/* Viewfinder brackets */}
+              {status === 'scanning' && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="relative w-[180px] h-[180px] shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]">
+                    {(['tl','tr','bl','br'] as const).map((c) => (
+                      <div key={c} className={[
+                        'absolute w-7 h-7',
+                        isStock
+                          ? (stockDir === 'in' ? 'border-green-400' : 'border-red-400')
+                          : 'border-blue-400',
+                        c === 'tl' ? 'top-0 left-0 border-t-2 border-l-2 rounded-tl' : '',
+                        c === 'tr' ? 'top-0 right-0 border-t-2 border-r-2 rounded-tr' : '',
+                        c === 'bl' ? 'bottom-0 left-0 border-b-2 border-l-2 rounded-bl' : '',
+                        c === 'br' ? 'bottom-0 right-0 border-b-2 border-r-2 rounded-br' : '',
+                      ].join(' ')} />
+                    ))}
+                    {/* Stock mode direction badge */}
+                    {isStock && (
+                      <div className={`absolute -top-7 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold ${stockDir === 'in' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
+                        {stockDir === 'in' ? <Plus size={10} /> : <Minus size={10} />}
+                        {stockDir === 'in' ? 'STOCK IN' : 'STOCK OUT'}
+                        {stockAmount > 1 && ` ×${stockAmount}`}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Find mode: success overlay */}
+              {status === 'found' && foundTool && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-green-900/60">
+                  <CheckCircle size={48} className="text-green-400" />
+                  <p className="text-sm font-semibold text-green-200 px-4 text-center">
+                    T{foundTool.toolNumber} — {foundTool.description}
+                  </p>
+                </div>
+              )}
             </>
           )}
-
-          {/* Hidden canvas for frame analysis */}
-          <canvas ref={canvasRef} className="hidden" />
+          <canvas ref={decodeRef} className="hidden" />
         </div>
 
-        {/* Status footer */}
-        <div className="px-5 py-4 min-h-[72px] flex flex-col items-center justify-center gap-1 text-center">
-          {status === 'starting' && (
-            <p className="text-sm text-slate-400 flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full border-2 border-blue-400 border-t-transparent animate-spin shrink-0" />
-              Starting camera…
-            </p>
+        {/* ── Controls bar ────────────────────────────────────────────────── */}
+        <div className="px-4 py-2.5 border-b border-slate-700 shrink-0 flex items-center gap-2.5 flex-wrap">
+          {/* Camera picker */}
+          {cameras.length > 1 && (
+            <div className="flex items-center gap-1.5">
+              <Camera size={11} className="text-slate-400 shrink-0" />
+              <select
+                value={activeCamId}
+                onChange={(e) => setActiveCamId(e.target.value)}
+                title="Select camera"
+                className="bg-slate-700 border border-slate-600 rounded-lg text-slate-200 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Auto (rear)</option>
+                {cameras.map((c, i) => (
+                  <option key={c.deviceId} value={c.deviceId}>
+                    {c.label || `Camera ${i + 1}`}
+                  </option>
+                ))}
+              </select>
+            </div>
           )}
 
-          {status === 'scanning' && (
+          {/* Stock mode controls */}
+          {isStock && (
             <>
-              <p className="text-sm text-slate-300">Point camera at a tool QR label</p>
-              {unknownText ? (
-                <p className="text-xs text-amber-400 mt-1">
-                  QR detected — no matching tool:{' '}
-                  <span className="font-mono text-amber-300">{unknownText}</span>
-                </p>
-              ) : (
-                <p className="text-xs text-slate-500 mt-1">
-                  QR codes encode the tool UUID (e.g. from Print Labels)
-                </p>
+              {/* In / Out toggle */}
+              <div className="flex rounded-lg overflow-hidden border border-slate-600 text-xs">
+                <button type="button" onClick={() => setStockDir('out')}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 transition-colors ${stockDir === 'out' ? 'bg-red-600 text-white font-semibold' : 'bg-slate-700 text-slate-400 hover:bg-slate-600'}`}>
+                  <Minus size={11} /> Out
+                </button>
+                <button type="button" onClick={() => setStockDir('in')}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 transition-colors ${stockDir === 'in' ? 'bg-green-600 text-white font-semibold' : 'bg-slate-700 text-slate-400 hover:bg-slate-600'}`}>
+                  <Plus size={11} /> In
+                </button>
+              </div>
+
+              {/* Qty per scan */}
+              <div className="flex items-center gap-1.5 text-xs">
+                <span className="text-slate-400">Qty</span>
+                <input
+                  type="number"
+                  value={stockAmount}
+                  min={1}
+                  step={1}
+                  title="Quantity per scan"
+                  onChange={(e) => setStockAmount(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-14 px-2 py-1 bg-slate-700 border border-slate-600 rounded-lg text-slate-200 text-right text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {stockLog.length > 0 && (
+                <button type="button" onClick={() => setStockLog([])}
+                  className="ml-auto flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300 transition-colors">
+                  <RotateCcw size={10} /> Clear log
+                </button>
               )}
             </>
           )}
 
+          {/* Status inline (right of controls when space allows) */}
+          {status === 'starting' && (
+            <span className="ml-auto flex items-center gap-1.5 text-xs text-slate-400">
+              <span className="w-2.5 h-2.5 rounded-full border-2 border-blue-400 border-t-transparent animate-spin shrink-0" />
+              Starting…
+            </span>
+          )}
+          {status === 'scanning' && !isStock && (
+            <span className="ml-auto text-xs text-slate-500">
+              {unknownText
+                ? <span className="text-amber-400">No match: <span className="font-mono">{unknownText}</span></span>
+                : 'Point at a QR label'}
+            </span>
+          )}
+          {status === 'scanning' && isStock && (
+            <span className="ml-auto text-xs text-slate-500">
+              {unknownText
+                ? <span className="text-amber-400">QR detected — no matching tool</span>
+                : 'Scan labels to adjust qty'}
+            </span>
+          )}
           {status === 'found' && foundTool && (
-            <div className="flex items-center gap-2 text-green-300 text-sm font-medium">
-              <CheckCircle size={15} />
-              Found: T{foundTool.toolNumber} — {foundTool.description}
+            <span className="ml-auto flex items-center gap-1 text-xs text-green-400">
+              <CheckCircle size={11} /> Opening editor…
+            </span>
+          )}
+        </div>
+
+        {/* ── Scrollable body ─────────────────────────────────────────────── */}
+        <div className="flex-1 overflow-y-auto min-h-0">
+
+          {/* Manual UUID input */}
+          <div className="px-4 py-3 border-b border-slate-700/50">
+            <p className="text-xs font-medium text-slate-500 mb-1.5">Manual lookup — paste UUID</p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={manualUuid}
+                onChange={(e) => { setManualUuid(e.target.value); setManualError(''); }}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleManualLookup(); }}
+                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                title="Tool UUID"
+                className="flex-1 min-w-0 px-2.5 py-1.5 text-xs font-mono bg-slate-900 border border-slate-700 rounded-lg text-slate-300 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="button"
+                onClick={handleManualLookup}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
+                  isStock
+                    ? stockDir === 'in'
+                      ? 'bg-green-600 hover:bg-green-500 text-white'
+                      : 'bg-red-600 hover:bg-red-500 text-white'
+                    : 'bg-blue-600 hover:bg-blue-500 text-white'
+                }`}
+              >
+                {!isStock ? 'Open' : stockDir === 'in' ? '+ In' : '− Out'}
+              </button>
+            </div>
+            {manualError && <p className="mt-1 text-xs text-red-400">{manualError}</p>}
+          </div>
+
+          {/* Stock log */}
+          {isStock && (
+            <div className="px-4 py-3">
+              {stockLog.length === 0 ? (
+                <p className="text-xs text-slate-600 text-center py-2">
+                  No adjustments yet — scan a label or paste a UUID above
+                </p>
+              ) : (
+                <>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+                    Recent adjustments
+                  </p>
+                  <div className="space-y-1">
+                    {stockLog.map((entry, i) => (
+                      <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-700/40 text-xs">
+                        <span className="font-mono text-blue-400 shrink-0 w-8">T{entry.toolNumber}</span>
+                        <span className="text-slate-300 truncate flex-1">{entry.description}</span>
+                        <span className={`font-bold shrink-0 w-8 text-right ${entry.delta > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {entry.delta > 0 ? `+${entry.delta}` : entry.delta}
+                        </span>
+                        <span className="text-slate-400 shrink-0">→ {entry.newQty}</span>
+                        <span className="text-slate-600 shrink-0 w-16 text-right">
+                          {new Date(entry.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           )}
 
+          {/* Find mode: error close button */}
           {status === 'error' && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors"
-            >
-              Close
-            </button>
+            <div className="px-4 py-3 flex justify-center">
+              <button type="button" onClick={onClose}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors">
+                Close
+              </button>
+            </div>
           )}
         </div>
 
