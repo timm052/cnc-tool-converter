@@ -47,7 +47,7 @@ export function buildQrText(tool: LibraryTool, mode: LabelOptions['qrContent']):
       `Type: ${tool.type}`,
       `Ø${tool.geometry.diameter}${tool.unit}`,
       tool.geometry.numberOfFlutes ? `${tool.geometry.numberOfFlutes} flutes` : '',
-      tool.machineGroup ? `Machine: ${tool.machineGroup}` : '',
+      (tool.machineGroups?.length ?? 0) > 0 ? `Machine: ${tool.machineGroups!.join(', ')}` : '',
     ].filter(Boolean).join('\n');
   }
 }
@@ -91,8 +91,8 @@ export async function printLabels(tools: LibraryTool[], opts: LabelOptions): Pro
     if (opts.showDiameter) infoLines.push(`<div class="field">Ø${tool.geometry.diameter}&nbsp;${tool.unit}</div>`);
     if (opts.showFlutes && tool.geometry.numberOfFlutes)
                            infoLines.push(`<div class="field">${tool.geometry.numberOfFlutes} flutes</div>`);
-    if (opts.showMachine && tool.machineGroup)
-                           infoLines.push(`<div class="field">${esc(tool.machineGroup)}</div>`);
+    if (opts.showMachine && (tool.machineGroups?.length ?? 0) > 0)
+                           infoLines.push(`<div class="field">${esc(tool.machineGroups!.join(', '))}</div>`);
     if (opts.showTags && tool.tags.length)
                            infoLines.push(`<div class="field tags">${tool.tags.map(esc).join(' · ')}</div>`);
 
@@ -237,7 +237,7 @@ function buildPdfRows(tool: LibraryTool, opts: SheetOptions): SheetRow[] {
   if (out.length > cribBefore) out.splice(cribBefore, 0, { kind: 'section', label: 'Crib' });
 
   const metaBefore = out.length;
-  if (opts.showMachineGroup  && tool.machineGroup)  row('Machine',  tool.machineGroup);
+  if (opts.showMachineGroup  && (tool.machineGroups?.length ?? 0) > 0)  row('Machine',  tool.machineGroups!.join(', '));
   if (opts.showTags          && tool.tags.length)   row('Tags',     tool.tags.join(', '));
   if (opts.showManufacturer  && tool.manufacturer)  row('Make',     tool.manufacturer);
   if (opts.showManufacturer  && tool.productId)     row('Prod. ID', tool.productId);

@@ -146,7 +146,7 @@ export default function DuplicateFinderPanel({ tools, onDelete, onClose }: Dupli
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700 shrink-0">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <Copy size={16} className="text-slate-400" />
             <h2 className="text-base font-semibold text-slate-100">Find Duplicates</h2>
             {groups.length > 0 && (
@@ -162,7 +162,7 @@ export default function DuplicateFinderPanel({ tools, onDelete, onClose }: Dupli
 
         {/* Criteria selector */}
         <div className="px-5 py-3 border-b border-slate-700 shrink-0">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Match by</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-2">Match by</p>
           <div className="flex gap-2 flex-wrap">
             {([
               ['type+diameter',        'Type + Diameter'],
@@ -303,8 +303,8 @@ export default function DuplicateFinderPanel({ tools, onDelete, onClose }: Dupli
                                 {tool.geometry.overallLength != null && (
                                   <span>L{tool.geometry.overallLength.toFixed(dp)}</span>
                                 )}
-                                {tool.machineGroup && (
-                                  <span className="truncate">{tool.machineGroup}</span>
+                                {(tool.machineGroups?.length ?? 0) > 0 && (
+                                  <span className="truncate">{tool.machineGroups!.join(', ')}</span>
                                 )}
                               </div>
                             </div>

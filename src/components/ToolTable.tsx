@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ChevronUp, ChevronDown, Search, X } from 'lucide-react';
 import type { Tool } from '../types/tool';
 import { useSettings } from '../contexts/SettingsContext';
+import { getTypeColour, getTypeLabel } from '../lib/customToolTypes';
 
 interface ToolTableProps {
   tools:   Tool[];
@@ -11,35 +12,6 @@ interface ToolTableProps {
 type SortKey = 'toolNumber' | 'description' | 'type' | 'diameter';
 type SortDir = 'asc' | 'desc';
 
-const TOOL_TYPE_LABELS: Record<string, string> = {
-  'flat end mill':       'Flat EM',
-  'ball end mill':       'Ball EM',
-  'bull nose end mill':  'Bull Nose',
-  'chamfer mill':        'Chamfer',
-  'face mill':           'Face Mill',
-  'spot drill':          'Spot Drill',
-  'drill':               'Drill',
-  'tapered mill':        'Tapered',
-  'boring bar':          'Boring Bar',
-  'thread mill':         'Thread',
-  'engraving':           'Engrave',
-  'custom':              'Custom',
-};
-
-const TOOL_TYPE_COLOURS: Record<string, string> = {
-  'flat end mill':       'bg-blue-500/20 text-blue-300',
-  'ball end mill':       'bg-purple-500/20 text-purple-300',
-  'bull nose end mill':  'bg-violet-500/20 text-violet-300',
-  'chamfer mill':        'bg-orange-500/20 text-orange-300',
-  'face mill':           'bg-cyan-500/20 text-cyan-300',
-  'spot drill':          'bg-yellow-500/20 text-yellow-300',
-  'drill':               'bg-green-500/20 text-green-300',
-  'tapered mill':        'bg-pink-500/20 text-pink-300',
-  'boring bar':          'bg-teal-500/20 text-teal-300',
-  'thread mill':         'bg-amber-500/20 text-amber-300',
-  'engraving':           'bg-rose-500/20 text-rose-300',
-  'custom':              'bg-slate-500/20 text-slate-300',
-};
 
 function ColHeader({
   label, sortKey, currentKey, dir, onSort,
@@ -188,8 +160,8 @@ export default function ToolTable({ tools, title }: ToolTableProps) {
 
                   {vis.type && (
                     <td className={`px-3 ${cellPy}`}>
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${TOOL_TYPE_COLOURS[tool.type] ?? 'bg-slate-500/20 text-slate-300'}`}>
-                        {TOOL_TYPE_LABELS[tool.type] ?? tool.type}
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${getTypeColour(tool.type, [])}`}>
+                        {getTypeLabel(tool.type, [])}
                       </span>
                     </td>
                   )}

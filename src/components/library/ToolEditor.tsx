@@ -119,7 +119,7 @@ function makeBlankTool(unit: ToolUnit, settings: Settings): LibraryTool {
     description:  '',
     unit,
     geometry:     { diameter: unit === 'mm' ? 6 : 0.25 },
-    machineGroup: settings.libraryDefaultMachineGroup || undefined,
+    machineGroups: settings.libraryDefaultMachineGroup ? [settings.libraryDefaultMachineGroup] : [],
     tags:         [],
     starred:      false,
     addedAt:      Date.now(),
@@ -512,6 +512,7 @@ export default function ToolEditor({
   const cut      = draft.cutting ?? {};
   const nc       = draft.nc ?? {};
   const type     = draft.type;
+  const fv       = getFieldVisibility(type, settings.customToolTypes);
   const distUnit = draft.unit === 'mm' ? 'mm' : 'in';
   const feedUnit = `${distUnit}/${(cut.feedMode ?? 'per-minute') === 'per-minute' ? 'min' : 'rev'}`;
 
@@ -724,11 +725,11 @@ export default function ToolEditor({
                 />
               </Row2>
 
-              <Row2 label="Machine group">
+              <Row2 label="Machines">
                 <MachineGroupInput
-                  value={draft.machineGroup}
+                  values={draft.machineGroups ?? []}
                   allGroups={allMachineGroups}
-                  onChange={(v) => patchDraft({ machineGroup: v })}
+                  onChange={(v) => patchDraft({ machineGroups: v })}
                 />
               </Row2>
 
@@ -746,81 +747,104 @@ export default function ToolEditor({
           {/* ── Geometry tab ─────────────────────────────────────────────── */}
           {activeTab === 'geometry' && (
             <>
-              <div className="grid grid-cols-2 gap-3">
-                <Row2 label={`Diameter * (${draft.unit})`}>
-                  <NumF
-                    value={geo.diameter}
-                    min={0}
-                    error={errors.diameter}
-                    onChange={(v) => patchGeo({ diameter: v ?? 0 })}
-                  />
-                </Row2>
-                <Row2 label={`Shaft diameter (${draft.unit})`}>
-                  <NumF value={geo.shaftDiameter} onChange={(v) => patchGeo({ shaftDiameter: v })} min={0} />
-                </Row2>
-                <Row2 label={`Overall length (${draft.unit})`}>
-                  <NumF value={geo.overallLength} onChange={(v) => patchGeo({ overallLength: v })} min={0} error={errors.overallLength} />
-                </Row2>
-                <Row2 label={`Body length (${draft.unit})`}>
-                  <NumF value={geo.bodyLength} onChange={(v) => patchGeo({ bodyLength: v })} min={0} error={errors.bodyLength} />
-                </Row2>
-                <Row2 label={`Flute length (${draft.unit})`}>
-                  <NumF value={geo.fluteLength} onChange={(v) => patchGeo({ fluteLength: v })} min={0} />
-                </Row2>
-                <Row2 label={`Shoulder length (${draft.unit})`}>
-                  <NumF value={geo.shoulderLength} onChange={(v) => patchGeo({ shoulderLength: v })} min={0} />
-                </Row2>
-                <Row2 label="Number of flutes">
-                  <NumF value={geo.numberOfFlutes} onChange={(v) => patchGeo({ numberOfFlutes: v })} min={0} step={1} />
-                </Row2>
-
-                {/* Conditional fields */}
-                {getFieldVisibility(type, settings.customToolTypes).showsCornerRadius && (
-                  <Row2 label={`Corner radius (${draft.unit})`}>
-                    <NumF value={geo.cornerRadius} onChange={(v) => patchGeo({ cornerRadius: v })} min={0} />
+              {fv.isJetCutter ? (
+                /* ── Jet cutter: only kerf/beam, nozzle, and mount length ── */
+                <div className="grid grid-cols-2 gap-3">
+                  <Row2 label={`Kerf / beam Ø * (${draft.unit})`}>
+                    <NumF
+                      value={geo.diameter}
+                      min={0}
+                      error={errors.diameter}
+                      onChange={(v) => patchGeo({ diameter: v ?? 0 })}
+                    />
                   </Row2>
-                )}
-                {getFieldVisibility(type, settings.customToolTypes).showsTaperAngle && (
-                  <Row2 label="Taper angle (°)">
-                    <NumF value={geo.taperAngle} onChange={(v) => patchGeo({ taperAngle: v })} min={0} />
+                  <Row2 label={`Nozzle / orifice Ø (${draft.unit})`}>
+                    <NumF value={geo.nozzleDiameter} onChange={(v) => patchGeo({ nozzleDiameter: v })} min={0} />
                   </Row2>
-                )}
-                {getFieldVisibility(type, settings.customToolTypes).showsTipDiameter && (
-                  <Row2 label={`Tip diameter (${draft.unit})`}>
-                    <NumF value={geo.tipDiameter} onChange={(v) => patchGeo({ tipDiameter: v })} min={0} />
+                  <Row2 label={`Overall length (${draft.unit})`}>
+                    <NumF value={geo.overallLength} onChange={(v) => patchGeo({ overallLength: v })} min={0} />
                   </Row2>
-                )}
-                {getFieldVisibility(type, settings.customToolTypes).showsNumTeeth && (
-                  <Row2 label="Number of teeth">
-                    <NumF value={geo.numberOfTeeth} onChange={(v) => patchGeo({ numberOfTeeth: v })} min={0} step={1} />
-                  </Row2>
-                )}
-              </div>
-
-              {/* Thread mill geometry section */}
-              {getFieldVisibility(type, settings.customToolTypes).showsThreadFields && (
-                <div className="pt-2 border-t border-slate-700/60">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
-                    Thread geometry
-                  </p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Row2 label={`Thread pitch (${draft.unit})`}>
-                      <NumF value={geo.threadPitch} onChange={(v) => patchGeo({ threadPitch: v })} min={0} />
-                    </Row2>
-                    <Row2 label="Profile angle (°)">
-                      <NumF value={geo.threadProfileAngle} onChange={(v) => patchGeo({ threadProfileAngle: v })} min={0} />
-                    </Row2>
-                  </div>
                 </div>
+              ) : (
+                /* ── Standard tool geometry ─── */
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Row2 label={`Diameter * (${draft.unit})`}>
+                      <NumF
+                        value={geo.diameter}
+                        min={0}
+                        error={errors.diameter}
+                        onChange={(v) => patchGeo({ diameter: v ?? 0 })}
+                      />
+                    </Row2>
+                    <Row2 label={`Shaft diameter (${draft.unit})`}>
+                      <NumF value={geo.shaftDiameter} onChange={(v) => patchGeo({ shaftDiameter: v })} min={0} />
+                    </Row2>
+                    <Row2 label={`Overall length (${draft.unit})`}>
+                      <NumF value={geo.overallLength} onChange={(v) => patchGeo({ overallLength: v })} min={0} error={errors.overallLength} />
+                    </Row2>
+                    <Row2 label={`Body length (${draft.unit})`}>
+                      <NumF value={geo.bodyLength} onChange={(v) => patchGeo({ bodyLength: v })} min={0} error={errors.bodyLength} />
+                    </Row2>
+                    <Row2 label={`Flute length (${draft.unit})`}>
+                      <NumF value={geo.fluteLength} onChange={(v) => patchGeo({ fluteLength: v })} min={0} />
+                    </Row2>
+                    <Row2 label={`Shoulder length (${draft.unit})`}>
+                      <NumF value={geo.shoulderLength} onChange={(v) => patchGeo({ shoulderLength: v })} min={0} />
+                    </Row2>
+                    <Row2 label="Number of flutes">
+                      <NumF value={geo.numberOfFlutes} onChange={(v) => patchGeo({ numberOfFlutes: v })} min={0} step={1} />
+                    </Row2>
+
+                    {/* Conditional fields */}
+                    {fv.showsCornerRadius && (
+                      <Row2 label={`Corner radius (${draft.unit})`}>
+                        <NumF value={geo.cornerRadius} onChange={(v) => patchGeo({ cornerRadius: v })} min={0} />
+                      </Row2>
+                    )}
+                    {fv.showsTaperAngle && (
+                      <Row2 label="Taper angle (°)">
+                        <NumF value={geo.taperAngle} onChange={(v) => patchGeo({ taperAngle: v })} min={0} />
+                      </Row2>
+                    )}
+                    {fv.showsTipDiameter && (
+                      <Row2 label={`Tip diameter (${draft.unit})`}>
+                        <NumF value={geo.tipDiameter} onChange={(v) => patchGeo({ tipDiameter: v })} min={0} />
+                      </Row2>
+                    )}
+                    {fv.showsNumTeeth && (
+                      <Row2 label="Number of teeth">
+                        <NumF value={geo.numberOfTeeth} onChange={(v) => patchGeo({ numberOfTeeth: v })} min={0} step={1} />
+                      </Row2>
+                    )}
+                  </div>
+
+                  {/* Thread mill geometry section */}
+                  {fv.showsThreadFields && (
+                    <div className="pt-2 border-t border-slate-700/60">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+                        Thread geometry
+                      </p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Row2 label={`Thread pitch (${draft.unit})`}>
+                          <NumF value={geo.threadPitch} onChange={(v) => patchGeo({ threadPitch: v })} min={0} />
+                        </Row2>
+                        <Row2 label="Profile angle (°)">
+                          <NumF value={geo.threadProfileAngle} onChange={(v) => patchGeo({ threadProfileAngle: v })} min={0} />
+                        </Row2>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-sm text-slate-300">Internal coolant channels</span>
+                    <Toggle value={geo.coolantSupport ?? false} onChange={(v) => patchGeo({ coolantSupport: v })} />
+                  </div>
+                </>
               )}
 
-              <div className="flex items-center justify-between pt-1">
-                <span className="text-sm text-slate-300">Internal coolant channels</span>
-                <Toggle value={geo.coolantSupport ?? false} onChange={(v) => patchGeo({ coolantSupport: v })} />
-              </div>
-
-              {/* Assembly — holder + stick-out */}
-              <div className="pt-2 border-t border-slate-700/60">
+              {/* Assembly — holder + stick-out (not applicable for jet cutters) */}
+              {!fv.isJetCutter && <div className="pt-2 border-t border-slate-700/60">
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Assembly</p>
                 <div className="space-y-3">
                   <Row2 label="Tool holder">
@@ -856,7 +880,7 @@ export default function ToolEditor({
                     );
                   })()}
                 </div>
-              </div>
+              </div>}
             </>
           )}
 
@@ -908,15 +932,17 @@ export default function ToolEditor({
               <>
                 {/* Default cutting parameters */}
                 <div className="grid grid-cols-2 gap-3">
-                  <Row2 label="Spindle (rpm)">
-                    <NumF value={cut.spindleRpm} onChange={(v) => patchCut({ spindleRpm: v })} min={0} step={1} />
-                  </Row2>
-                  <Row2 label={`Surface speed (${speedUnit})`}>
-                    <NumF value={computedSurfaceSpeed} min={0} onChange={() => { /* read-only */ }} />
-                  </Row2>
-                  <Row2 label="Ramp spindle (rpm)">
-                    <NumF value={cut.rampSpindleRpm} onChange={(v) => patchCut({ rampSpindleRpm: v })} min={0} step={1} />
-                  </Row2>
+                  {!fv.isJetCutter && <>
+                    <Row2 label="Spindle (rpm)">
+                      <NumF value={cut.spindleRpm} onChange={(v) => patchCut({ spindleRpm: v })} min={0} step={1} />
+                    </Row2>
+                    <Row2 label={`Surface speed (${speedUnit})`}>
+                      <NumF value={computedSurfaceSpeed} min={0} onChange={() => { /* read-only */ }} />
+                    </Row2>
+                    <Row2 label="Ramp spindle (rpm)">
+                      <NumF value={cut.rampSpindleRpm} onChange={(v) => patchCut({ rampSpindleRpm: v })} min={0} step={1} />
+                    </Row2>
+                  </>}
                   <Row2 label={`Cutting feed (${feedUnit})`}>
                     <NumF value={cut.feedCutting} onChange={(v) => patchCut({ feedCutting: v })} min={0} />
                   </Row2>

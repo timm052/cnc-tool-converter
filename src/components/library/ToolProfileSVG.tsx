@@ -12,6 +12,8 @@ import { useId } from 'react';
 import type { LibraryTool } from '../../types/libraryTool';
 import type { ToolType, ToolGeometry } from '../../types/tool';
 import type { ToolHolder } from '../../types/holder';
+import type { CustomToolTypeDefinition } from '../../lib/customToolTypes';
+import { getProfileShape, getTypeLabel } from '../../lib/customToolTypes';
 import { useSettings } from '../../contexts/SettingsContext';
 
 // ── Resolved geometry ─────────────────────────────────────────────────────────
@@ -26,6 +28,8 @@ interface ResolvedGeometry {
   cornerRadius:    number;
   taperAngle:      number;   // half-angle from axis, degrees
   tipDiameter:     number;
+  profileRadius?:  number;   // circle-segment arc radius; undefined = use cornerRadius
+  nozzleDiameter?: number;   // orifice/kerf diameter for jet cutters
   threadPitch:     number;
   numberOfTeeth:   number;
   numberOfFlutes?: number;   // undefined = not set → no hatch marks
@@ -50,7 +54,12 @@ function defaultTaperAngle(type: ToolType): number {
 
 function resolveGeometry(type: ToolType, geo: ToolGeometry): ResolvedGeometry {
   const d  = geo.diameter || 6;
-  const sd = geo.shaftDiameter ?? d;
+  // Probe and lollipop mill have a narrow neck/stylus by default
+  const sd = type === 'probe'
+    ? (geo.shaftDiameter ?? d * 0.25)
+    : type === 'lollipop mill'
+      ? (geo.shaftDiameter ?? d * 0.4)
+      : (geo.shaftDiameter ?? d);
   const ol = type === 'face mill'
     ? (geo.overallLength ?? d * 0.8)
     : (geo.overallLength ?? d * 5);
@@ -77,6 +86,8 @@ function resolveGeometry(type: ToolType, geo: ToolGeometry): ResolvedGeometry {
     cornerRadius:    cr,
     taperAngle:      ta,
     tipDiameter:     td,
+    profileRadius:   geo.profileRadius,   // pass through; undefined = use cornerRadius
+    nozzleDiameter:  geo.nozzleDiameter,  // pass through; undefined = use default
     threadPitch:     tp,
     numberOfTeeth:   nt,
     numberOfFlutes:  geo.numberOfFlutes,  // pass through; undefined = no marks
@@ -155,7 +166,12 @@ function L(toolX: number, toolY: number, s: number): string {
 
 // ── Profile path builder ──────────────────────────────────────────────────────
 
-function buildProfilePath(type: ToolType, geo: ResolvedGeometry, s: number): string {
+function buildProfilePath(
+  type: ToolType,
+  geo: ResolvedGeometry,
+  s: number,
+  customTypes: CustomToolTypeDefinition[],
+): string {
   const { diameter, shaftDiameter, overallLength, fluteLength,
           cornerRadius, taperAngle, tipDiameter } = geo;
 
@@ -163,6 +179,125 @@ function buildProfilePath(type: ToolType, geo: ResolvedGeometry, s: number): str
   const sR = shaftDiameter / 2;
   const FL = fluteLength;
   const OL = overallLength;
+
+  // ── Special-case tools that don't fit the shared preamble/close model ──────
+
+  if (type === 'dovetail mill') {
+    // Dovetail: cutting section is an inverted cone — WIDER at the tip than the neck.
+    // taperAngle = half-angle of the dovetail face from horizontal.
+    const halfAngle = taperAngle * Math.PI / 180;
+    const rawNeckR  = fR - FL * Math.tan(halfAngle);
+    // neckR = radius at top of cutting section (clamp to [0.5, fR-0.5])
+    const neckR     = Math.max(0.5, Math.min(rawNeckR, fR - 0.5));
+    // The shank may be wider than the neck — taper it down
+    const shankR    = Math.max(sR, neckR);
+    const transH    = Math.abs(shankR - neckR) / Math.tan(30 * Math.PI / 180);
+    const transY    = Math.min(OL, FL + Math.max(transH, 1 / s));
+    const tipR      = tipDiameter / 2;
+    return [
+      `M${tx(-shankR, s)},${ty(OL, s)}`,
+      `L${tx(shankR, s)},${ty(OL, s)}`,
+      `L${tx(shankR, s)},${ty(transY, s)}`,
+      ...(shankR > neckR ? [`L${tx(neckR, s)},${ty(FL, s)}`] : []),
+      `L${tx(fR, s)},${TIP_Y}`,
+      ...(tipR > 0 ? [`L${tx(tipR, s)},${TIP_Y}`, `L${tx(-tipR, s)},${TIP_Y}`] : []),
+      `L${tx(-fR, s)},${TIP_Y}`,
+      ...(shankR > neckR ? [`L${tx(-neckR, s)},${ty(FL, s)}`] : []),
+      `L${tx(-shankR, s)},${ty(transY, s)}`,
+      'Z',
+    ].join(' ');
+  }
+
+  if (type === 'slot mill') {
+    // T-slot cutter: cylindrical shank, then a wide flat disc at the bottom.
+    // diameter = disc outer diameter; shaftDiameter = neck diameter; fluteLength = disc height.
+    if (fR <= sR) {
+      // Degenerate: disc not wider than neck — render as flat end mill
+      // (falls through to shared preamble below)
+    } else {
+      const discH = Math.max(FL, 2 / s);   // disc height, at least 2 px visible
+      const shankToDiscY = Math.min(OL, discH + 1 / s);  // small gap so disc is distinct
+      return [
+        `M${tx(-sR, s)},${ty(OL, s)}`,
+        `L${tx(sR, s)},${ty(OL, s)}`,
+        `L${tx(sR, s)},${ty(discH, s)}`,    // down narrow neck to disc top
+        `L${tx(fR, s)},${ty(discH, s)}`,    // step out to disc outer radius
+        `L${tx(fR, s)},${TIP_Y}`,           // disc right side
+        `L${tx(-fR, s)},${TIP_Y}`,          // flat disc bottom
+        `L${tx(-fR, s)},${ty(discH, s)}`,   // disc left side
+        `L${tx(-sR, s)},${ty(discH, s)}`,   // step back to neck
+        'Z',
+      ].join(' ');
+    }
+  }
+
+  if (type === 'face mill') {
+    // Face mill: wide flat cutter much larger than the shank.
+    // Render as: shank → 45° taper outward to body → flat bottom.
+    const bodyH  = Math.max(FL, 4 / s);       // face mill body height
+    const taperH = Math.abs(fR - sR) / Math.tan(45 * Math.PI / 180);
+    const transY = Math.min(OL, bodyH + taperH);
+    return [
+      `M${tx(-sR, s)},${ty(OL, s)}`,
+      `L${tx(sR, s)},${ty(OL, s)}`,
+      `L${tx(sR, s)},${ty(transY, s)}`,
+      `L${tx(fR, s)},${ty(bodyH, s)}`,       // 45° taper to full face mill radius
+      `L${tx(fR, s)},${TIP_Y}`,              // flat face right edge
+      `L${tx(-fR, s)},${TIP_Y}`,             // flat bottom
+      `L${tx(-fR, s)},${ty(bodyH, s)}`,
+      `L${tx(-sR, s)},${ty(transY, s)}`,
+      'Z',
+    ].join(' ');
+  }
+
+  if (type === 'circle segment barrel') {
+    // Barrel: convex sides that bulge outward at mid-height, flat bottom.
+    // Uses a quadratic bezier per side so that the midpoint equals fR exactly.
+    const sagitta = (geo.profileRadius && geo.profileRadius > fR)
+      ? geo.profileRadius - Math.sqrt(geo.profileRadius ** 2 - fR ** 2)
+      : fR * 0.22;                                    // default 22% bulge
+    const neckR  = Math.max(fR - sagitta, fR * 0.65); // radius at top/bottom of cutting section
+    const ctrlX  = 2 * fR - neckR;                   // bezier control → midpoint = fR
+    const eqY    = FL / 2;
+    const taperH = Math.abs(sR - neckR) / Math.tan(30 * Math.PI / 180);
+    const transY = Math.min(OL, FL + Math.max(taperH, 1 / s));
+    return [
+      `M${tx(-sR, s)},${ty(OL, s)}`,
+      `L${tx(sR, s)},${ty(OL, s)}`,
+      `L${tx(sR, s)},${ty(transY, s)}`,
+      ...(sR !== neckR ? [`L${tx(neckR, s)},${ty(FL, s)}`] : []),
+      `Q${tx(ctrlX, s)},${ty(eqY, s)} ${tx(neckR, s)},${TIP_Y}`,  // right convex arc
+      `L${tx(-neckR, s)},${TIP_Y}`,                                // flat bottom
+      `Q${tx(-ctrlX, s)},${ty(eqY, s)} ${tx(-neckR, s)},${ty(FL, s)}`, // left convex arc
+      ...(sR !== neckR ? [`L${tx(-sR, s)},${ty(transY, s)}`] : []),
+      'Z',
+    ].join(' ');
+  }
+
+  if (type === 'circle segment oval') {
+    // Oval/bullet: cylindrical sides tapering near the tip, then a rounded oval cap.
+    // tipR = radius of the hemispherical cap at the bottom.
+    const tipR   = (geo.profileRadius && geo.profileRadius > 0 && geo.profileRadius < fR)
+      ? geo.profileRadius
+      : fR * 0.38;
+    const tipRPx = r1(tipR * s);
+    const shTaperH = Math.abs(sR - fR) / Math.tan(30 * Math.PI / 180);
+    const transY   = Math.min(OL, FL + Math.max(shTaperH, 1 / s));
+    return [
+      `M${tx(-sR, s)},${ty(OL, s)}`,
+      `L${tx(sR, s)},${ty(OL, s)}`,
+      `L${tx(sR, s)},${ty(transY, s)}`,
+      ...(sR !== fR ? [`L${tx(fR, s)},${ty(FL, s)}`] : []),
+      // Taper sides from fR down to tipR (cap radius), then draw the hemisphere.
+      // Arc goes from (tipR, tipR) to (0, 0) — chord = tipR√2, radius = tipR → always valid.
+      `L${tx(tipR, s)},${ty(tipR, s)}`,                            // taper right to cap start
+      `A${tipRPx},${tipRPx} 0 0 1 ${tx(0, s)},${TIP_Y}`,          // right half of cap
+      `A${tipRPx},${tipRPx} 0 0 1 ${tx(-tipR, s)},${ty(tipR, s)}`,// left half of cap
+      `L${tx(-fR, s)},${ty(FL, s)}`,                               // taper left back up
+      ...(sR !== fR ? [`L${tx(-sR, s)},${ty(transY, s)}`] : []),
+      'Z',
+    ].join(' ');
+  }
 
   // taperBottomTS: where the 45° taper meets the flute/shoulder diameter.
   // shoulderLength is measured from the tip (= fluteLength + non-fluted relief).
@@ -199,12 +334,8 @@ function buildProfilePath(type: ToolType, geo: ResolvedGeometry, s: number): str
   switch (type) {
 
     case 'flat end mill':
-    case 'face mill':
     case 'boring bar':
-    case 'counter bore':
-    case 'reamer':
     case 'form mill':
-    case 'slot mill':
     case 'holder':
     case 'custom':
       tip = `${L(fR, 0, s)} ${L(-fR, 0, s)}`;
@@ -222,12 +353,7 @@ function buildProfilePath(type: ToolType, geo: ResolvedGeometry, s: number): str
       break;
     }
 
-    case 'bull nose end mill':
-    case 'circle segment barrel':
-    case 'circle segment lens':
-    case 'circle segment oval': {
-      // Circle segment tools approximate as bull-nose; cornerRadius (RE) may be small
-      // so fall back to flat if effectively zero.
+    case 'bull nose end mill': {
       const crPx = r1(Math.min(cornerRadius, fR) * s);
       if (crPx < 1) {
         tip = `${L(fR, 0, s)} ${L(-fR, 0, s)}`;
@@ -242,8 +368,33 @@ function buildProfilePath(type: ToolType, geo: ResolvedGeometry, s: number): str
       break;
     }
 
+    case 'circle segment barrel':
+    case 'circle segment oval':
+      // Both handled by early returns above — fallback flat just in case
+      tip = `${L(fR, 0, s)} ${L(-fR, 0, s)}`;
+      break;
+
+    case 'circle segment lens': {
+      // Lens: parallel sides, gently curved convex tip — a large-radius arc (flatter than ball nose).
+      // Default lens radius = fR * 3.5 (produces a visible but gentle arc).
+      const lensR   = (geo.profileRadius && geo.profileRadius >= fR)
+        ? geo.profileRadius
+        : fR * 3.5;
+      const sagitta = lensR - Math.sqrt(lensR * lensR - fR * fR);
+      const lensRPx = r1(lensR * s);
+      if (sagitta * s < 0.5) {
+        tip = `${L(fR, 0, s)} ${L(-fR, 0, s)}`;
+      } else {
+        tip = [
+          `L${tx(fR, s)},${ty(sagitta, s)}`,
+          `A${lensRPx},${lensRPx} 0 0 1 ${tx(0, s)},${TIP_Y}`,
+          `A${lensRPx},${lensRPx} 0 0 1 ${tx(-fR, s)},${ty(sagitta, s)}`,
+        ].join(' ');
+      }
+      break;
+    }
+
     case 'drill':
-    case 'center drill':
     case 'spot drill': {
       const tipR      = tipDiameter / 2;
       const rawConeH  = (fR - tipR) / Math.tan((taperAngle * Math.PI) / 180);
@@ -259,8 +410,60 @@ function buildProfilePath(type: ToolType, geo: ResolvedGeometry, s: number): str
       break;
     }
 
+    case 'center drill': {
+      // Two-stage: body → 60° countersink chamfer → pilot cylinder → 118° pilot tip
+      const pilotR = (geo.tipDiameter ?? 0) > 0
+        ? Math.min(geo.tipDiameter / 2, fR * 0.4)
+        : fR * 0.22;
+      const rawPilotConeH = pilotR / Math.tan(59 * Math.PI / 180);
+      const pilotConeH    = Math.max(rawPilotConeH, 4 / s);
+      const pilotCylH     = Math.max(FL * 0.28, 2 / s);
+      const chamferEndY   = pilotCylH + pilotConeH;   // tool Y where chamfer ends
+      tip = [
+        // right side: preamble left us at (fR, FL)
+        L(pilotR, chamferEndY, s),      // chamfer → pilot start
+        L(pilotR, pilotConeH, s),       // pilot cylinder
+        `L${tx(0, s)},${TIP_Y}`,        // pilot tip point (pointed)
+        // left side
+        L(-pilotR, pilotConeH, s),
+        L(-pilotR, chamferEndY, s),
+        L(-fR, FL, s),                  // back to left shoulder
+      ].join(' ');
+      break;
+    }
+
+    case 'counter bore': {
+      // Flat face with pilot pin extending below
+      const pilotR = (geo.tipDiameter ?? 0) > 0
+        ? Math.min(geo.tipDiameter / 2, fR * 0.6)
+        : fR * 0.3;
+      const pilotH = Math.max(FL * 0.35, 5 / s);
+      tip = [
+        L(fR, pilotH, s),       // right face step down from shoulder to flat face
+        L(pilotR, pilotH, s),   // step inward to pilot
+        L(pilotR, 0, s),        // pilot right side to bottom
+        L(-pilotR, 0, s),       // pilot flat tip
+        L(-pilotR, pilotH, s),  // pilot left side back up
+        L(-fR, pilotH, s),      // step back out to main diameter
+        // close will add L(-fR, FL)
+      ].join(' ');
+      break;
+    }
+
+    case 'reamer': {
+      // Flat tip with small 45° lead chamfer on outer edge
+      const chamferW = fR * 0.1;
+      const chamferH = chamferW;   // 45° → equal height and width
+      tip = [
+        L(fR, chamferH, s),
+        L(fR - chamferW, 0, s),
+        L(-(fR - chamferW), 0, s),
+        L(-fR, chamferH, s),
+      ].join(' ');
+      break;
+    }
+
     case 'chamfer mill':
-    case 'tapered mill':
     case 'engraving':
     case 'counter sink': {
       const tipR = tipDiameter / 2;
@@ -272,27 +475,36 @@ function buildProfilePath(type: ToolType, geo: ResolvedGeometry, s: number): str
       break;
     }
 
-    case 'dovetail mill': {
-      // Wider at cutting end than shaft. Preamble already flares outward since fR > sR.
-      // Bottom: optional corner radius rounding the outer edge, then flat inner face.
-      const tipR = tipDiameter / 2;
-      const cr   = Math.min(cornerRadius, Math.max(0, fR - tipR - 0.001));
-      const crPx = r1(cr * s);
-      if (crPx < 1) {
+    case 'tapered mill': {
+      // tapered_ball: cornerRadius ≈ fR → full hemisphere at tip
+      // tapered_bull_nose: cornerRadius > 0 and < fR → corner radius
+      // tapered flat: cornerRadius = 0 → straight tip
+      const cr = cornerRadius;
+      const crPx = r1(Math.min(cr, fR) * s);
+      if (crPx >= r1(fR * s) - 0.5) {
+        // Ball tip (tapered_ball) — hemisphere of radius = fR at tip
+        const rPx = r1(fR * s);
         tip = [
-          `L${tx(fR, s)},${TIP_Y}`,
-          `L${tx(tipR, s)},${TIP_Y}`,
-          ...(tipR > 0 ? [`L${tx(-tipR, s)},${TIP_Y}`] : []),
-          `L${tx(-fR, s)},${TIP_Y}`,
+          `L${tx(fR, s)},${ty(fR, s)}`,
+          `A${rPx},${rPx} 0 0 1 ${tx(0, s)},${TIP_Y}`,
+          `A${rPx},${rPx} 0 0 1 ${tx(-fR, s)},${ty(fR, s)}`,
+        ].join(' ');
+      } else if (crPx >= 1) {
+        // Bull-nose tip (tapered_bull_nose) — corner radius at the cutting edge
+        const clampCR = Math.min(cr, fR);
+        tip = [
+          `L${tx(fR, s)},${ty(clampCR, s)}`,
+          `A${crPx},${crPx} 0 0 1 ${tx(fR - clampCR, s)},${TIP_Y}`,
+          `L${tx(-(fR - clampCR), s)},${TIP_Y}`,
+          `A${crPx},${crPx} 0 0 1 ${tx(-fR, s)},${ty(clampCR, s)}`,
         ].join(' ');
       } else {
+        // Flat tip (tapered flat)
+        const tipR = tipDiameter / 2;
         tip = [
-          `L${tx(fR, s)},${ty(cr, s)}`,
-          `A${crPx},${crPx} 0 0 1 ${tx(fR - cr, s)},${TIP_Y}`,
-          ...(fR - cr > tipR + 0.3 ? [`L${tx(tipR, s)},${TIP_Y}`] : []),
+          `L${tx(tipR, s)},${TIP_Y}`,
           ...(tipR > 0 ? [`L${tx(-tipR, s)},${TIP_Y}`] : []),
-          ...(fR - cr > tipR + 0.3 ? [`L${tx(-(fR - cr), s)},${TIP_Y}`] : []),
-          `A${crPx},${crPx} 0 0 1 ${tx(-fR, s)},${ty(cr, s)}`,
+          `L${tx(-fR, s)},${ty(FL, s)}`,
         ].join(' ');
       }
       break;
@@ -331,53 +543,277 @@ function buildProfilePath(type: ToolType, geo: ResolvedGeometry, s: number): str
 
     case 'tap right hand':
     case 'tap left hand': {
-      // Like thread mill but number of turns = FL / pitch (not stored NT which is starts)
-      const pitch  = geo.threadPitch;
-      const nTeeth = Math.min(30, Math.max(1, Math.floor(FL / pitch)));
-      const notchD = fR * 0.15;   // shallower notch than thread mill
+      // Like thread mill but with a lead chamfer on the bottom nChamfer teeth
+      const pitch    = geo.threadPitch;
+      const nFull    = Math.min(30, Math.max(1, Math.floor(FL / pitch)));
+      const nChamfer = Math.min(3, nFull);   // first 3 teeth taper from small → full OD
+      const notchD   = fR * 0.15;
 
-      const teeth: { crestY: number; rootY: number }[] = [];
-      for (let i = 0; i < nTeeth; i++) {
+      const teeth: { crestY: number; rootY: number; outerR: number }[] = [];
+      for (let i = 0; i < nFull; i++) {
         const crestY = (i + 1) * pitch;
         const rootY  = i * pitch + pitch * 0.5;
         if (crestY > FL) break;
-        teeth.push({ crestY, rootY });
+        // i=0 is lowest (first cutting) tooth; it has the smallest chamfered radius
+        const outerR = i < nChamfer
+          ? fR * (i + 1) / (nChamfer + 1)
+          : fR;
+        teeth.push({ crestY, rootY, outerR });
       }
 
-      const rightPts = teeth.slice().reverse().flatMap(({ crestY, rootY }) => [
-        `L${tx(fR, s)},${ty(crestY, s)}`,
-        `L${tx(fR - notchD, s)},${ty(rootY, s)}`,
+      if (teeth.length === 0) {
+        tip = `${L(fR, 0, s)} ${L(-fR, 0, s)}`;
+        break;
+      }
+
+      // rightPts: reversed → highest tooth first (near FL), lowest tooth last (near tip)
+      const rightPts = teeth.slice().reverse().flatMap(({ crestY, rootY, outerR }) => [
+        `L${tx(outerR, s)},${ty(crestY, s)}`,
+        `L${tx(Math.max(outerR - notchD, 0.1), s)},${ty(rootY, s)}`,
       ]);
-      const leftPts = teeth.flatMap(({ crestY, rootY }) => [
-        `L${tx(-(fR - notchD), s)},${ty(rootY, s)}`,
-        `L${tx(-fR, s)},${ty(crestY, s)}`,
+      const leftPts = teeth.flatMap(({ crestY, rootY, outerR }) => [
+        `L${tx(-Math.max(outerR - notchD, 0.1), s)},${ty(rootY, s)}`,
+        `L${tx(-outerR, s)},${ty(crestY, s)}`,
       ]);
 
+      // Bottom: flat tip at the smallest (first) tooth's outer radius
+      const tipR = teeth[0].outerR;
       tip = [
         ...rightPts,
-        `L${tx(fR, s)},${TIP_Y}`,
-        `L${tx(-fR, s)},${TIP_Y}`,
+        `L${tx(tipR, s)},${TIP_Y}`,
+        `L${tx(-tipR, s)},${TIP_Y}`,
         ...leftPts,
       ].join(' ');
       break;
     }
 
-    case 'laser cutter':
-    case 'plasma cutter':
-    case 'waterjet': {
-      // Converging nozzle shape
-      const orificeR = r1(fR * 0.12);
+    case 'laser cutter': {
+      // Fine orifice; two-step convergence from flange to nozzle body to orifice exit
+      const orificeR = geo.nozzleDiameter !== undefined
+        ? Math.min(geo.nozzleDiameter / 2, fR * 0.15)
+        : fR * 0.06;
+      const bodyR  = fR * 0.32;
+      const body1Y = FL * 0.45;   // step in to nozzle body
+      const body2Y = FL * 0.10;   // converge toward orifice
       tip = [
-        `L${tx(fR * 0.55, s)},${ty(FL * 0.18, s)}`,
-        `L${tx(orificeR, s)},${TIP_Y}`,
-        `L${tx(-orificeR, s)},${TIP_Y}`,
-        `L${tx(-fR * 0.55, s)},${ty(FL * 0.18, s)}`,
+        L(fR * 0.65, FL * 0.2, s),   // outer convergence
+        L(bodyR, body1Y, s),           // step in to nozzle body
+        L(bodyR, body2Y, s),           // nozzle body
+        L(orificeR, 0, s),             // fine orifice exit
+        L(-orificeR, 0, s),
+        L(-bodyR, body2Y, s),
+        L(-bodyR, body1Y, s),
+        L(-fR * 0.65, FL * 0.2, s),
+        L(-fR, FL, s),
       ].join(' ');
       break;
     }
 
-    default:
-      tip = `${L(fR, 0, s)} ${L(-fR, 0, s)}`;
+    case 'plasma cutter': {
+      // Wider orifice; simple single-step convergence
+      const orificeR = geo.nozzleDiameter !== undefined
+        ? Math.min(geo.nozzleDiameter / 2, fR * 0.4)
+        : fR * 0.2;
+      tip = [
+        L(fR * 0.6, FL * 0.2, s),
+        L(orificeR, 0, s),
+        L(-orificeR, 0, s),
+        L(-fR * 0.6, FL * 0.2, s),
+        L(-fR, FL, s),
+      ].join(' ');
+      break;
+    }
+
+    case 'waterjet': {
+      // Converging nozzle with a straight mixing-tube section before the orifice
+      const orificeR  = geo.nozzleDiameter !== undefined
+        ? Math.min(geo.nozzleDiameter / 2, fR * 0.25)
+        : fR * 0.12;
+      const tubeR     = orificeR * 2.2;   // mixing tube wider than orifice
+      const tubeTopY  = FL * 0.42;        // where outer body narrows to tube
+      const tubeBotY  = FL * 0.08;        // tube exits to orifice
+      tip = [
+        L(fR * 0.6, FL * 0.2, s),         // outer convergence
+        L(tubeR, tubeTopY, s),             // step in to mixing tube
+        L(tubeR, tubeBotY, s),             // straight mixing tube
+        L(orificeR, 0, s),                 // orifice exit
+        L(-orificeR, 0, s),
+        L(-tubeR, tubeBotY, s),
+        L(-tubeR, tubeTopY, s),
+        L(-fR * 0.6, FL * 0.2, s),
+        L(-fR, FL, s),
+      ].join(' ');
+      break;
+    }
+
+    default: {
+      // For user-defined custom type IDs, delegate to getProfileShape
+      const shape = getProfileShape(type, customTypes);
+      switch (shape) {
+        case 'ball': {
+          const rPx = r1(fR * s);
+          tip = [
+            `L${tx(fR, s)},${ty(fR, s)}`,
+            `A${rPx},${rPx} 0 0 1 ${tx(0, s)},${TIP_Y}`,
+            `A${rPx},${rPx} 0 0 1 ${tx(-fR, s)},${ty(fR, s)}`,
+          ].join(' ');
+          break;
+        }
+        case 'bull nose': {
+          const crPx2 = r1(Math.min(cornerRadius, fR) * s);
+          if (crPx2 < 1) {
+            tip = `${L(fR, 0, s)} ${L(-fR, 0, s)}`;
+          } else {
+            tip = [
+              `L${tx(fR, s)},${ty(cornerRadius, s)}`,
+              `A${crPx2},${crPx2} 0 0 1 ${tx(fR - cornerRadius, s)},${TIP_Y}`,
+              `L${tx(-(fR - cornerRadius), s)},${TIP_Y}`,
+              `A${crPx2},${crPx2} 0 0 1 ${tx(-fR, s)},${ty(cornerRadius, s)}`,
+            ].join(' ');
+          }
+          break;
+        }
+        case 'tapered ball': {
+          const crPx2 = r1(Math.min(cornerRadius, fR) * s);
+          if (crPx2 >= r1(fR * s) - 0.5) {
+            const rPx2 = r1(fR * s);
+            tip = [
+              `L${tx(fR, s)},${ty(fR, s)}`,
+              `A${rPx2},${rPx2} 0 0 1 ${tx(0, s)},${TIP_Y}`,
+              `A${rPx2},${rPx2} 0 0 1 ${tx(-fR, s)},${ty(fR, s)}`,
+            ].join(' ');
+          } else {
+            // No corner radius set → treat as plain ball
+            const rPx2 = r1(fR * s);
+            tip = [
+              `L${tx(fR, s)},${ty(fR, s)}`,
+              `A${rPx2},${rPx2} 0 0 1 ${tx(0, s)},${TIP_Y}`,
+              `A${rPx2},${rPx2} 0 0 1 ${tx(-fR, s)},${ty(fR, s)}`,
+            ].join(' ');
+          }
+          break;
+        }
+        case 'tapered bull nose': {
+          const clampCR2 = Math.min(cornerRadius, fR);
+          const crPx2 = r1(clampCR2 * s);
+          if (crPx2 >= 1) {
+            tip = [
+              `L${tx(fR, s)},${ty(clampCR2, s)}`,
+              `A${crPx2},${crPx2} 0 0 1 ${tx(fR - clampCR2, s)},${TIP_Y}`,
+              `L${tx(-(fR - clampCR2), s)},${TIP_Y}`,
+              `A${crPx2},${crPx2} 0 0 1 ${tx(-fR, s)},${ty(clampCR2, s)}`,
+            ].join(' ');
+          } else {
+            tip = `${L(fR, 0, s)} ${L(-fR, 0, s)}`;
+          }
+          break;
+        }
+        case 'drill': {
+          const tipR2 = tipDiameter / 2;
+          const coneH2 = Math.max((fR - tipR2) / Math.tan((taperAngle * Math.PI) / 180), 12 / s);
+          tip = [
+            `L${tx(fR, s)},${ty(coneH2, s)}`,
+            `L${tx(tipR2, s)},${TIP_Y}`,
+            ...(tipR2 > 0 ? [`L${tx(-tipR2, s)},${TIP_Y}`] : []),
+            `L${tx(-fR, s)},${ty(coneH2, s)}`,
+          ].join(' ');
+          break;
+        }
+        case 'tapered': {
+          const tipR2 = tipDiameter / 2;
+          tip = [
+            `L${tx(tipR2, s)},${TIP_Y}`,
+            ...(tipR2 > 0 ? [`L${tx(-tipR2, s)},${TIP_Y}`] : []),
+            `L${tx(-fR, s)},${ty(FL, s)}`,
+          ].join(' ');
+          break;
+        }
+        case 'center drill': {
+          const pilotR2 = tipDiameter > 0 ? Math.min(tipDiameter / 2, fR * 0.4) : fR * 0.22;
+          const pcH2 = Math.max(pilotR2 / Math.tan(59 * Math.PI / 180), 4 / s);
+          const pylH2 = Math.max(FL * 0.28, 2 / s);
+          const chamY2 = pylH2 + pcH2;
+          tip = [
+            L(pilotR2, chamY2, s), L(pilotR2, pcH2, s),
+            `L${tx(0, s)},${TIP_Y}`,
+            L(-pilotR2, pcH2, s), L(-pilotR2, chamY2, s), L(-fR, FL, s),
+          ].join(' ');
+          break;
+        }
+        case 'counter bore': {
+          const pilotR2 = tipDiameter > 0 ? Math.min(tipDiameter / 2, fR * 0.6) : fR * 0.3;
+          const pH2 = Math.max(FL * 0.35, 5 / s);
+          tip = [
+            L(fR, pH2, s), L(pilotR2, pH2, s), L(pilotR2, 0, s),
+            L(-pilotR2, 0, s), L(-pilotR2, pH2, s), L(-fR, pH2, s),
+          ].join(' ');
+          break;
+        }
+        case 'reamer': {
+          const cw2 = fR * 0.1;
+          tip = [
+            L(fR, cw2, s), L(fR - cw2, 0, s),
+            L(-(fR - cw2), 0, s), L(-fR, cw2, s),
+          ].join(' ');
+          break;
+        }
+        case 'tap': {
+          const pitch2 = geo.threadPitch;
+          const nFull2 = Math.min(30, Math.max(1, Math.floor(FL / pitch2)));
+          const nCh2 = Math.min(3, nFull2);
+          const nd2 = fR * 0.15;
+          const teeth2: { crestY: number; rootY: number; outerR: number }[] = [];
+          for (let i = 0; i < nFull2; i++) {
+            const crestY = (i + 1) * pitch2;
+            if (crestY > FL) break;
+            teeth2.push({
+              crestY,
+              rootY: i * pitch2 + pitch2 * 0.5,
+              outerR: i < nCh2 ? fR * (i + 1) / (nCh2 + 1) : fR,
+            });
+          }
+          if (teeth2.length === 0) { tip = `${L(fR, 0, s)} ${L(-fR, 0, s)}`; break; }
+          const tipR2 = teeth2[0].outerR;
+          tip = [
+            ...teeth2.slice().reverse().flatMap(({ crestY, rootY, outerR }) => [
+              `L${tx(outerR, s)},${ty(crestY, s)}`,
+              `L${tx(Math.max(outerR - nd2, 0.1), s)},${ty(rootY, s)}`,
+            ]),
+            `L${tx(tipR2, s)},${TIP_Y}`, `L${tx(-tipR2, s)},${TIP_Y}`,
+            ...teeth2.flatMap(({ crestY, rootY, outerR }) => [
+              `L${tx(-Math.max(outerR - nd2, 0.1), s)},${ty(rootY, s)}`,
+              `L${tx(-outerR, s)},${ty(crestY, s)}`,
+            ]),
+          ].join(' ');
+          break;
+        }
+        case 'thread mill': {
+          const pitch2 = geo.threadPitch;
+          const nTeeth2 = geo.numberOfTeeth;
+          const nd2 = fR * 0.2;
+          const teeth2: { crestY: number; rootY: number }[] = [];
+          for (let i = 0; i < nTeeth2; i++) {
+            const crestY = (i + 1) * pitch2;
+            if (crestY > FL) break;
+            teeth2.push({ crestY, rootY: i * pitch2 + pitch2 * 0.5 });
+          }
+          tip = [
+            ...teeth2.slice().reverse().flatMap(({ crestY, rootY }) => [
+              `L${tx(fR, s)},${ty(crestY, s)}`,
+              `L${tx(fR - nd2, s)},${ty(rootY, s)}`,
+            ]),
+            `L${tx(fR, s)},${TIP_Y}`, `L${tx(-fR, s)},${TIP_Y}`,
+            ...teeth2.flatMap(({ crestY, rootY }) => [
+              `L${tx(-(fR - nd2), s)},${ty(rootY, s)}`,
+              `L${tx(-fR, s)},${ty(crestY, s)}`,
+            ]),
+          ].join(' ');
+          break;
+        }
+        default:
+          tip = `${L(fR, 0, s)} ${L(-fR, 0, s)}`;
+      }
+    }
   }
 
   return `${preamble} ${tip} ${close}`;
@@ -458,6 +894,139 @@ function FluteLines({ numberOfFlutes, fRpx, flzTop, flzBot }: FluteLinesProps) {
         );
       })}
     </>
+  );
+}
+
+// ── Static illustrations for non-geometric cutting tools ──────────────────────
+
+function StaticCutterSVG({
+  type,
+  zoom,
+  unit,
+  nozzleDiameter,
+  autoHeight = false,
+}: {
+  type: 'laser cutter' | 'plasma cutter' | 'waterjet';
+  zoom: number;
+  unit: string;
+  nozzleDiameter?: number;
+  autoHeight?: boolean;
+}) {
+  const vbH = 185;
+  const svgH = Math.round(vbH * zoom);
+  const vbW = r1(480 / zoom);
+  const vbX = r1(CX - vbW / 2);
+  const viewBoxAttr = `${vbX} 0 ${vbW} ${vbH}`;
+
+  const ndLabel = nozzleDiameter != null ? `  ·  Ø${nozzleDiameter} ${unit}` : '';
+  const label = type === 'laser cutter' ? 'Laser Cutter'
+    : type === 'plasma cutter' ? 'Plasma Cutter'
+    : 'Waterjet';
+
+  return (
+    <svg viewBox={viewBoxAttr} width="100%" height={autoHeight ? undefined : svgH} className="block"
+         aria-label={`${label} tool profile`}>
+      <rect x={vbX} y={0} width={vbW} height={185} fill="#0f172a" />
+      <text x={vbX + 4} y={10} fontSize={10} fill="#475569"
+            fontFamily="ui-monospace, monospace" textAnchor="start" dominantBaseline="hanging">
+        {unit}
+      </text>
+      <line x1={CX} y1={10} x2={CX} y2={130}
+            stroke="#1e293b" strokeWidth={0.8} strokeDasharray="3,3" />
+
+      {/* ── Plasma cutter ─────────────────────────────────────────────── */}
+      {type === 'plasma cutter' && (
+        <g>
+          {/* Ribbed body */}
+          <rect x={212} y={15} width={56} height={33} rx={2}
+                fill="#1c2e3e" stroke="#7bafc8" strokeWidth={1.5} />
+          <line x1={212} y1={24} x2={268} y2={24} stroke="#7bafc8" strokeWidth={1} strokeOpacity={0.55} />
+          <line x1={212} y1={31} x2={268} y2={31} stroke="#7bafc8" strokeWidth={1} strokeOpacity={0.55} />
+          <line x1={212} y1={38} x2={268} y2={38} stroke="#7bafc8" strokeWidth={1} strokeOpacity={0.55} />
+          {/* Body → nozzle housing taper */}
+          <path d="M212,48 L224,67 L256,67 L268,48 Z"
+                fill="#1c2e3e" stroke="#7bafc8" strokeWidth={1.5} strokeLinejoin="round" />
+          {/* Electrode nozzle housing */}
+          <rect x={224} y={67} width={32} height={20} rx={1}
+                fill="#1c2e3e" stroke="#7bafc8" strokeWidth={1.5} />
+          {/* Nozzle housing → tip taper */}
+          <path d="M224,87 L233,101 L247,101 L256,87 Z"
+                fill="#1c2e3e" stroke="#7bafc8" strokeWidth={1.5} strokeLinejoin="round" />
+          {/* Diamond pointed tip */}
+          <path d="M233,101 L240,119 L247,101 Z"
+                fill="#1c2e3e" stroke="#7bafc8" strokeWidth={1.5} strokeLinejoin="round" />
+          {/* Arc sparks */}
+          <line x1={234} y1={123} x2={226} y2={133} stroke="#f59e0b" strokeWidth={1.5} strokeOpacity={0.85} />
+          <line x1={240} y1={122} x2={240} y2={133} stroke="#f59e0b" strokeWidth={1.5} strokeOpacity={0.85} />
+          <line x1={246} y1={123} x2={254} y2={133} stroke="#f59e0b" strokeWidth={1.5} strokeOpacity={0.85} />
+        </g>
+      )}
+
+      {/* ── Laser cutter ──────────────────────────────────────────────── */}
+      {type === 'laser cutter' && (
+        <g>
+          {/* Head body */}
+          <rect x={210} y={15} width={60} height={34} rx={3}
+                fill="#1c2e3e" stroke="#7bafc8" strokeWidth={1.5} />
+          {/* Lens — outer ring */}
+          <circle cx={CX} cy={32} r={12} fill="#0f172a" stroke="#60a5fa" strokeWidth={1.5} />
+          {/* Lens — inner focus spot */}
+          <circle cx={CX} cy={32} r={6} fill="#1e3a5f" stroke="#93c5fd" strokeWidth={1} fillOpacity={0.8} />
+          {/* Lens cross-hairs */}
+          <line x1={228} y1={32} x2={252} y2={32} stroke="#60a5fa" strokeWidth={0.6} strokeOpacity={0.4} />
+          <line x1={CX}  y1={20} x2={CX}  y2={44} stroke="#60a5fa" strokeWidth={0.6} strokeOpacity={0.4} />
+          {/* Convergent nozzle cone */}
+          <path d="M210,49 L231,76 L249,76 L270,49 Z"
+                fill="#1c2e3e" stroke="#7bafc8" strokeWidth={1.5} strokeLinejoin="round" />
+          {/* Nozzle tip cylinder */}
+          <rect x={235} y={76} width={10} height={14} rx={1}
+                fill="#1c2e3e" stroke="#7bafc8" strokeWidth={1.5} />
+          {/* Laser beam — red dashed */}
+          <line x1={CX} y1={90} x2={CX} y2={122}
+                stroke="#ef4444" strokeWidth={1.5} strokeDasharray="3,2" strokeOpacity={0.9} />
+          {/* Spark rays */}
+          <line x1={CX - 1} y1={120} x2={CX - 13} y2={133} stroke="#fbbf24" strokeWidth={1.5} strokeOpacity={0.9} />
+          <line x1={CX + 1} y1={120} x2={CX + 13} y2={133} stroke="#fbbf24" strokeWidth={1.5} strokeOpacity={0.9} />
+          <line x1={CX}     y1={121} x2={CX - 8}  y2={133} stroke="#fbbf24" strokeWidth={1}   strokeOpacity={0.5} />
+          <line x1={CX}     y1={121} x2={CX + 8}  y2={133} stroke="#fbbf24" strokeWidth={1}   strokeOpacity={0.5} />
+          <line x1={CX}     y1={123} x2={CX}       y2={134} stroke="#fbbf24" strokeWidth={1}   strokeOpacity={0.4} />
+        </g>
+      )}
+
+      {/* ── Waterjet ──────────────────────────────────────────────────── */}
+      {type === 'waterjet' && (
+        <g>
+          {/* Main head body */}
+          <rect x={218} y={15} width={44} height={27} rx={3}
+                fill="#1c2e3e" stroke="#7bafc8" strokeWidth={1.5} />
+          {/* Side water-supply inlet (left) */}
+          <rect x={193} y={21} width={25} height={10} rx={2}
+                fill="#1c2e3e" stroke="#7bafc8" strokeWidth={1.2} />
+          {/* Water drop symbol (right) */}
+          <path d={`M${CX + 26},12 C${CX + 24},16 ${CX + 21},19 ${CX + 21},22 A5,5 0 0 0 ${CX + 31},22 C${CX + 31},19 ${CX + 28},16 ${CX + 26},12 Z`}
+                fill="#38bdf8" fillOpacity={0.65} stroke="#38bdf8" strokeWidth={0.8} />
+          {/* Body → mixing chamber taper */}
+          <path d="M218,42 L229,58 L251,58 L262,42 Z"
+                fill="#1c2e3e" stroke="#7bafc8" strokeWidth={1.5} strokeLinejoin="round" />
+          {/* Mixing tube — long narrow characteristic section */}
+          <rect x={233} y={58} width={14} height={40} rx={1}
+                fill="#1c2e3e" stroke="#7bafc8" strokeWidth={1.5} />
+          {/* Orifice taper */}
+          <path d="M233,98 L237,108 L243,108 L247,98 Z"
+                fill="#1c2e3e" stroke="#7bafc8" strokeWidth={1.2} strokeLinejoin="round" />
+          {/* Water jet stream */}
+          <line x1={CX}     y1={108} x2={CX}     y2={130} stroke="#38bdf8" strokeWidth={2.5} strokeOpacity={0.85} />
+          <line x1={CX - 1} y1={108} x2={CX - 1} y2={130} stroke="#7dd3fc" strokeWidth={0.8} strokeOpacity={0.3} />
+          <line x1={CX + 1} y1={108} x2={CX + 1} y2={130} stroke="#7dd3fc" strokeWidth={0.8} strokeOpacity={0.3} />
+        </g>
+      )}
+
+      {/* Label */}
+      <text x={CX} y={178} fontSize={11} fontWeight={600} fill="#64748b"
+            fontFamily="ui-sans-serif, sans-serif" textAnchor="middle">
+        {label}{ndLabel}
+      </text>
+    </svg>
   );
 }
 
@@ -544,15 +1113,31 @@ export function ToolProfileSVG({
   draft,
   zoom = 1,
   allHolders = [],
+  autoHeight = false,
 }: {
-  draft:       LibraryTool;
-  zoom?:       number;
-  allHolders?: ToolHolder[];
+  draft:        LibraryTool;
+  zoom?:        number;
+  allHolders?:  ToolHolder[];
+  autoHeight?:  boolean;
 }) {
   const { settings } = useSettings();
-  const clipId = useId();
-  const dec  = settings.tableDecimalPrecision;
-  const unit = draft.unit;
+  const clipId     = useId();
+  const dec        = settings.tableDecimalPrecision;
+  const unit       = draft.unit;
+  const customTypes = settings.customToolTypes;
+
+  // Static illustration for non-geometric cutting tools — return early after hooks
+  if (draft.type === 'laser cutter' || draft.type === 'plasma cutter' || draft.type === 'waterjet') {
+    return (
+      <StaticCutterSVG
+        type={draft.type as 'laser cutter' | 'plasma cutter' | 'waterjet'}
+        zoom={zoom}
+        unit={unit}
+        nozzleDiameter={draft.geometry.nozzleDiameter}
+        autoHeight={autoHeight}
+      />
+    );
+  }
 
   // Format a number: round to `dec` places but strip trailing zeros so the
   // result matches what the user typed in the editor (e.g. 6 → "6", not "6.000")
@@ -595,7 +1180,7 @@ export function ToolProfileSVG({
     );
   }
 
-  const profileD = buildProfilePath(draft.type, resolved, scale);
+  const profileD = buildProfilePath(draft.type, resolved, scale, customTypes);
 
   // ── Annotation geometry ────────────────────────────────────────────────────
 
@@ -674,7 +1259,7 @@ export function ToolProfileSVG({
     <svg
       viewBox={viewBoxAttr}
       width="100%"
-      height={svgH}
+      height={autoHeight ? undefined : svgH}
       className="block"
       aria-label={`${draft.type} profile`}
     >
@@ -688,13 +1273,13 @@ export function ToolProfileSVG({
       {/* Background */}
       <rect width="480" height="185" fill="#0f172a" />
 
-      {/* Unit badge */}
+      {/* Unit badge — top-left of viewBox so it never overlaps the tool at any zoom */}
       <text
-        x="474" y="10"
+        x={vbX + 4} y="10"
         fontSize="10"
         fill="#475569"
         fontFamily="ui-monospace, monospace"
-        textAnchor="end"
+        textAnchor="start"
         dominantBaseline="hanging"
       >
         {unit}
@@ -874,7 +1459,7 @@ export function ToolProfileSVG({
 
       {/* Tool type label — centred */}
       <text x={CX} y="178" fontSize="11" fontWeight="600" fill="#64748b" fontFamily="ui-sans-serif, sans-serif" textAnchor="middle">
-        {draft.type}
+        {getTypeLabel(draft.type, customTypes)}
         {resolved.numberOfFlutes ? `  ·  ${resolved.numberOfFlutes} flutes` : ''}
       </text>
     </svg>

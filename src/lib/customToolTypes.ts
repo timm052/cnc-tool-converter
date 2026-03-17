@@ -3,7 +3,19 @@ export interface CustomToolTypeDefinition {
   id:               string;
   label:            string;
   /** Which SVG profile shape to render */
-  profileShape:     'flat' | 'ball' | 'tapered' | 'drill';
+  profileShape:
+    | 'flat'           // flat bottom (end mill, face mill)
+    | 'ball'           // hemispherical tip
+    | 'bull nose'      // flat with corner radius
+    | 'tapered'        // V-shape / cone tip (chamfer, countersink)
+    | 'tapered ball'   // tapered body + ball tip
+    | 'tapered bull nose' // tapered body + corner radius
+    | 'drill'          // pointed tip with drill-point cone
+    | 'center drill'   // two-stage center drill
+    | 'counter bore'   // flat face + pilot pin
+    | 'reamer'         // flat + lead chamfer
+    | 'tap'            // threaded with lead chamfer
+    | 'thread mill';   // thread teeth only
   colour:           string;   // Tailwind bg/text class pair, e.g. "bg-indigo-500/20 text-indigo-300"
   showsCornerRadius:   boolean;
   showsTaperAngle:     boolean;
@@ -12,7 +24,7 @@ export interface CustomToolTypeDefinition {
   showsNumTeeth:       boolean;
 }
 
-const BUILTIN_TYPES = [
+export const BUILTIN_TYPES = [
   // Milling
   'flat end mill', 'ball end mill', 'bull nose end mill', 'chamfer mill',
   'face mill', 'tapered mill', 'dovetail mill', 'slot mill', 'lollipop mill',
@@ -28,11 +40,59 @@ const BUILTIN_TYPES = [
   'probe', 'laser cutter', 'plasma cutter', 'waterjet', 'holder', 'custom',
 ] as const;
 
+const BUILTIN_LABELS: Record<string, string> = {
+  // Milling
+  'flat end mill':          'Flat End Mill',
+  'ball end mill':          'Ball End Mill',
+  'bull nose end mill':     'Bull Nose',
+  'chamfer mill':           'Chamfer Mill',
+  'face mill':              'Face Mill',
+  'tapered mill':           'Tapered Mill',
+  'dovetail mill':          'Dovetail Mill',
+  'slot mill':              'Slot Mill',
+  'lollipop mill':          'Lollipop Mill',
+  'form mill':              'Form Mill',
+  'engraving':              'Engraving',
+  // Circle segment
+  'circle segment barrel':  'CS Barrel',
+  'circle segment lens':    'CS Lens',
+  'circle segment oval':    'CS Oval',
+  // Hole making
+  'drill':                  'Drill',
+  'center drill':           'Center Drill',
+  'spot drill':             'Spot Drill',
+  'counter bore':           'Counter Bore',
+  'counter sink':           'Counter Sink',
+  'reamer':                 'Reamer',
+  'boring bar':             'Boring Bar',
+  // Threading
+  'thread mill':            'Thread Mill',
+  'tap right hand':         'Tap (RH)',
+  'tap left hand':          'Tap (LH)',
+  // Special
+  'probe':                  'Probe',
+  'laser cutter':           'Laser',
+  'plasma cutter':          'Plasma',
+  'waterjet':               'Waterjet',
+  'holder':                 'Holder',
+  'custom':                 'Custom',
+};
+
+/** Display label for a type (built-in or custom). */
+export function getTypeLabel(
+  typeId: string,
+  customTypes: CustomToolTypeDefinition[],
+): string {
+  const custom = customTypes.find((c) => c.id === typeId);
+  if (custom) return custom.label;
+  return BUILTIN_LABELS[typeId] ?? typeId;
+}
+
 /** Returns combined list for the <select> options. */
 export function getAllToolTypeOptions(
   customTypes: CustomToolTypeDefinition[],
 ): { value: string; label: string }[] {
-  const builtin = BUILTIN_TYPES.map((t) => ({ value: t, label: t }));
+  const builtin = BUILTIN_TYPES.map((t) => ({ value: t, label: BUILTIN_LABELS[t] ?? t }));
   const custom  = customTypes.map((c) => ({ value: c.id, label: `★ ${c.label}` }));
   return [...builtin, ...custom];
 }
@@ -42,15 +102,33 @@ export function getFieldVisibility(
   typeId: string,
   customTypes: CustomToolTypeDefinition[],
 ): {
+  isJetCutter:       boolean;
+  showsNozzleDiameter: boolean;
   showsCornerRadius: boolean;
   showsTaperAngle:   boolean;
   showsTipDiameter:  boolean;
   showsThreadFields: boolean;
   showsNumTeeth:     boolean;
 } {
+  // Jet cutters have a completely different set of relevant fields
+  const JET_TYPES = ['laser cutter', 'plasma cutter', 'waterjet'];
+  if (JET_TYPES.includes(typeId)) {
+    return {
+      isJetCutter:         true,
+      showsNozzleDiameter: true,
+      showsCornerRadius:   false,
+      showsTaperAngle:     false,
+      showsTipDiameter:    false,
+      showsThreadFields:   false,
+      showsNumTeeth:       false,
+    };
+  }
+
   const custom = customTypes.find((c) => c.id === typeId);
   if (custom) {
     return {
+      isJetCutter:         false,
+      showsNozzleDiameter: false,
       showsCornerRadius: custom.showsCornerRadius,
       showsTaperAngle:   custom.showsTaperAngle,
       showsTipDiameter:  custom.showsTipDiameter,
@@ -60,8 +138,10 @@ export function getFieldVisibility(
   }
   // Built-in type fallback
   return {
+    isJetCutter:         false,
+    showsNozzleDiameter: false,
     showsCornerRadius: [
-      'bull nose end mill', 'lollipop mill', 'probe',
+      'bull nose end mill', 'lollipop mill', 'probe', 'tapered mill',
       'circle segment barrel', 'circle segment lens', 'circle segment oval',
       'custom',
     ].includes(typeId),
@@ -130,16 +210,30 @@ export function getTypeColour(
 export function getProfileShape(
   typeId: string,
   customTypes: CustomToolTypeDefinition[],
-): 'flat' | 'ball' | 'tapered' | 'drill' {
+): CustomToolTypeDefinition['profileShape'] {
   const custom = customTypes.find((c) => c.id === typeId);
   if (custom) return custom.profileShape;
-  if (['ball end mill', 'lollipop mill', 'probe'].includes(typeId)) return 'ball';
-  if ([
-    'drill', 'center drill', 'spot drill', 'chamfer mill', 'tapered mill',
-    'dovetail mill', 'counter sink', 'engraving', 'thread mill',
-    'tap right hand', 'tap left hand',
-  ].includes(typeId)) return 'tapered';
-  return 'flat';
+  // Built-in type mapping
+  switch (typeId) {
+    case 'ball end mill':
+    case 'lollipop mill':
+    case 'probe':             return 'ball';
+    case 'bull nose end mill': return 'bull nose';
+    case 'tapered mill':      return 'tapered ball';   // default; overridden by cornerRadius at runtime
+    case 'drill':
+    case 'spot drill':        return 'drill';
+    case 'center drill':      return 'center drill';
+    case 'counter bore':      return 'counter bore';
+    case 'reamer':            return 'reamer';
+    case 'tap right hand':
+    case 'tap left hand':     return 'tap';
+    case 'thread mill':       return 'thread mill';
+    case 'chamfer mill':
+    case 'dovetail mill':
+    case 'counter sink':
+    case 'engraving':         return 'tapered';
+    default:                  return 'flat';
+  }
 }
 
 export const CUSTOM_TYPE_COLOUR_OPTIONS = [

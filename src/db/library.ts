@@ -18,6 +18,20 @@ class LibraryDatabase extends Dexie {
       materials: 'id, name, category, createdAt',
       holders:   'id, name, type, createdAt',
     });
+    // v3 — migrate machineGroup (string) → machineGroups (string[])
+    // *machineGroups is a multi-value index so queries like .where('machineGroups').equals(x) work.
+    this.version(3).stores({
+      tools:     'id, toolNumber, type, *machineGroups, starred, addedAt',
+      materials: 'id, name, category, createdAt',
+      holders:   'id, name, type, createdAt',
+    }).upgrade((tx) =>
+      tx.table('tools').toCollection().modify((tool: LibraryTool & { machineGroup?: string }) => {
+        if (!tool.machineGroups) {
+          tool.machineGroups = tool.machineGroup ? [tool.machineGroup] : [];
+        }
+        delete tool.machineGroup;
+      }),
+    );
   }
 }
 

@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { X, Download, Layers } from 'lucide-react';
+import { X, Download, Layers, Server } from 'lucide-react';
 import { registry } from '../../converters';
 import type { LibraryTool } from '../../types/libraryTool';
 import type { WorkMaterial } from '../../types/material';
 import { useSettings } from '../../contexts/SettingsContext';
-import FormatSelector from '../FormatSelector';
 import { toolsToCsv } from '../../lib/csvLibrary';
 import { triggerDownload } from '../../lib/downloadUtils';
 
@@ -16,19 +15,25 @@ interface ExportPanelProps {
 
 const CSV_FORMAT_ID = 'csv';
 
+type SplitMode = 'none' | 'material' | 'machine';
+
 export default function ExportPanel({ selectedTools, allMaterials, onClose }: ExportPanelProps) {
   const { settings } = useSettings();
   const exportableFormats = registry.getExportableFormats();
 
-  const [formatId,         setFormatId]         = useState(exportableFormats[0]?.id ?? '');
-  const [splitByMaterial,  setSplitByMaterial]  = useState(false);
-  const [isExporting,      setIsExporting]      = useState(false);
+  const [formatId,    setFormatId]    = useState(exportableFormats[0]?.id ?? '');
+  const [splitMode,   setSplitMode]   = useState<SplitMode>('none');
+  const [isExporting, setIsExporting] = useState(false);
 
   const isCsv = formatId === CSV_FORMAT_ID;
 
   // Tools that have at least one material entry
   const toolsWithMaterials = selectedTools.filter((t) => (t.toolMaterials?.length ?? 0) > 0);
-  const canSplit = !isCsv && toolsWithMaterials.length > 0;
+  // Unique machine groups across selected tools
+  const allGroups = Array.from(new Set(selectedTools.flatMap((t) => t.machineGroups ?? []))).sort();
+
+  const canSplitMaterial = !isCsv && toolsWithMaterials.length > 0;
+  const canSplitMachine  = !isCsv && allGroups.length > 0;
 
   const writerOpts = {
     filename:                     'library-export',
@@ -39,6 +44,16 @@ export default function ExportPanel({ selectedTools, allMaterials, onClose }: Ex
     hsmlibMachineVendor:          settings.hsmlibDefaultMachineVendor || undefined,
     hsmlibMachineModel:           settings.hsmlibDefaultMachineModel  || undefined,
   };
+
+  // Helper: stagger multiple file downloads so browsers don't block them
+  async function staggeredDownload(items: { content: string | Uint8Array; mimeType: string; filename: string }[]) {
+    for (let i = 0; i < items.length; i++) {
+      await new Promise<void>((resolve) => setTimeout(() => {
+        triggerDownload(items[i].content, items[i].mimeType, items[i].filename);
+        resolve();
+      }, i * 300));
+    }
+  }
 
   async function handleDownload() {
     setIsExporting(true);
@@ -53,91 +68,127 @@ export default function ExportPanel({ selectedTools, allMaterials, onClose }: Ex
       const converter = registry.getConverter(formatId);
       if (!converter) return;
 
-      if (!splitByMaterial) {
-        // Single file export
+      // ── Single file ──────────────────────────────────────────────────────────
+      if (splitMode === 'none') {
         const result = await converter.write(selectedTools, writerOpts);
         triggerDownload(result.content, result.mimeType, result.filename);
         onClose();
         return;
       }
 
-      // Split by material — one file per unique materialId across selected tools
-      const matMap = new Map<string, LibraryTool[]>();
-      for (const tool of selectedTools) {
-        for (const entry of tool.toolMaterials ?? []) {
-          const list = matMap.get(entry.materialId) ?? [];
-          list.push(tool);
-          matMap.set(entry.materialId, list);
+      // ── Split by material ────────────────────────────────────────────────────
+      if (splitMode === 'material') {
+        const matMap = new Map<string, LibraryTool[]>();
+        for (const tool of selectedTools) {
+          for (const entry of tool.toolMaterials ?? []) {
+            const list = matMap.get(entry.materialId) ?? [];
+            list.push(tool);
+            matMap.set(entry.materialId, list);
+          }
         }
+        const unassigned = selectedTools.filter((t) => !t.toolMaterials?.length);
+        const files: { content: string | Uint8Array; mimeType: string; filename: string }[] = [];
+
+        for (const [materialId, tools] of matMap) {
+          const mat      = allMaterials.find((m) => m.id === materialId);
+          const matName  = (mat?.name ?? materialId).replace(/[^a-z0-9_-]/gi, '_');
+          const merged   = tools.map((tool) => {
+            const entry = tool.toolMaterials!.find((e) => e.materialId === materialId)!;
+            return {
+              ...tool,
+              cutting: {
+                ...tool.cutting,
+                ...(entry.rpm            !== undefined ? { spindleRpm:     entry.rpm            } : {}),
+                ...(entry.rampSpindleRpm !== undefined ? { rampSpindleRpm: entry.rampSpindleRpm } : {}),
+                ...(entry.feedRate       !== undefined ? { feedCutting:    entry.feedRate        } : {}),
+                ...(entry.feedPlunge     !== undefined ? { feedPlunge:     entry.feedPlunge      } : {}),
+                ...(entry.feedRamp       !== undefined ? { feedRamp:       entry.feedRamp        } : {}),
+                ...(entry.feedEntry      !== undefined ? { feedEntry:      entry.feedEntry       } : {}),
+                ...(entry.feedExit       !== undefined ? { feedExit:       entry.feedExit        } : {}),
+                ...(entry.feedRetract    !== undefined ? { feedRetract:    entry.feedRetract     } : {}),
+                ...(entry.coolant        !== undefined ? { coolant:        entry.coolant         } : {}),
+                ...(entry.feedMode       !== undefined ? { feedMode:       entry.feedMode        } : {}),
+                ...(entry.clockwise      !== undefined ? { clockwise:      entry.clockwise       } : {}),
+              },
+            };
+          });
+          const result = await converter.write(merged, { ...writerOpts, filename: `export_${matName}` });
+          files.push(result);
+        }
+        if (unassigned.length > 0) {
+          const result = await converter.write(unassigned, { ...writerOpts, filename: 'export_unassigned' });
+          files.push(result);
+        }
+        await staggeredDownload(files);
+        onClose();
+        return;
       }
 
-      // Tools with no materials go into an "unassigned" file if any
-      const unassigned = selectedTools.filter((t) => !t.toolMaterials?.length);
+      // ── Split by machine group ───────────────────────────────────────────────
+      if (splitMode === 'machine') {
+        const files: { content: string | Uint8Array; mimeType: string; filename: string }[] = [];
 
-      let fileIndex = 0;
-      for (const [materialId, tools] of matMap) {
-        const mat     = allMaterials.find((m) => m.id === materialId);
-        const matName = (mat?.name ?? materialId).replace(/[^a-z0-9_-]/gi, '_');
-
-        // Merge this material's F&S into each tool's cutting params
-        const mergedTools: LibraryTool[] = tools.map((tool) => {
-          const entry = tool.toolMaterials!.find((e) => e.materialId === materialId)!;
-          return {
-            ...tool,
-            cutting: {
-              ...tool.cutting,
-              ...(entry.rpm            !== undefined ? { spindleRpm:     entry.rpm            } : {}),
-              ...(entry.rampSpindleRpm !== undefined ? { rampSpindleRpm: entry.rampSpindleRpm } : {}),
-              ...(entry.feedRate       !== undefined ? { feedCutting:    entry.feedRate        } : {}),
-              ...(entry.feedPlunge     !== undefined ? { feedPlunge:     entry.feedPlunge      } : {}),
-              ...(entry.feedRamp       !== undefined ? { feedRamp:       entry.feedRamp        } : {}),
-              ...(entry.feedEntry      !== undefined ? { feedEntry:      entry.feedEntry       } : {}),
-              ...(entry.feedExit       !== undefined ? { feedExit:       entry.feedExit        } : {}),
-              ...(entry.feedRetract    !== undefined ? { feedRetract:    entry.feedRetract     } : {}),
-              ...(entry.coolant        !== undefined ? { coolant:        entry.coolant         } : {}),
-              ...(entry.feedMode       !== undefined ? { feedMode:       entry.feedMode        } : {}),
-              ...(entry.clockwise      !== undefined ? { clockwise:      entry.clockwise       } : {}),
-            },
-          };
-        });
-
-        const result = await converter.write(mergedTools, {
-          ...writerOpts,
-          filename: `export_${matName}`,
-        });
-
-        // Stagger downloads slightly so browsers don't block them
-        await new Promise<void>((resolve) => setTimeout(() => {
-          triggerDownload(result.content, result.mimeType, result.filename);
-          resolve();
-        }, fileIndex * 300));
-        fileIndex++;
+        for (const group of allGroups) {
+          const groupTools = selectedTools.filter((t) => (t.machineGroups ?? []).includes(group));
+          if (groupTools.length === 0) continue;
+          const safeName = group.replace(/[^a-z0-9_-]/gi, '_');
+          // For formats that expect a single machine group, pin it to the current group
+          const pinned: LibraryTool[] = groupTools.map((t) => ({
+            ...t,
+            machineGroups: [group],
+          }));
+          const result = await converter.write(pinned, { ...writerOpts, filename: `export_${safeName}` });
+          files.push(result);
+        }
+        // Tools belonging to no group
+        const ungrouped = selectedTools.filter((t) => !(t.machineGroups ?? []).length);
+        if (ungrouped.length > 0) {
+          const result = await converter.write(ungrouped, { ...writerOpts, filename: 'export_ungrouped' });
+          files.push(result);
+        }
+        await staggeredDownload(files);
+        onClose();
+        return;
       }
-
-      // Export unassigned tools as a separate file
-      if (unassigned.length > 0) {
-        const result = await converter.write(unassigned, {
-          ...writerOpts,
-          filename: 'export_unassigned',
-        });
-        await new Promise<void>((resolve) => setTimeout(() => {
-          triggerDownload(result.content, result.mimeType, result.filename);
-          resolve();
-        }, fileIndex * 300));
-      }
-
-      onClose();
     } finally {
       setIsExporting(false);
     }
   }
 
+  function SplitToggle({ mode, label, description, disabled, icon: Icon }: {
+    mode: SplitMode; label: string; description: string; disabled?: boolean; icon: typeof Layers;
+  }) {
+    const active = splitMode === mode;
+    return (
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setSplitMode(active ? 'none' : mode)}
+        className={[
+          'w-full text-left rounded-lg border px-4 py-3 transition-colors',
+          disabled ? 'opacity-40 cursor-not-allowed border-slate-700 bg-slate-800/40' :
+          active   ? 'border-blue-500/60 bg-blue-600/10' : 'border-slate-700 bg-slate-800/60 hover:border-slate-600',
+        ].join(' ')}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Icon size={14} className={active ? 'text-blue-400' : 'text-slate-400'} />
+            <span className={`text-sm font-medium ${active ? 'text-blue-300' : 'text-slate-200'}`}>{label}</span>
+          </div>
+          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${active ? 'border-blue-400' : 'border-slate-600'}`}>
+            {active && <div className="w-2 h-2 rounded-full bg-blue-400" />}
+          </div>
+        </div>
+        <p className="text-xs text-slate-500 mt-1 leading-relaxed">{description}</p>
+      </button>
+    );
+  }
+
+  const downloadLabel = splitMode !== 'none' ? 'Download files' : 'Download';
+
   return (
     <>
-      {/* Backdrop */}
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
-
-      {/* Panel */}
       <div className="fixed right-0 top-0 h-full w-[400px] bg-slate-800 border-l border-slate-700 z-50 flex flex-col shadow-2xl">
 
         {/* Header */}
@@ -155,11 +206,14 @@ export default function ExportPanel({ selectedTools, allMaterials, onClose }: Ex
             <p className="text-sm text-slate-200 font-medium">
               {selectedTools.length} tool{selectedTools.length !== 1 ? 's' : ''} selected
             </p>
-            <div className="mt-2 space-y-1 max-h-48 overflow-y-auto">
+            <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
               {selectedTools.slice(0, 10).map((t) => (
                 <div key={t.id} className="flex items-center gap-2 text-xs text-slate-400">
                   <span className="font-mono text-blue-400">T{t.toolNumber}</span>
                   <span className="truncate">{t.description}</span>
+                  {(t.machineGroups?.length ?? 0) > 0 && (
+                    <span className="shrink-0 text-blue-300">{t.machineGroups!.join(', ')}</span>
+                  )}
                   {(t.toolMaterials?.length ?? 0) > 0 && (
                     <span className="shrink-0 text-emerald-400">{t.toolMaterials!.length}M</span>
                   )}
@@ -173,11 +227,11 @@ export default function ExportPanel({ selectedTools, allMaterials, onClose }: Ex
 
           {/* Target format */}
           <div>
-            <p className="text-xs font-medium text-slate-400 mb-2">TARGET FORMAT</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-2">Target format</p>
             <select
               title="Target format"
               value={formatId}
-              onChange={(e) => { setFormatId(e.target.value); setSplitByMaterial(false); }}
+              onChange={(e) => { setFormatId(e.target.value); setSplitMode('none'); }}
               className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
             >
               {exportableFormats.map((f) => (
@@ -187,49 +241,47 @@ export default function ExportPanel({ selectedTools, allMaterials, onClose }: Ex
             </select>
           </div>
 
-          {/* Split by material */}
-          {canSplit && (
-            <div className="rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Layers size={14} className="text-slate-400" />
-                  <span className="text-sm text-slate-200 font-medium">Split by material</span>
-                </div>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={splitByMaterial ? 'true' : 'false'}
-                  title="Toggle split by material"
-                  onClick={() => setSplitByMaterial((v) => !v)}
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${splitByMaterial ? 'bg-blue-600' : 'bg-slate-600'}`}
-                >
-                  <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${splitByMaterial ? 'translate-x-5' : 'translate-x-0.5'}`} />
-                </button>
+          {/* Split options */}
+          {!isCsv && (
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-2">Split output</p>
+              <div className="space-y-2">
+                <SplitToggle
+                  mode="machine"
+                  label="Split by machine group"
+                  icon={Server}
+                  disabled={!canSplitMachine}
+                  description={
+                    canSplitMachine
+                      ? `One file per machine group (${allGroups.length} groups). Tools belonging to multiple groups appear in each relevant file.`
+                      : 'No tools have machine groups assigned.'
+                  }
+                />
+                <SplitToggle
+                  mode="material"
+                  label="Split by material"
+                  icon={Layers}
+                  disabled={!canSplitMaterial}
+                  description={
+                    canSplitMaterial
+                      ? `One file per material (${toolsWithMaterials.length} tool${toolsWithMaterials.length !== 1 ? 's' : ''} with material F&S). Each file merges the material's cutting params into the tool.`
+                      : 'No tools have per-material F&S data.'
+                  }
+                />
               </div>
-              {splitByMaterial && (
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Generates one file per material ({toolsWithMaterials.length} tool{toolsWithMaterials.length !== 1 ? 's' : ''} with materials). Each file has the material's F&S merged into the cutting params.
-                </p>
-              )}
-              {!splitByMaterial && (
-                <p className="text-xs text-slate-500">
-                  {toolsWithMaterials.length} of {selectedTools.length} tools have per-material F&S data.
-                </p>
-              )}
             </div>
           )}
 
-          {/* Settings note */}
+          {/* Notes */}
           {!isCsv && (
             <p className="text-xs text-slate-500">
-              Format-specific options (decimal places, pocket assignment, etc.) are applied from
-              your <span className="text-slate-400">Settings → LinuxCNC Writer</span> preferences.
+              Format-specific options are applied from{' '}
+              <span className="text-slate-400">Settings → LinuxCNC Writer</span>.
             </p>
           )}
           {isCsv && (
             <p className="text-xs text-slate-500">
-              Exports a flat spreadsheet with tool geometry, cutting parameters, tags, and machine group.
-              Can be re-imported via Import → CSV (spreadsheet).
+              Exports a flat spreadsheet with tool geometry, cutting parameters, tags, and machine groups.
             </p>
           )}
 
@@ -246,13 +298,11 @@ export default function ExportPanel({ selectedTools, allMaterials, onClose }: Ex
             disabled={isExporting}
             className={[
               'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors',
-              !isExporting
-                ? 'bg-blue-600 hover:bg-blue-500 text-white'
-                : 'bg-slate-700 text-slate-500 cursor-not-allowed',
+              !isExporting ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-slate-700 text-slate-500 cursor-not-allowed',
             ].join(' ')}
           >
             <Download size={14} />
-            {isExporting ? 'Exporting…' : splitByMaterial ? 'Download files' : 'Download'}
+            {isExporting ? 'Exporting…' : downloadLabel}
           </button>
         </div>
       </div>

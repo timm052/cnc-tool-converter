@@ -48,7 +48,9 @@ export interface LibraryTool extends Tool {
   tags: string[];
   /** Whether the tool has been starred / favourited */
   starred: boolean;
-  /** Named machine group this tool belongs to, e.g. 'VF-2', 'Lathe' */
+  /** Machine groups this tool belongs to, e.g. ['VF-2', 'VF-4'] */
+  machineGroups?: string[];
+  /** @deprecated Use machineGroups — kept for IndexedDB migration reads only */
   machineGroup?: string;
   /** Unix millisecond timestamp when the tool was first added */
   addedAt: number;

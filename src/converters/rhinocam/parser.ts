@@ -65,13 +65,13 @@ const NAME_TO_TYPE: [RegExp, ToolType][] = [
   [/^threadmill/i,     'thread mill'],
   [/^thread\s*mill/i,  'thread mill'],
   [/^dovetailmill/i,   'tapered mill'],
-  [/^lollipopmill/i,   'ball end mill'],
-  [/^centerdrill/i,    'spot drill'],
-  [/^tap$/i,           'thread mill'],
+  [/^lollipopmill/i,   'lollipop mill'],
+  [/^centerdrill/i,    'center drill'],
+  [/^tap$/i,           'tap right hand'],
   [/^rbore/i,          'boring bar'],
   [/^drillmill/i,      'drill'],
   [/^drill/i,          'drill'],
-  [/^reammill/i,       'drill'],
+  [/^reammill/i,       'reamer'],
 ];
 
 function inferType(name: string): ToolType {

@@ -32,10 +32,10 @@ export default function ToolSheetPanel({ tools, onClose }: ToolSheetPanelProps) 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700 shrink-0">
           <div>
-            <h2 className="text-base font-semibold text-slate-100 flex items-center gap-2">
-              <FileText size={14} className="text-slate-400" />
-              Print Tool Sheet
-            </h2>
+            <div className="flex items-center gap-2">
+              <FileText size={16} className="text-slate-400" />
+              <h2 className="text-base font-semibold text-slate-100">Print Tool Sheet</h2>
+            </div>
             <p className="text-xs text-slate-500 mt-0.5">{tools.length} tool{tools.length !== 1 ? 's' : ''}</p>
           </div>
           <button type="button" title="Close" onClick={onClose} className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700">
@@ -47,7 +47,7 @@ export default function ToolSheetPanel({ tools, onClose }: ToolSheetPanelProps) 
 
           {/* Layout */}
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Layout</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-2">Layout</p>
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-2">Cards per row</label>
               <div className="flex gap-2">
@@ -77,7 +77,7 @@ export default function ToolSheetPanel({ tools, onClose }: ToolSheetPanelProps) 
 
           {/* Sections */}
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Sections to include</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-2">Sections to include</p>
             <div className="rounded-lg border border-slate-700 bg-slate-800/40 p-3 grid grid-cols-2 gap-y-2.5 gap-x-4">
               <FieldToggle label="Geometry"      checked={opts.showGeometry}      onChange={(v) => patch({ showGeometry: v })} />
               <FieldToggle label="Cutting params" checked={opts.showCutting}      onChange={(v) => patch({ showCutting: v })} />

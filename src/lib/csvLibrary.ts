@@ -80,7 +80,7 @@ export function toolsToCsv(tools: LibraryTool[]): string {
       t.cutting?.spindleRpm  !== undefined ? String(t.cutting.spindleRpm)  : '',
       t.cutting?.feedCutting !== undefined ? String(t.cutting.feedCutting) : '',
       t.material     ?? '',
-      t.machineGroup ?? '',
+      (t.machineGroups ?? []).join(';'),
       t.tags.join(';'),
       t.starred ? 'true' : 'false',
       // New fields
@@ -195,7 +195,7 @@ export function csvToTools(csv: string): CsvImportResult {
     const starredRaw = get(row, 'starred').toLowerCase();
     const starred    = starredRaw === 'true' || starredRaw === '1' || starredRaw === 'yes';
 
-    const machineGroup = get(row, 'machinegroup') || undefined;
+    const machineGroups = get(row, 'machinegroup').split(';').map((s) => s.trim()).filter(Boolean);
     const description  = get(row, 'description') || `T${tNum}`;
 
     // New crib / assembly / custom fields
@@ -235,7 +235,7 @@ export function csvToTools(csv: string): CsvImportResult {
         ? { spindleRpm, feedCutting }
         : undefined,
       material,
-      machineGroup,
+      machineGroups,
       tags,
       starred,
       addedAt:   now,

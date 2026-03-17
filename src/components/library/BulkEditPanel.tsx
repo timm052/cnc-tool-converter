@@ -177,7 +177,8 @@ export default function BulkEditPanel({
   const [manufacturer, setManufacturer] = useState('');
   const [productId,    setProductId]    = useState('');
   const [comment,      setComment]      = useState('');
-  const [machineGroup, setMachineGroup] = useState<string | undefined>(undefined);
+  const [machineGroups,     setMachineGroups]     = useState<string[]>([]);
+  const [machineGroupMode, setMachineGroupMode] = useState<'add' | 'replace'>('add');
   const [starred,      setStarred]      = useState(false);
   const [tagMode,      setTagMode]      = useState<'add' | 'replace'>('add');
   const [tags,         setTags]         = useState<string[]>([]);
@@ -255,7 +256,7 @@ export default function BulkEditPanel({
       manufacturer:    gs(tools.map((t) => t.manufacturer)),
       productId:       gs(tools.map((t) => t.productId)),
       comment:         gs(tools.map((t) => t.comment)),
-      machineGroup:    gs(tools.map((t) => t.machineGroup)),
+      machineGroups:   undefined, // arrays — not reduced to a shared scalar
       starred:         gs(tools.map((t) => t.starred)),
       diameter:        gs(tools.map((t) => t.geometry?.diameter)),
       shaftDiameter:   gs(tools.map((t) => t.geometry?.shaftDiameter)),
@@ -301,7 +302,7 @@ export default function BulkEditPanel({
       case 'manufacturer':    setManufacturer(v as string);         break;
       case 'productId':       setProductId(v as string);            break;
       case 'comment':         setComment(v as string);              break;
-      case 'machineGroup':    setMachineGroup(v as string);         break;
+      case 'machineGroups':   setMachineGroups(v as string[]);      break;
       case 'starred':         setStarred(v as boolean);             break;
       case 'diameter':        setDiameter(v as number);             break;
       case 'shaftDiameter':   setShaftDiameter(v as number);        break;
@@ -468,7 +469,11 @@ export default function BulkEditPanel({
         if (checked.has('manufacturer')) patch.manufacturer = manufacturer;
         if (checked.has('productId'))    patch.productId    = productId;
         if (checked.has('comment'))      patch.comment      = comment;
-        if (checked.has('machineGroup')) patch.machineGroup = machineGroup;
+        if (checked.has('machineGroups')) {
+          patch.machineGroups = machineGroupMode === 'replace'
+            ? machineGroups
+            : [...new Set([...(tool.machineGroups ?? []), ...machineGroups])];
+        }
         if (checked.has('starred'))      patch.starred      = starred;
         if (checked.has('tags')) {
           patch.tags = tagMode === 'replace'
@@ -581,15 +586,15 @@ export default function BulkEditPanel({
       <div className="fixed right-0 top-0 h-full w-[480px] bg-slate-800 border-l border-slate-700 z-50 flex flex-col shadow-2xl">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700 shrink-0">
           <div>
-            <h2 className="text-sm font-semibold text-slate-100">Bulk Edit</h2>
+            <h2 className="text-base font-semibold text-slate-100">Bulk Edit</h2>
             <p className="text-xs text-slate-400 mt-0.5">
               {tools.length} tool{tools.length !== 1 ? 's' : ''} — check a field to include it
             </p>
           </div>
           <button type="button" onClick={onClose} title="Close" className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700">
-            <X size={15} />
+            <X size={16} />
           </button>
         </div>
 
@@ -634,8 +639,18 @@ export default function BulkEditPanel({
             <FieldRow field="comment" label="Comment" checked={checked} onToggle={toggleChecked}>
               <TextF value={comment} onChange={setComment} />
             </FieldRow>
-            <FieldRow field="machineGroup" label="Machine group" checked={checked} onToggle={toggleChecked}>
-              <MachineGroupInput value={machineGroup} allGroups={allGroups} onChange={setMachineGroup} />
+            <FieldRow field="machineGroups" label="Machines" checked={checked} onToggle={toggleChecked}>
+              <div className="space-y-2">
+                <div className="flex gap-1.5">
+                  {(['add', 'replace'] as const).map((mode) => (
+                    <button key={mode} type="button" onClick={() => setMachineGroupMode(mode)}
+                      className={`px-2 py-1 rounded text-xs font-medium border ${machineGroupMode === mode ? 'bg-blue-600 text-white border-blue-500' : 'bg-slate-700 text-slate-300 border-slate-600'}`}>
+                      {mode === 'add' ? 'Add to machines' : 'Replace machines'}
+                    </button>
+                  ))}
+                </div>
+                <MachineGroupInput values={machineGroups} allGroups={allGroups} onChange={setMachineGroups} />
+              </div>
             </FieldRow>
             <FieldRow field="starred" label="Starred / Favourite" checked={checked} onToggle={toggleChecked}>
               <BoolToggle value={starred} onChange={setStarred} label="Starred / Favourite" />

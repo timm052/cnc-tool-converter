@@ -87,7 +87,7 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
     return {
       ...tool,
       id:           crypto.randomUUID(),   // always assign a fresh UUID in the library
-      machineGroup: settings.libraryImportDefaultMachineGroup || undefined,
+      machineGroups: settings.libraryImportDefaultMachineGroup ? [settings.libraryImportDefaultMachineGroup] : [],
       tags:         [],
       starred:      false,
       addedAt:      now,
@@ -184,7 +184,7 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
 
           {/* Source format */}
           <div>
-            <p className="text-xs font-medium text-slate-400 mb-2">SOURCE FORMAT</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-2">Source format</p>
             <select
               value={formatId}
               onChange={(e) => { setFormatId(e.target.value); handleClear(); }}

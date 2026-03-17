@@ -8,8 +8,9 @@ import Sidebar from './components/Sidebar';
 import ConverterPage from './components/pages/ConverterPage';
 import ToolManagerPage from './components/pages/ToolManagerPage';
 import SettingsPage from './components/pages/SettingsPage';
+import ToolDebugPage from './components/pages/ToolDebugPage';
 
-export type Page = 'converter' | 'tools' | 'settings';
+export type Page = 'converter' | 'tools' | 'settings' | 'debug';
 
 function ThemeWrapper({ children }: { children: ReactNode }) {
   const { settings } = useSettings();
@@ -39,6 +40,7 @@ export default function App() {
                   {activePage === 'converter' && <ConverterPage />}
                   {activePage === 'tools'     && <ToolManagerPage />}
                   {activePage === 'settings'  && <SettingsPage />}
+                  {activePage === 'debug'     && <ToolDebugPage />}
                 </main>
               </div>
             </ThemeWrapper>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowRight, RefreshCw, AlertCircle, ArrowLeftRight, CheckCircle, AlertTriangle, ChevronDown, Clock, X, Map, FolderOpen, FileText } from 'lucide-react';
+import { ArrowRight, RefreshCw, AlertCircle, ArrowLeftRight, CheckCircle, AlertTriangle, ChevronDown, Map, FolderOpen, FileText } from 'lucide-react';
 import { registry } from '../../converters';
 import type { Tool } from '../../types/tool';
 import type { ParseResult, WriteResult } from '../../types/converter';
@@ -10,7 +10,6 @@ import ToolTable from '../ToolTable';
 import ConversionOutput from '../ConversionOutput';
 import FieldMappingEditor from '../converter/FieldMappingEditor';
 import { useSettings, loadLastFormatPair, saveLastFormatPair } from '../../contexts/SettingsContext';
-import { useRecentFiles } from '../../hooks/useRecentFiles';
 import { loadMapping, applyFieldMapping } from '../../lib/fieldMapping';
 
 interface LoadedFile {
@@ -28,17 +27,8 @@ const HSMLIB_TO_LINUXCNC_LOST = [
   'Comments, product IDs, and manufacturer info',
 ];
 
-function relativeTime(ts: number): string {
-  const diff = Math.floor((Date.now() - ts) / 1000);
-  if (diff < 60)    return 'just now';
-  if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
-}
-
 export default function ConverterPage() {
   const { settings } = useSettings();
-  const { recentFiles, addRecent, removeRecent, clearRecent } = useRecentFiles();
 
   // ── Format state (with optional localStorage memory) ─────────────────────
   const [sourceFormatId, setSourceFormatId] = useState<string>(() => {
@@ -146,13 +136,6 @@ export default function ConverterPage() {
         setSelectedResult(0);
       }
       setStage('converted');
-      addRecent({
-        name:         files[0]?.name ?? 'unknown',
-        sourceFormat: srcFmtId,
-        targetFormat: tgtFmtId,
-        toolCount:    toolsToConvert.length,
-        convertedAt:  Date.now(),
-      });
     } catch (err) {
       setParseErrors((prev) => [...prev, `Conversion error: ${err}`]);
     }
@@ -431,39 +414,6 @@ export default function ConverterPage() {
             )}
           </div>
 
-          {/* Recent conversions */}
-          {recentFiles.length > 0 && (
-            <div className="w-full max-w-md">
-              <div className="flex items-center justify-between mb-2">
-                <span className="flex items-center gap-1.5 text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  <Clock size={11} />
-                  Recent
-                </span>
-                <button onClick={clearRecent} className="text-xs text-slate-600 hover:text-slate-400 transition-colors">
-                  Clear all
-                </button>
-              </div>
-              <div className="rounded-xl border border-slate-700 divide-y divide-slate-700/60 overflow-hidden">
-                {recentFiles.map((f, i) => (
-                  <div key={i} className="flex items-center gap-3 px-3 py-2 text-xs bg-slate-800/40 hover:bg-slate-700/40 transition-colors">
-                    <span className="text-slate-300 truncate flex-1" title={f.name}>{f.name}</span>
-                    <span className="text-slate-500 shrink-0">
-                      {f.sourceFormat} → {f.targetFormat}
-                    </span>
-                    <span className="text-slate-600 shrink-0">{f.toolCount}T</span>
-                    <span className="text-slate-600 shrink-0">{relativeTime(f.convertedAt)}</span>
-                    <button
-                      onClick={() => removeRecent(i)}
-                      title="Remove from history"
-                      className="text-slate-600 hover:text-slate-400 transition-colors shrink-0"
-                    >
-                      <X size={11} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       ) : (
         <div className="flex flex-col gap-5 flex-1 min-h-0">

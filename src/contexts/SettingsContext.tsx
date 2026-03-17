@@ -79,6 +79,9 @@ export interface Settings {
 
   // Appearance
   theme: 'dark' | 'retro90s' | 'winxp' | 'macos9' | 'light';
+
+  // Developer
+  devMode: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -143,6 +146,8 @@ export const DEFAULT_SETTINGS: Settings = {
   customToolTypes: [],
 
   theme: 'dark',
+
+  devMode: false,
 };
 
 const STORAGE_KEY     = 'cnc-tool-converter:settings';

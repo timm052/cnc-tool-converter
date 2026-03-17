@@ -1,5 +1,8 @@
-import { ArrowLeftRight, Library, Settings, ChevronRight, type LucideIcon } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowLeftRight, Library, Settings, ChevronRight, Bug, Download, type LucideIcon } from 'lucide-react';
 import type { Page } from '../App';
+import { useSettings } from '../contexts/SettingsContext';
+import { daysSinceBackup } from '../lib/backupNudge';
 
 interface SidebarProps {
   activePage: Page;
@@ -29,13 +32,31 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Settings',
     icon:  Settings,
   },
+  {
+    id:    'debug',
+    label: 'Preview Debug',
+    icon:  Bug,
+    badge: 'DEV',
+  },
 ];
 
 export default function Sidebar({ activePage, onNavigate }: SidebarProps) {
+  const { settings } = useSettings();
+  const visibleItems = NAV_ITEMS.filter(item => item.id !== 'debug' || settings.devMode);
+
+  // Backup nudge — re-evaluate each render (cheap localStorage read)
+  const [daysSince, setDaysSince] = useState<number | null>(null);
+  useEffect(() => {
+    setDaysSince(daysSinceBackup());
+  }, [activePage]); // refresh when user navigates (e.g. after doing a backup)
+
+  const showNudge   = daysSince === null || daysSince >= 7;
+  const nudgeLabel  = daysSince === null ? 'Never backed up' : `Backed up ${daysSince}d ago`;
+
   return (
     <aside className="w-52 shrink-0 bg-slate-800 border-r border-slate-700 flex flex-col">
       <nav className="flex-1 p-3 space-y-0.5">
-        {NAV_ITEMS.map(({ id, label, icon: Icon, badge }) => {
+        {visibleItems.map(({ id, label, icon: Icon, badge }) => {
           const active = activePage === id;
           return (
             <button
@@ -65,9 +86,20 @@ export default function Sidebar({ activePage, onNavigate }: SidebarProps) {
       </nav>
 
       {/* Footer */}
-      <div className="p-3 border-t border-slate-700">
+      <div className="p-3 border-t border-slate-700 space-y-2">
+        {showNudge && (
+          <button
+            type="button"
+            onClick={() => onNavigate('tools')}
+            title="Go to Tool Manager to back up your library"
+            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
+          >
+            <Download size={11} />
+            <span className="truncate">{nudgeLabel}</span>
+          </button>
+        )}
         <p className="text-xs text-slate-500 text-center">
-          Supports HSMLib · Fusion 360 · LinuxCNC
+          HSMLib · Fusion 360 · LinuxCNC
         </p>
       </div>
     </aside>

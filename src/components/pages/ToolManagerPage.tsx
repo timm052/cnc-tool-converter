@@ -3,6 +3,7 @@ import {
   Library, Plus, Upload, Download, Search, Star, X,
   ChevronDown, Layers, Tag, RotateCcw, Keyboard, SlidersHorizontal, Columns2, Hash,
   Printer, QrCode, FlaskConical, Wrench, ScanLine, Copy, Package,
+  Calculator, AlertTriangle, FileText, ArrowRightLeft,
 } from 'lucide-react';
 import { useLibrary } from '../../contexts/LibraryContext';
 import { useHolders } from '../../contexts/HolderContext';
@@ -21,10 +22,14 @@ import ToolSheetPanel from '../library/ToolSheetPanel';
 import MaterialLibraryPanel from '../library/MaterialLibraryPanel';
 import HolderLibraryPanel from '../library/HolderLibraryPanel';
 import QrScannerPanel from '../library/QrScannerPanel';
+import SpeedsFeedsPanel from '../library/SpeedsFeedsPanel';
+import ValidationPanel from '../library/ValidationPanel';
+import { downloadGcodeOffsetSheet } from '../../lib/gcodeOffsetSheet';
+import { recordBackup } from '../../lib/backupNudge';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Panel = 'import' | 'export' | 'edit' | 'bulk-edit' | 'compare' | 'renumber' | 'label-print' | 'sheet-print' | 'materials' | 'holders' | 'duplicates' | 'qr-scan' | null;
+type Panel = 'import' | 'export' | 'edit' | 'bulk-edit' | 'compare' | 'renumber' | 'label-print' | 'sheet-print' | 'materials' | 'holders' | 'duplicates' | 'qr-scan' | 'feeds' | 'validation' | 'copy-group' | null;
 
 // ── Machine group sidebar ─────────────────────────────────────────────────────
 
@@ -237,6 +242,121 @@ function RenumberModal({
   );
 }
 
+// ── Copy-to-Group modal ────────────────────────────────────────────────────────
+
+function CopyToGroupModal({
+  tools,
+  allGroups,
+  onCopy,
+  onClose,
+}: {
+  tools:     LibraryTool[];
+  allGroups: string[];
+  onCopy:    (tools: LibraryTool[]) => Promise<void>;
+  onClose:   () => void;
+}) {
+  const [targetGroup, setTargetGroup] = useState(allGroups[0] ?? '');
+  const [customGroup, setCustomGroup] = useState('');
+  const [useCustom,   setUseCustom]   = useState(false);
+  const [isCopying,   setIsCopying]   = useState(false);
+
+  const finalGroup = useCustom ? customGroup.trim() : targetGroup;
+
+  async function handleCopy() {
+    if (!finalGroup) return;
+    setIsCopying(true);
+    const maxNum = Math.max(0, ...tools.map((t) => t.toolNumber));
+    const copies = tools.map((t, i) => ({
+      ...t,
+      id:           crypto.randomUUID(),
+      machineGroups: [...new Set([...(t.machineGroups ?? []), finalGroup])],
+      toolNumber:   maxNum + i + 1,
+      description:  t.description,
+      addedAt:      Date.now(),
+      updatedAt:    Date.now(),
+    }));
+    await onCopy(copies);
+    setIsCopying(false);
+  }
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[400px] bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl flex flex-col">
+
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700 shrink-0">
+          <h2 className="text-base font-semibold text-slate-100 flex items-center gap-2">
+            <ArrowRightLeft size={14} className="text-slate-400" />
+            Copy to Machine Group
+          </h2>
+          <button type="button" onClick={onClose} title="Close" className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700">
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          <p className="text-xs text-slate-400">
+            Copy {tools.length} selected tool{tools.length !== 1 ? 's' : ''} to a machine group.
+            New tool numbers will be assigned automatically.
+          </p>
+
+          {!useCustom && allGroups.length > 0 ? (
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1">Target group</label>
+              <select
+                value={targetGroup}
+                onChange={(e) => setTargetGroup(e.target.value)}
+                title="Target machine group"
+                className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
+                {allGroups.map((g) => <option key={g} value={g}>{g}</option>)}
+              </select>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1">New group name</label>
+              <input
+                type="text"
+                value={customGroup}
+                placeholder="e.g. VF-4, Lathe 2…"
+                onChange={(e) => setCustomGroup(e.target.value)}
+                className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setUseCustom((v) => !v)}
+            className="text-xs text-blue-400 hover:text-blue-300"
+          >
+            {useCustom ? '← Use existing group' : '+ New group'}
+          </button>
+        </div>
+
+        <div className="px-5 py-4 border-t border-slate-700 shrink-0 flex items-center justify-end gap-3">
+          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-700">
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleCopy}
+            disabled={isCopying || !finalGroup}
+            className={[
+              'px-4 py-2 rounded-lg text-sm font-semibold transition-colors',
+              !isCopying && finalGroup
+                ? 'bg-blue-600 hover:bg-blue-500 text-white'
+                : 'bg-slate-700 text-slate-500 cursor-not-allowed',
+            ].join(' ')}
+          >
+            {isCopying ? 'Copying…' : `Copy ${tools.length} tool${tools.length !== 1 ? 's' : ''}`}
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function ToolManagerPage() {
@@ -269,7 +389,7 @@ export default function ToolManagerPage() {
   // ── Derived / filtered list ───────────────────────────────────────────────
   const filteredTools = useMemo(() => {
     let list = tools;
-    if (machineFilter !== null) list = list.filter((t) => t.machineGroup === machineFilter);
+    if (machineFilter !== null) list = list.filter((t) => (t.machineGroups ?? []).includes(machineFilter));
     if (starredOnly)            list = list.filter((t) => t.starred);
     if (lowStockOnly)           list = list.filter((t) => t.reorderPoint != null && t.quantity != null && t.quantity <= t.reorderPoint);
     if (tagFilter.length > 0)   list = list.filter((t) => tagFilter.every((tag) => t.tags.includes(tag)));
@@ -280,6 +400,9 @@ export default function ToolManagerPage() {
         t.type.toLowerCase().includes(q) ||
         String(t.toolNumber).includes(q) ||
         (t.manufacturer ?? '').toLowerCase().includes(q) ||
+        (t.productId   ?? '').toLowerCase().includes(q) ||
+        (t.supplier    ?? '').toLowerCase().includes(q) ||
+        (t.location    ?? '').toLowerCase().includes(q) ||
         t.tags.some((tag) => tag.toLowerCase().includes(q)),
       );
     }
@@ -289,7 +412,9 @@ export default function ToolManagerPage() {
   const toolCountByGroup = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const t of tools) {
-      if (t.machineGroup) counts[t.machineGroup] = (counts[t.machineGroup] ?? 0) + 1;
+      for (const g of t.machineGroups ?? []) {
+        counts[g] = (counts[g] ?? 0) + 1;
+      }
     }
     return counts;
   }, [tools]);
@@ -353,6 +478,7 @@ export default function ToolManagerPage() {
     a.download = `tool-library-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    recordBackup();
   }
 
   async function handleRestore(e: React.ChangeEvent<HTMLInputElement>) {
@@ -403,6 +529,12 @@ export default function ToolManagerPage() {
     handleToggleSelect(focusedId);
   }, [focusedId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const duplicateFocused = useCallback(() => {
+    if (!focusedId) return;
+    const t = filteredTools.find((x) => x.id === focusedId);
+    if (t) handleDuplicate({ ...t, id: crypto.randomUUID(), toolNumber: t.toolNumber + 1000, description: `${t.description} (copy)`, addedAt: Date.now(), updatedAt: Date.now() });
+  }, [focusedId, filteredTools]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useKeyboardShortcuts([
     { key: 'ArrowDown', callback: () => moveFocus(1)  },
     { key: 'ArrowUp',   callback: () => moveFocus(-1) },
@@ -411,6 +543,7 @@ export default function ToolManagerPage() {
     { key: 'Enter',     callback: openFocused  },
     { key: 'e',         callback: openFocused  },
     { key: ' ',         callback: toggleFocusedSelect },
+    { key: 'd',         ctrl: true, callback: duplicateFocused },
     { key: '/',         callback: () => { searchInputRef.current?.focus(); searchInputRef.current?.select(); } },
     { key: '?',         callback: () => setShowShortcuts((s) => !s) },
     { key: 'q',         ctrl: true, callback: () => { if (tools.length > 0) setActivePanel('qr-scan'); } },
@@ -451,11 +584,31 @@ export default function ToolManagerPage() {
           {selectedIds.size === 1 && selectedTools.length === 1 && (
             <button
               onClick={() => handleDuplicate({ ...selectedTools[0], id: crypto.randomUUID(), toolNumber: selectedTools[0].toolNumber + 1000, description: `${selectedTools[0].description} (copy)`, addedAt: Date.now(), updatedAt: Date.now() })}
-              title="Duplicate selected tool"
+              title="Duplicate selected tool (Ctrl+D)"
               className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
             >
               <Copy size={14} />
               Duplicate
+            </button>
+          )}
+          {selectedIds.size > 0 && (
+            <button
+              onClick={() => setActivePanel('copy-group')}
+              title="Copy selected tools to a machine group"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
+            >
+              <ArrowRightLeft size={14} />
+              Copy to Group
+            </button>
+          )}
+          {selectedIds.size > 0 && (
+            <button
+              onClick={() => setActivePanel('feeds')}
+              title="Speeds & Feeds calculator"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
+            >
+              <Calculator size={14} />
+              F&amp;S
             </button>
           )}
           {selectedIds.size >= 2 && (
@@ -564,6 +717,26 @@ export default function ToolManagerPage() {
             >
               <Printer size={14} />
               Print Sheet
+            </button>
+          )}
+          {tools.length > 0 && (
+            <button
+              onClick={() => downloadGcodeOffsetSheet(selectedTools.length > 0 ? selectedTools : filteredTools)}
+              title="Download G-code tool offset reference sheet (.txt)"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
+            >
+              <FileText size={14} />
+              Offset Sheet
+            </button>
+          )}
+          {tools.length > 0 && (
+            <button
+              onClick={() => setActivePanel('validation')}
+              title="Scan library for data quality issues"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
+            >
+              <AlertTriangle size={14} />
+              Issues
             </button>
           )}
           {tools.length > 0 && (
@@ -815,6 +988,35 @@ export default function ToolManagerPage() {
           onClose={closePanel}
         />
       )}
+      {activePanel === 'feeds' && (
+        <SpeedsFeedsPanel
+          tool={selectedTools.length === 1 ? selectedTools[0] : null}
+          allMaterials={materials}
+          onApply={selectedTools.length === 1 ? (patch) => updateTool(selectedTools[0].id, patch) : undefined}
+          onClose={closePanel}
+        />
+      )}
+      {activePanel === 'validation' && (
+        <ValidationPanel
+          tools={tools}
+          onGoTo={(id) => {
+            const t = tools.find((x) => x.id === id);
+            if (t) openEdit(t);
+          }}
+          onClose={closePanel}
+        />
+      )}
+      {activePanel === 'copy-group' && (
+        <CopyToGroupModal
+          tools={selectedTools}
+          allGroups={allMachineGroups}
+          onCopy={async (copies) => {
+            for (const c of copies) await addTool(c);
+            closePanel();
+          }}
+          onClose={closePanel}
+        />
+      )}
 
       {/* ── Keyboard shortcuts legend ─────────────────────────────────────── */}
       {showShortcuts && (
@@ -838,6 +1040,7 @@ export default function ToolManagerPage() {
                 ['Space',         'Toggle selection'],
                 ['/',             'Focus search'],
                 ['Esc',           'Clear search / close panel'],
+                ['Ctrl+D',        'Duplicate focused tool'],
                 ['Ctrl+Q',        'Open QR scanner'],
                 ['Ctrl+Enter',    'Convert (Converter page)'],
                 ['Ctrl+Z',        'Undo (Tool Editor)'],

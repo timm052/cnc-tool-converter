@@ -90,14 +90,14 @@ export default function FileDropZone({
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    processFiles(e.dataTransfer.files);
+    void processFiles(e.dataTransfer.files);
   }, [processFiles]);
 
   const onDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
   const onDragLeave = () => setIsDragging(false);
 
   const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) processFiles(e.target.files);
+    if (e.target.files) void processFiles(e.target.files);
     e.target.value = ''; // allow re-selecting the same file
   };
 

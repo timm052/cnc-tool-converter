@@ -217,8 +217,9 @@ export default function MaterialLibraryPanel({ onClose }: { onClose: () => void 
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
 
           {isLoading && (
-            <div className="flex items-center justify-center py-16">
-              <span className="text-sm text-slate-500">Loading…</span>
+            <div className="flex items-center justify-center gap-2.5 py-16 text-slate-400">
+              <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+              Loading…
             </div>
           )}
 

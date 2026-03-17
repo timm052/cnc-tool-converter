@@ -4,6 +4,7 @@ import type { LibraryTool } from '../../types/libraryTool';
 import type { TableColumnVisibility } from '../../contexts/SettingsContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import { validateTool } from '../../lib/toolValidation';
+import { getTypeColour, getTypeLabel, BUILTIN_TYPES } from '../../lib/customToolTypes';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -26,43 +27,7 @@ export interface LibraryTableProps {
   onFocusId?:     (id: string) => void;
 }
 
-// ── Tool type colours ─────────────────────────────────────────────────────────
-
-const TYPE_COLOURS: Record<string, string> = {
-  'flat end mill':      'bg-blue-500/20 text-blue-300',
-  'ball end mill':      'bg-purple-500/20 text-purple-300',
-  'bull nose end mill': 'bg-violet-500/20 text-violet-300',
-  'chamfer mill':       'bg-orange-500/20 text-orange-300',
-  'face mill':          'bg-cyan-500/20 text-cyan-300',
-  'spot drill':         'bg-yellow-500/20 text-yellow-300',
-  'drill':              'bg-green-500/20 text-green-300',
-  'tapered mill':       'bg-pink-500/20 text-pink-300',
-  'boring bar':         'bg-teal-500/20 text-teal-300',
-  'thread mill':        'bg-amber-500/20 text-amber-300',
-  'engraving':          'bg-rose-500/20 text-rose-300',
-  'custom':             'bg-slate-500/20 text-slate-300',
-};
-
-const TYPE_LABELS: Record<string, string> = {
-  'flat end mill':      'Flat EM',
-  'ball end mill':      'Ball EM',
-  'bull nose end mill': 'Bull Nose',
-  'chamfer mill':       'Chamfer',
-  'face mill':          'Face Mill',
-  'spot drill':         'Spot Drill',
-  'drill':              'Drill',
-  'tapered mill':       'Tapered',
-  'boring bar':         'Boring Bar',
-  'thread mill':        'Thread',
-  'engraving':          'Engrave',
-  'custom':             'Custom',
-};
-
-const KNOWN_TYPES = [
-  'flat end mill', 'ball end mill', 'bull nose end mill', 'chamfer mill',
-  'face mill', 'spot drill', 'drill', 'tapered mill', 'boring bar',
-  'thread mill', 'engraving', 'custom',
-];
+const KNOWN_TYPES = [...BUILTIN_TYPES] as string[];
 const KNOWN_MATERIALS  = ['carbide', 'hss', 'ceramics', 'diamond', 'other'];
 const KNOWN_COOLANTS   = ['flood', 'air', 'mist', 'suction', 'disabled'];
 
@@ -103,8 +68,8 @@ const ALL_COL_DEFS: ColDef[] = [
   {
     id: 'type', label: 'Type', group: 'Identity', sortKey: 'type',
     render: (t) => (
-      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${TYPE_COLOURS[t.type] ?? 'bg-slate-500/20 text-slate-300'}`}>
-        {TYPE_LABELS[t.type] ?? t.type}
+      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${getTypeColour(t.type, [])}`}>
+        {getTypeLabel(t.type, [])}
       </span>
     ),
     editType: 'select', editOptions: KNOWN_TYPES,
@@ -219,10 +184,23 @@ const ALL_COL_DEFS: ColDef[] = [
   },
   {
     id: 'machineGroup', label: 'Machine', group: 'Library',
-    render: (t) => <span className="text-slate-400 text-xs">{t.machineGroup ?? '—'}</span>,
+    render: (t) => {
+      const groups = t.machineGroups ?? [];
+      if (groups.length === 0) return <span className="text-slate-600 text-xs">—</span>;
+      return (
+        <span className="flex flex-wrap gap-1">
+          {groups.map((g) => (
+            <span key={g} className="px-1.5 py-0.5 rounded text-xs bg-blue-600/20 text-blue-300">{g}</span>
+          ))}
+        </span>
+      );
+    },
+    // Inline edit: comma-separated string ↔ string[]
     editType: 'text',
-    getEditRaw: (t) => t.machineGroup ?? '',
-    getPatch: (raw) => ({ machineGroup: raw || undefined }),
+    getEditRaw: (t) => (t.machineGroups ?? []).join(', '),
+    getPatch: (raw) => ({
+      machineGroups: raw.split(',').map((s) => s.trim()).filter(Boolean),
+    }),
   },
   {
     id: 'qty', label: 'Qty', group: 'Library',

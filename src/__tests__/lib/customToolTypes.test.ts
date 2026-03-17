@@ -117,10 +117,19 @@ describe('getProfileShape', () => {
     expect(getProfileShape('ball end mill', [])).toBe('ball');
   });
 
-  it('returns tapered for drill, chamfer mill, thread mill, engraving', () => {
-    for (const t of ['drill', 'spot drill', 'chamfer mill', 'tapered mill', 'engraving', 'thread mill']) {
-      expect(getProfileShape(t, [])).toBe('tapered');
-    }
+  it('returns distinct shapes for specialised tool types', () => {
+    expect(getProfileShape('drill',        [])).toBe('drill');
+    expect(getProfileShape('spot drill',   [])).toBe('drill');
+    expect(getProfileShape('chamfer mill', [])).toBe('tapered');
+    expect(getProfileShape('engraving',    [])).toBe('tapered');
+    expect(getProfileShape('thread mill',  [])).toBe('thread mill');
+    expect(getProfileShape('tap right hand', [])).toBe('tap');
+    expect(getProfileShape('tap left hand',  [])).toBe('tap');
+    expect(getProfileShape('center drill', [])).toBe('center drill');
+    expect(getProfileShape('counter bore', [])).toBe('counter bore');
+    expect(getProfileShape('reamer',       [])).toBe('reamer');
+    expect(getProfileShape('tapered mill', [])).toBe('tapered ball');
+    expect(getProfileShape('bull nose end mill', [])).toBe('bull nose');
   });
 
   it('returns flat for flat end mill and face mill', () => {

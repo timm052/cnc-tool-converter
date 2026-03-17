@@ -19,7 +19,7 @@ const FIELD_GROUPS: { group: string; rows: { label: string; get: (t: LibraryTool
       { label: 'Unit',        get: (t) => t.unit },
       { label: 'Material',    get: (t) => t.material ?? '—' },
       { label: 'Manufacturer', get: (t) => t.manufacturer ?? '—' },
-      { label: 'Machine',     get: (t) => t.machineGroup ?? '—' },
+      { label: 'Machines',    get: (t) => (t.machineGroups?.join(', ')) || '—' },
     ],
   },
   {

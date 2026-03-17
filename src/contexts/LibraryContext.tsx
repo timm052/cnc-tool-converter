@@ -37,7 +37,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   // ── Derived ──────────────────────────────────────────────────────────────
 
   const allMachineGroups = Array.from(
-    new Set(tools.map((t) => t.machineGroup).filter((g): g is string => Boolean(g))),
+    new Set(tools.flatMap((t) => t.machineGroups ?? []).filter(Boolean)),
   ).sort();
 
   const allTags = Array.from(

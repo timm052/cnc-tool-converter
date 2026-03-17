@@ -94,8 +94,8 @@ function LabelPreview({
   if (opts.showDiameter) lines.push({ text: `Ø${tool.geometry.diameter} ${tool.unit}`, mono: true });
   if (opts.showFlutes && tool.geometry.numberOfFlutes)
                          lines.push({ text: `${tool.geometry.numberOfFlutes} flutes` });
-  if (opts.showMachine && tool.machineGroup)
-                         lines.push({ text: tool.machineGroup });
+  if (opts.showMachine && (tool.machineGroups?.length ?? 0) > 0)
+                         lines.push({ text: tool.machineGroups!.join(', ') });
   if (opts.showTags && tool.tags.length)
                          lines.push({ text: tool.tags.join(' · ') });
 
@@ -176,10 +176,10 @@ export default function LabelPrintPanel({ tools, onClose }: LabelPrintPanelProps
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700 shrink-0">
           <div>
-            <h2 className="text-base font-semibold text-slate-100 flex items-center gap-2">
-              <QrCode size={14} className="text-slate-400" />
-              Print Labels
-            </h2>
+            <div className="flex items-center gap-2">
+              <QrCode size={16} className="text-slate-400" />
+              <h2 className="text-base font-semibold text-slate-100">Print Labels</h2>
+            </div>
             <p className="text-xs text-slate-500 mt-0.5">{tools.length} tool{tools.length !== 1 ? 's' : ''} selected</p>
           </div>
           <button onClick={onClose} title="Close" className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700">
@@ -191,7 +191,7 @@ export default function LabelPrintPanel({ tools, onClose }: LabelPrintPanelProps
 
           {/* Label size */}
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Label size</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-2">Label size</p>
             <div className="grid grid-cols-3 gap-3">
               <NumInput label="Width"   value={opts.widthMm}  min={20} max={200} step={0.5} suffix="mm" onChange={(v) => patch({ widthMm: v })} />
               <NumInput label="Height"  value={opts.heightMm} min={10} max={100} step={0.5} suffix="mm" onChange={(v) => patch({ heightMm: v })} />
@@ -204,7 +204,7 @@ export default function LabelPrintPanel({ tools, onClose }: LabelPrintPanelProps
 
           {/* QR code */}
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">QR code</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-2">QR code</p>
             <div className="rounded-lg border border-slate-700 bg-slate-800/40 p-3 space-y-3">
               <FieldToggle label="Include QR code" checked={opts.showQr} onChange={(v) => patch({ showQr: v })} />
               {opts.showQr && (
@@ -214,7 +214,7 @@ export default function LabelPrintPanel({ tools, onClose }: LabelPrintPanelProps
                     value={opts.qrContent}
                     aria-label="QR content"
                     onChange={(e) => patch({ qrContent: e.target.value as LabelOptions['qrContent'] })}
-                    className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                   >
                     <option value="full">Full info (T#, description, type, diameter)</option>
                     <option value="description">T# + description only</option>
@@ -227,7 +227,7 @@ export default function LabelPrintPanel({ tools, onClose }: LabelPrintPanelProps
 
           {/* Fields */}
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Fields to print</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-2">Fields to print</p>
             <div className="rounded-lg border border-slate-700 bg-slate-800/40 p-3 grid grid-cols-2 gap-2">
               <FieldToggle label="Tool number (T#)"  checked={opts.showTNumber}  onChange={(v) => patch({ showTNumber: v })} />
               <FieldToggle label="Description"       checked={opts.showDesc}     onChange={(v) => patch({ showDesc: v })} />
@@ -242,7 +242,7 @@ export default function LabelPrintPanel({ tools, onClose }: LabelPrintPanelProps
           {/* Live preview */}
           {previewTool && (
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
+              <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-2">
                 Preview <span className="font-normal text-slate-500 normal-case">(T{previewTool.toolNumber})</span>
               </p>
               <div className="rounded-lg bg-slate-700/30 border border-slate-700 p-4 flex gap-3 flex-wrap">

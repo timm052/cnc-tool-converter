@@ -280,7 +280,6 @@ export default function SettingsPage() {
                     : 'border-slate-600 bg-slate-800 hover:border-slate-500',
                 ].join(' ')}
               >
-                {/* Mini preview */}
                 <div className="w-full h-16 bg-slate-950 rounded overflow-hidden flex flex-col pointer-events-none select-none">
                   <div className="h-4 bg-slate-900 flex items-center px-1.5 gap-1">
                     <div className="w-2 h-2 rounded-full bg-blue-600" />
@@ -297,114 +296,9 @@ export default function SettingsPage() {
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-slate-200">Dark</p>
-                  <p className="text-xs text-slate-500">Default modern dark UI</p>
+                  <p className="text-xs text-slate-500">Modern dark UI</p>
                 </div>
                 {settings.theme === 'dark' && (
-                  <span className="text-xs text-blue-400 font-medium">✓ Active</span>
-                )}
-              </button>
-
-              {/* Retro 90s theme card */}
-              <button
-                type="button"
-                onClick={() => set('theme', 'retro90s')}
-                className={[
-                  'flex-1 flex flex-col gap-2 p-3 border-2 text-left transition-all',
-                  settings.theme === 'retro90s'
-                    ? 'border-blue-500 bg-slate-700'
-                    : 'border-slate-600 bg-slate-800 hover:border-slate-500',
-                ].join(' ')}
-              >
-                {/* Mini preview */}
-                <div className="theme-preview-retro w-full h-16 overflow-hidden flex flex-col pointer-events-none select-none">
-                  <div className="theme-preview-retro__titlebar h-4 flex items-center px-1.5 gap-1">
-                    <div className="theme-preview-retro__titlebar-icon w-2 h-2" />
-                    <div className="theme-preview-retro__titlebar-label w-8 h-1" />
-                  </div>
-                  <div className="theme-preview-retro__body flex flex-1 overflow-hidden">
-                    <div className="theme-preview-retro__body w-8" />
-                    <div className="theme-preview-retro__content flex-1 p-1 space-y-1">
-                      <div className="theme-preview-retro__row h-1.5 w-3/4" />
-                      <div className="theme-preview-retro__row h-1.5 w-1/2" />
-                      <div className="theme-preview-retro__row--accent h-1.5 w-2/3" />
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-200">Retro 90s</p>
-                  <p className="text-xs text-slate-500">Windows 95/98 skeuomorphic</p>
-                </div>
-                {settings.theme === 'retro90s' && (
-                  <span className="text-xs text-blue-400 font-medium">✓ Active</span>
-                )}
-              </button>
-
-              {/* Windows XP theme card */}
-              <button
-                type="button"
-                onClick={() => set('theme', 'winxp')}
-                className={[
-                  'flex-1 flex flex-col gap-2 p-3 border-2 text-left transition-all',
-                  settings.theme === 'winxp'
-                    ? 'border-blue-500 bg-slate-700'
-                    : 'border-slate-600 bg-slate-800 hover:border-slate-500',
-                ].join(' ')}
-              >
-                {/* Mini preview */}
-                <div className="theme-preview-xp w-full h-16 overflow-hidden flex flex-col pointer-events-none select-none">
-                  <div className="theme-preview-xp__titlebar h-4 flex items-center px-1.5 gap-1">
-                    <div className="theme-preview-xp__titlebar-icon w-2 h-2" />
-                    <div className="theme-preview-xp__titlebar-label w-8 h-1" />
-                  </div>
-                  <div className="theme-preview-xp__window flex flex-1 overflow-hidden">
-                    <div className="theme-preview-xp__body w-8" />
-                    <div className="theme-preview-xp__content flex-1 p-1 space-y-1">
-                      <div className="theme-preview-xp__row h-1.5 w-3/4" />
-                      <div className="theme-preview-xp__row h-1.5 w-1/2" />
-                      <div className="theme-preview-xp__row--accent h-1.5 w-2/3" />
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-200">Windows XP</p>
-                  <p className="text-xs text-slate-500">Luna blue, warm beige, gradients</p>
-                </div>
-                {settings.theme === 'winxp' && (
-                  <span className="text-xs text-blue-400 font-medium">✓ Active</span>
-                )}
-              </button>
-
-              {/* Mac OS 9 theme card */}
-              <button
-                type="button"
-                onClick={() => set('theme', 'macos9')}
-                className={[
-                  'flex-1 flex flex-col gap-2 p-3 border-2 text-left transition-all',
-                  settings.theme === 'macos9'
-                    ? 'border-blue-500 bg-slate-700'
-                    : 'border-slate-600 bg-slate-800 hover:border-slate-500',
-                ].join(' ')}
-              >
-                {/* Mini preview */}
-                <div className="theme-preview-mac9 w-full h-16 overflow-hidden flex flex-col pointer-events-none select-none">
-                  <div className="theme-preview-mac9__titlebar h-4 flex items-center px-1.5 gap-1">
-                    <div className="theme-preview-mac9__close w-2 h-2" />
-                    <div className="theme-preview-mac9__label w-8 h-1" />
-                  </div>
-                  <div className="theme-preview-mac9__window flex flex-1 overflow-hidden">
-                    <div className="theme-preview-mac9__body w-8" />
-                    <div className="theme-preview-mac9__content flex-1 p-1 space-y-1">
-                      <div className="theme-preview-mac9__row h-1.5 w-3/4" />
-                      <div className="theme-preview-mac9__row h-1.5 w-1/2" />
-                      <div className="theme-preview-mac9__row--accent h-1.5 w-2/3" />
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-200">Mac OS 9</p>
-                  <p className="text-xs text-slate-500">Platinum pinstripes, gray chrome</p>
-                </div>
-                {settings.theme === 'macos9' && (
                   <span className="text-xs text-blue-400 font-medium">✓ Active</span>
                 )}
               </button>
@@ -420,7 +314,6 @@ export default function SettingsPage() {
                     : 'border-slate-600 bg-slate-800 hover:border-slate-500',
                 ].join(' ')}
               >
-                {/* Mini preview */}
                 <div className="theme-preview-light w-full h-16 overflow-hidden flex flex-col pointer-events-none select-none">
                   <div className="theme-preview-light__titlebar h-4 flex items-center px-1.5 gap-1">
                     <div className="w-2 h-2 rounded-full bg-blue-500" />
@@ -437,9 +330,111 @@ export default function SettingsPage() {
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-slate-200">Light</p>
-                  <p className="text-xs text-slate-500">Clean modern light UI</p>
+                  <p className="text-xs text-slate-500">Modern light UI</p>
                 </div>
                 {settings.theme === 'light' && (
+                  <span className="text-xs text-blue-400 font-medium">✓ Active</span>
+                )}
+              </button>
+
+              {/* Retro 90s theme card */}
+              <button
+                type="button"
+                onClick={() => set('theme', 'retro90s')}
+                className={[
+                  'flex-1 flex flex-col gap-2 p-3 border-2 text-left transition-all',
+                  settings.theme === 'retro90s'
+                    ? 'border-blue-500 bg-slate-700'
+                    : 'border-slate-600 bg-slate-800 hover:border-slate-500',
+                ].join(' ')}
+              >
+                <div className="theme-preview-retro w-full h-16 overflow-hidden flex flex-col pointer-events-none select-none">
+                  <div className="theme-preview-retro__titlebar h-4 flex items-center px-1.5 gap-1">
+                    <div className="theme-preview-retro__titlebar-icon w-2 h-2" />
+                    <div className="theme-preview-retro__titlebar-label w-8 h-1" />
+                  </div>
+                  <div className="theme-preview-retro__body flex flex-1 overflow-hidden">
+                    <div className="theme-preview-retro__body w-8" />
+                    <div className="theme-preview-retro__content flex-1 p-1 space-y-1">
+                      <div className="theme-preview-retro__row h-1.5 w-3/4" />
+                      <div className="theme-preview-retro__row h-1.5 w-1/2" />
+                      <div className="theme-preview-retro__row--accent h-1.5 w-2/3" />
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-200">Retro 90s</p>
+                  <p className="text-xs text-slate-500">Windows 95/98 style</p>
+                </div>
+                {settings.theme === 'retro90s' && (
+                  <span className="text-xs text-blue-400 font-medium">✓ Active</span>
+                )}
+              </button>
+
+              {/* Mac OS 9 theme card */}
+              <button
+                type="button"
+                onClick={() => set('theme', 'macos9')}
+                className={[
+                  'flex-1 flex flex-col gap-2 p-3 border-2 text-left transition-all',
+                  settings.theme === 'macos9'
+                    ? 'border-blue-500 bg-slate-700'
+                    : 'border-slate-600 bg-slate-800 hover:border-slate-500',
+                ].join(' ')}
+              >
+                <div className="theme-preview-mac9 w-full h-16 overflow-hidden flex flex-col pointer-events-none select-none">
+                  <div className="theme-preview-mac9__titlebar h-4 flex items-center px-1.5 gap-1">
+                    <div className="theme-preview-mac9__close w-2 h-2" />
+                    <div className="theme-preview-mac9__label w-8 h-1" />
+                  </div>
+                  <div className="theme-preview-mac9__window flex flex-1 overflow-hidden">
+                    <div className="theme-preview-mac9__body w-8" />
+                    <div className="theme-preview-mac9__content flex-1 p-1 space-y-1">
+                      <div className="theme-preview-mac9__row h-1.5 w-3/4" />
+                      <div className="theme-preview-mac9__row h-1.5 w-1/2" />
+                      <div className="theme-preview-mac9__row--accent h-1.5 w-2/3" />
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-200">Mac OS 9</p>
+                  <p className="text-xs text-slate-500">Platinum pinstripes</p>
+                </div>
+                {settings.theme === 'macos9' && (
+                  <span className="text-xs text-blue-400 font-medium">✓ Active</span>
+                )}
+              </button>
+
+              {/* Windows XP theme card */}
+              <button
+                type="button"
+                onClick={() => set('theme', 'winxp')}
+                className={[
+                  'flex-1 flex flex-col gap-2 p-3 border-2 text-left transition-all',
+                  settings.theme === 'winxp'
+                    ? 'border-blue-500 bg-slate-700'
+                    : 'border-slate-600 bg-slate-800 hover:border-slate-500',
+                ].join(' ')}
+              >
+                <div className="theme-preview-xp w-full h-16 overflow-hidden flex flex-col pointer-events-none select-none">
+                  <div className="theme-preview-xp__titlebar h-4 flex items-center px-1.5 gap-1">
+                    <div className="theme-preview-xp__titlebar-icon w-2 h-2" />
+                    <div className="theme-preview-xp__titlebar-label w-8 h-1" />
+                  </div>
+                  <div className="theme-preview-xp__window flex flex-1 overflow-hidden">
+                    <div className="theme-preview-xp__body w-8" />
+                    <div className="theme-preview-xp__content flex-1 p-1 space-y-1">
+                      <div className="theme-preview-xp__row h-1.5 w-3/4" />
+                      <div className="theme-preview-xp__row h-1.5 w-1/2" />
+                      <div className="theme-preview-xp__row--accent h-1.5 w-2/3" />
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-200">Windows XP</p>
+                  <p className="text-xs text-slate-500">Luna blue, gradients</p>
+                </div>
+                {settings.theme === 'winxp' && (
                   <span className="text-xs text-blue-400 font-medium">✓ Active</span>
                 )}
               </button>
@@ -606,6 +601,9 @@ export default function SettingsPage() {
               onChange={(v) => set('libraryMaxTagsShown', Math.max(1, Math.min(10, v)))}
             />
           </Row>
+          <Row label="Validation warnings" description="Show a warning icon on tools with missing or inconsistent geometry values.">
+            <Toggle value={settings.validationWarningsEnabled} onChange={(v) => set('validationWarningsEnabled', v)} />
+          </Row>
         </Section>
 
         {/* LinuxCNC Writer */}
@@ -727,8 +725,21 @@ export default function SettingsPage() {
                         onChange={(e) => updateCustomType(ct.id, { profileShape: e.target.value as CustomToolTypeDefinition['profileShape'] })}
                         className="w-full px-2 py-1 text-xs bg-slate-700 border border-slate-600 rounded text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
                       >
-                        {(['flat', 'ball', 'tapered', 'drill'] as const).map((s) => (
-                          <option key={s} value={s}>{s}</option>
+                        {([
+                          ['flat',             'Flat (end mill)'],
+                          ['ball',             'Ball'],
+                          ['bull nose',        'Bull Nose'],
+                          ['tapered',          'Tapered / V-tip'],
+                          ['tapered ball',     'Tapered Ball'],
+                          ['tapered bull nose','Tapered Bull Nose'],
+                          ['drill',            'Drill (pointed)'],
+                          ['center drill',     'Center Drill'],
+                          ['counter bore',     'Counter Bore'],
+                          ['reamer',           'Reamer'],
+                          ['tap',              'Tap'],
+                          ['thread mill',      'Thread Mill'],
+                        ] as [string, string][]).map(([val, label]) => (
+                          <option key={val} value={val}>{label}</option>
                         ))}
                       </select>
                     </div>
@@ -775,6 +786,21 @@ export default function SettingsPage() {
                 Add custom type
               </button>
             </div>
+          </Row>
+        </Section>
+
+        {/* Developer */}
+        <Section title="Developer">
+          <Row label="Dev mode" description="Show the Preview Debug tab in the sidebar">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={settings.devMode}
+                onChange={(e) => set('devMode', e.target.checked)}
+                className="w-4 h-4 rounded border-slate-500 bg-slate-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+              />
+              <span className="text-sm text-slate-300">Enable dev mode</span>
+            </label>
           </Row>
         </Section>
 
