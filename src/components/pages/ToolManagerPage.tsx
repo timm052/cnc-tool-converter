@@ -487,7 +487,7 @@ export default function ToolManagerPage() {
     allMachineGroups, allTags,
     addTool, addTools, updateTool, patchEach, deleteTool, deleteTools,
   } = useLibrary();
-  const nextToolNumber = Math.max(0, ...tools.map((t) => t.toolNumber)) + 1;
+  const nextToolNumber = useMemo(() => Math.max(0, ...tools.map((t) => t.toolNumber)) + 1, [tools]);
   const { settings, updateSettings } = useSettings();
   const { holders }   = useHolders();
   const { materials } = useMaterials();
@@ -605,7 +605,10 @@ export default function ToolManagerPage() {
     return counts;
   }, [tools]);
 
-  const selectedTools = filteredTools.filter((t) => selectedIds.has(t.id));
+  const selectedTools = useMemo(
+    () => filteredTools.filter((t) => selectedIds.has(t.id)),
+    [filteredTools, selectedIds],
+  );
   const hasFilters    = starredOnly || lowStockOnly || conditionFilter !== null || tagFilter.length > 0 || searchQuery.trim() !== '' || machineFilter !== null;
 
   const inventoryValue = useMemo(() => {
@@ -623,52 +626,53 @@ export default function ToolManagerPage() {
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
-  function handleToggleSelect(id: string) {
+  const handleToggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
-  }
+  }, []);
 
-  function handleSelectAll(all: LibraryTool[]) {
+  const handleSelectAll = useCallback((all: LibraryTool[]) => {
     setSelectedIds(all.length === 0 ? new Set() : new Set(all.map((t) => t.id)));
-  }
+  }, []);
 
-  function handleToggleStar(id: string, starred: boolean) {
+  const handleToggleStar = useCallback((id: string, starred: boolean) => {
     updateTool(id, { starred });
-  }
+  }, [updateTool]);
 
-  function openEdit(tool: LibraryTool) {
+  const openEdit = useCallback((tool: LibraryTool) => {
     setEditingTool(tool);
     setActivePanel('edit');
-  }
+  }, []);
 
-  function openNew() {
+  const openNew = useCallback(() => {
     setEditingTool(null);
     setActivePanel('edit');
-  }
+  }, []);
 
-  async function handleSaveTool(tool: LibraryTool) {
+  const handleSaveTool = useCallback(async (tool: LibraryTool) => {
     const exists = tools.some((t) => t.id === tool.id);
     if (exists) {
       await updateTool(tool.id, tool);
     } else {
       await addTool(tool);
     }
-  }
+  }, [tools, updateTool, addTool]);
 
-  async function handleDuplicate(copy: LibraryTool) {
+  const handleDuplicate = useCallback(async (copy: LibraryTool) => {
     await addTool(copy);
-    openEdit(copy);
-  }
+    setEditingTool(copy);
+    setActivePanel('edit');
+  }, [addTool]);
 
-  function closePanel() {
+  const closePanel = useCallback(() => {
     setActivePanel(null);
     setEditingTool(null);
-  }
+  }, []);
 
-  function handleBackup() {
+  const handleBackup = useCallback(() => {
     const payload = JSON.stringify({ version: 1, exportedAt: Date.now(), tools }, null, 2);
     const blob = new Blob([payload], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -678,9 +682,9 @@ export default function ToolManagerPage() {
     a.click();
     URL.revokeObjectURL(url);
     recordBackup();
-  }
+  }, [tools]);
 
-  async function handleRestore(e: React.ChangeEvent<HTMLInputElement>) {
+  const handleRestore = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
@@ -692,20 +696,20 @@ export default function ToolManagerPage() {
       console.error('Restore failed:', err);
     }
     e.target.value = '';
-  }
+  }, [addTools]);
 
-  function clearFilters() {
+  const clearFilters = useCallback(() => {
     setSearchQuery('');
     setStarredOnly(false);
     setLowStockOnly(false);
     setConditionFilter(null);
     setTagFilter([]);
     setMachineFilter(null);
-  }
+  }, []);
 
-  function toggleTagFilter(tag: string) {
+  const toggleTagFilter = useCallback((tag: string) => {
     setTagFilter((prev) => prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]);
-  }
+  }, []);
 
   // ── Keyboard navigation ───────────────────────────────────────────────────
 
@@ -722,18 +726,18 @@ export default function ToolManagerPage() {
     if (!focusedId) return;
     const t = filteredTools.find((t) => t.id === focusedId);
     if (t) openEdit(t);
-  }, [focusedId, filteredTools]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [focusedId, filteredTools, openEdit]);
 
   const toggleFocusedSelect = useCallback(() => {
     if (!focusedId) return;
     handleToggleSelect(focusedId);
-  }, [focusedId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [focusedId, handleToggleSelect]);
 
   const duplicateFocused = useCallback(() => {
     if (!focusedId) return;
     const t = filteredTools.find((x) => x.id === focusedId);
     if (t) handleDuplicate({ ...t, id: crypto.randomUUID(), toolNumber: t.toolNumber + 1000, description: `${t.description} (copy)`, addedAt: Date.now(), updatedAt: Date.now() });
-  }, [focusedId, filteredTools]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [focusedId, filteredTools, handleDuplicate]);
 
   useKeyboardShortcuts([
     { key: 'ArrowDown', callback: () => moveFocus(1)  },
@@ -857,7 +861,7 @@ export default function ToolManagerPage() {
 
           {/* ── Always-visible actions ── */}
 
-          {tools.some((t) => t.reorderPoint != null && t.quantity != null && t.quantity <= t.reorderPoint) && (
+          {lowStockCount > 0 && (
             <button
               type="button"
               onClick={() => setActivePanel('low-stock')}

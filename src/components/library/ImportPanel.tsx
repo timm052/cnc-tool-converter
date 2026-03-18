@@ -66,6 +66,21 @@ function saveRecentFile(name: string, formatId: string): void {
   } catch { /* quota — ignore */ }
 }
 
+// ── Merge field definitions (module-scope — no closure deps) ─────────────────
+
+const MERGE_FIELDS: { key: string; label: string; getValue: (t: Tool) => unknown }[] = [
+  { key: 'description',    label: 'Description',   getValue: (t) => t.description },
+  { key: 'manufacturer',   label: 'Make/model',    getValue: (t) => t.manufacturer },
+  { key: 'diameter',       label: 'Diameter',      getValue: (t) => t.geometry.diameter },
+  { key: 'overallLength',  label: 'OAL',           getValue: (t) => t.geometry.overallLength },
+  { key: 'fluteLength',    label: 'Flute length',  getValue: (t) => t.geometry.fluteLength },
+  { key: 'numberOfFlutes', label: 'Flutes',        getValue: (t) => t.geometry.numberOfFlutes },
+  { key: 'spindleRpm',     label: 'RPM',           getValue: (t) => t.cutting?.spindleRpm },
+  { key: 'feedCutting',    label: 'Feed rate',     getValue: (t) => t.cutting?.feedCutting },
+  { key: 'feedPlunge',     label: 'Plunge feed',   getValue: (t) => t.cutting?.feedPlunge },
+  { key: 'comment',        label: 'Comment',       getValue: (t) => t.comment },
+];
+
 // ── Duplicate reason labels ───────────────────────────────────────────────────
 
 const REASON_LABELS: Record<DuplicateMatch['reason'], string> = {
@@ -111,18 +126,22 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
   const sourceFormat = isCsv ? CSV_FORMAT : isXlsx ? XLSX_FORMAT : importableFormats.find((f) => f.id === formatId);
 
   // Compute validation warnings for the current preview
-  const validationWarnings = settings.validationWarningsEnabled
-    ? preview.flatMap((t) => {
-        const issues = validateTool(t).filter((v) => v.severity === 'warning');
-        return issues.map((w) => `T${t.toolNumber} (${t.description}): ${w.message}`);
-      })
-    : [];
+  const validationWarnings = useMemo(() =>
+    settings.validationWarningsEnabled
+      ? preview.flatMap((t) => {
+          const issues = validateTool(t).filter((v) => v.severity === 'warning');
+          return issues.map((w) => `T${t.toolNumber} (${t.description}): ${w.message}`);
+        })
+      : [],
+  [preview, settings.validationWarningsEnabled]);
 
   // Deduplicate matches by incomingIndex (first/highest-priority reason per tool)
-  const uniqueDups = duplicates.reduce<DuplicateMatch[]>((acc, dup) => {
-    if (!acc.find((d) => d.incomingIndex === dup.incomingIndex)) acc.push(dup);
-    return acc;
-  }, []);
+  const uniqueDups = useMemo(() =>
+    duplicates.reduce<DuplicateMatch[]>((acc, dup) => {
+      if (!acc.find((d) => d.incomingIndex === dup.incomingIndex)) acc.push(dup);
+      return acc;
+    }, []),
+  [duplicates]);
 
   const importCount = preview.length - skipIndices.size;
 
@@ -220,20 +239,6 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
       return next;
     });
   }
-
-  // Build mergeable field list for a duplicate
-  const MERGE_FIELDS: { key: string; label: string; getValue: (t: Tool) => unknown }[] = [
-    { key: 'description',    label: 'Description',   getValue: (t) => t.description },
-    { key: 'manufacturer',   label: 'Make/model',    getValue: (t) => t.manufacturer },
-    { key: 'diameter',       label: 'Diameter',      getValue: (t) => t.geometry.diameter },
-    { key: 'overallLength',  label: 'OAL',           getValue: (t) => t.geometry.overallLength },
-    { key: 'fluteLength',    label: 'Flute length',  getValue: (t) => t.geometry.fluteLength },
-    { key: 'numberOfFlutes', label: 'Flutes',        getValue: (t) => t.geometry.numberOfFlutes },
-    { key: 'spindleRpm',     label: 'RPM',           getValue: (t) => t.cutting?.spindleRpm },
-    { key: 'feedCutting',    label: 'Feed rate',     getValue: (t) => t.cutting?.feedCutting },
-    { key: 'feedPlunge',     label: 'Plunge feed',   getValue: (t) => t.cutting?.feedPlunge },
-    { key: 'comment',        label: 'Comment',       getValue: (t) => t.comment },
-  ];
 
   function getDiffFields(incoming: Tool, existingId: string): typeof MERGE_FIELDS {
     const existing = libraryTools.find((t) => t.id === existingId);

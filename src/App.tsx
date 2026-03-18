@@ -1,17 +1,26 @@
-import { useState, useEffect, useCallback, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense, type ReactNode } from 'react';
 import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 import { LibraryProvider } from './contexts/LibraryContext';
 import { MaterialProvider } from './contexts/MaterialContext';
 import { HolderProvider } from './contexts/HolderContext';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
-import ConverterPage from './components/pages/ConverterPage';
-import ToolManagerPage from './components/pages/ToolManagerPage';
-import SettingsPage from './components/pages/SettingsPage';
-import ToolDebugPage from './components/pages/ToolDebugPage';
 import ChangelogModal, { shouldShowChangelog } from './components/ChangelogModal';
 
+const ConverterPage   = lazy(() => import('./components/pages/ConverterPage'));
+const ToolManagerPage = lazy(() => import('./components/pages/ToolManagerPage'));
+const SettingsPage    = lazy(() => import('./components/pages/SettingsPage'));
+const ToolDebugPage   = lazy(() => import('./components/pages/ToolDebugPage'));
+
 export type Page = 'converter' | 'tools' | 'settings' | 'debug';
+
+function PageFallback() {
+  return (
+    <div className="flex items-center justify-center h-full gap-3 text-slate-400">
+      <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
 
 function ThemeWrapper({ children }: { children: ReactNode }) {
   const { settings } = useSettings();
@@ -57,10 +66,12 @@ export default function App() {
               <div className="flex flex-1 overflow-hidden">
                 <Sidebar activePage={activePage} onNavigate={setActivePage} />
                 <main className="flex-1 overflow-hidden min-w-0">
-                  {activePage === 'converter' && <ConverterPage />}
-                  {activePage === 'tools'     && <ToolManagerPage />}
-                  {activePage === 'settings'  && <SettingsPage />}
-                  {activePage === 'debug'     && <ToolDebugPage />}
+                  <Suspense fallback={<PageFallback />}>
+                    {activePage === 'converter' && <ConverterPage />}
+                    {activePage === 'tools'     && <ToolManagerPage />}
+                    {activePage === 'settings'  && <SettingsPage />}
+                    {activePage === 'debug'     && <ToolDebugPage />}
+                  </Suspense>
                 </main>
               </div>
               {showChangelog && <ChangelogModal onClose={closeChangelog} />}

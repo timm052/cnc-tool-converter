@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import type { CustomToolTypeDefinition } from '../lib/customToolTypes';
 
 export interface TableColumnVisibility {
@@ -219,16 +219,21 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     }
   }, [settings]);
 
-  function updateSettings(patch: Partial<Settings>) {
+  const updateSettings = useCallback((patch: Partial<Settings>) => {
     setSettings((prev) => ({ ...prev, ...patch }));
-  }
+  }, []);
 
-  function resetSettings() {
+  const resetSettings = useCallback(() => {
     setSettings({ ...DEFAULT_SETTINGS });
-  }
+  }, []);
+
+  const value = useMemo(
+    () => ({ settings, updateSettings, resetSettings }),
+    [settings, updateSettings, resetSettings],
+  );
 
   return (
-    <SettingsContext.Provider value={{ settings, updateSettings, resetSettings }}>
+    <SettingsContext.Provider value={value}>
       {children}
     </SettingsContext.Provider>
   );

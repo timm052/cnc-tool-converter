@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback, memo } from 'react';
 import { ChevronUp, ChevronDown, Star, Pencil, AlertTriangle, Columns2, Plus, Minus, Layers, X } from 'lucide-react';
 import type { LibraryTool } from '../../types/libraryTool';
 import { TOOL_CONDITION_LABELS, TOOL_CONDITION_COLOURS } from '../../types/libraryTool';
@@ -530,7 +530,7 @@ function MaterialsPopover({ tool, allMaterials }: { tool: LibraryTool; allMateri
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function LibraryTable({
+function LibraryTable({
   tools,
   selectedIds,
   onToggleSelect,
@@ -555,7 +555,7 @@ export default function LibraryTable({
   const [sortKey, setSortKey] = useState<SortKey>(settings.librarySortKey as SortKey);
   const [sortDir, setSortDir] = useState<SortDir>(settings.librarySortDir);
 
-  function handleSort(key: SortKey) {
+  const handleSort = useCallback((key: SortKey) => {
     if (key === sortKey) {
       const next: SortDir = sortDir === 'asc' ? 'desc' : 'asc';
       setSortDir(next);
@@ -565,28 +565,28 @@ export default function LibraryTable({
       setSortDir('asc');
       updateSettings({ librarySortKey: key, librarySortDir: 'asc' });
     }
-  }
+  }, [sortKey, sortDir, updateSettings]);
 
   // ── Inline editing ───────────────────────────────────────────────────────
   const [editingCell, setEditingCell] = useState<{ toolId: string; colId: string } | null>(null);
   const [editRaw,     setEditRaw]     = useState('');
 
-  function startEdit(tool: LibraryTool, col: ColDef) {
+  const startEdit = useCallback((tool: LibraryTool, col: ColDef) => {
     if (!onPatchTool || col.editType === 'none') return;
     setEditingCell({ toolId: tool.id, colId: col.id });
     setEditRaw(col.getEditRaw(tool));
-  }
+  }, [onPatchTool]);
 
-  function commitEdit(tool: LibraryTool, col: ColDef) {
+  const commitEdit = useCallback((tool: LibraryTool, col: ColDef) => {
     if (!onPatchTool) return;
     const patch = col.getPatch(editRaw.trim(), tool);
     onPatchTool(tool.id, patch);
     setEditingCell(null);
-  }
+  }, [onPatchTool, editRaw]);
 
-  function cancelEdit() {
+  const cancelEdit = useCallback(() => {
     setEditingCell(null);
-  }
+  }, []);
 
   // ── Column picker ────────────────────────────────────────────────────────
   const [colPickerOpen,    setColPickerOpen]    = useState(false);
@@ -605,33 +605,35 @@ export default function LibraryTable({
     return [...keys].sort();
   }, [tools, customFieldCols]);
 
-  function toggleCol(key: keyof TableColumnVisibility) {
+  const toggleCol = useCallback((key: keyof TableColumnVisibility) => {
     updateSettings({ tableColumnVisibility: { ...vis, [key]: !vis[key] } });
-  }
+  }, [vis, updateSettings]);
 
-  function toggleCustomCol(key: string) {
+  const toggleCustomCol = useCallback((key: string) => {
     const next = customFieldCols.includes(key)
       ? customFieldCols.filter((k) => k !== key)
       : [...customFieldCols, key];
     updateSettings({ customFieldColumns: next });
-  }
+  }, [customFieldCols, updateSettings]);
 
-  function addCustomCol() {
+  const addCustomCol = useCallback(() => {
     const name = newCustomColName.trim();
     if (!name || customFieldCols.includes(name)) { setNewCustomColName(''); return; }
     updateSettings({ customFieldColumns: [...customFieldCols, name] });
     setNewCustomColName('');
-  }
+  }, [newCustomColName, customFieldCols, updateSettings]);
 
   // ── Visible columns ──────────────────────────────────────────────────────
   // A column is visible if explicitly enabled in vis, OR if it's machineGroup
   // and the showMachineCol fallback is active (backward compat).
-  const visibleCols = ALL_COL_DEFS.filter(
-    (c) => vis[c.id] || (c.id === 'machineGroup' && showMachineCol && !vis.machineGroup),
-  );
+  const visibleCols = useMemo(() =>
+    ALL_COL_DEFS.filter(
+      (c) => vis[c.id] || (c.id === 'machineGroup' && showMachineCol && !vis.machineGroup),
+    ),
+  [vis, showMachineCol]);
 
   // ── Sorted rows ──────────────────────────────────────────────────────────
-  const sorted = [...tools].sort((a, b) => {
+  const sorted = useMemo(() => [...tools].sort((a, b) => {
     let cmp = 0;
     switch (sortKey) {
       case 'toolNumber':  cmp = a.toolNumber - b.toolNumber; break;
@@ -641,9 +643,18 @@ export default function LibraryTable({
       case 'addedAt':     cmp = a.addedAt - b.addedAt; break;
     }
     return sortDir === 'asc' ? cmp : -cmp;
-  });
+  }), [tools, sortKey, sortDir]);
 
-  const allSelected = tools.length > 0 && tools.every((t) => selectedIds.has(t.id));
+  const allSelected = useMemo(
+    () => tools.length > 0 && tools.every((t) => selectedIds.has(t.id)),
+    [tools, selectedIds],
+  );
+
+  // ── Pre-computed validation (avoid calling validateTool N times per render) ─
+  const validationMap = useMemo(() => {
+    if (!settings.validationWarningsEnabled) return new Map<string, ReturnType<typeof validateTool>>();
+    return new Map(tools.map((t) => [t.id, validateTool(t)]));
+  }, [tools, settings.validationWarningsEnabled]);
 
   if (tools.length === 0) {
     return (
@@ -783,7 +794,7 @@ export default function LibraryTable({
           {sorted.map((tool, i) => {
             const selected  = selectedIds.has(tool.id);
             const focused   = focusedId === tool.id;
-            const issues    = settings.validationWarningsEnabled ? validateTool(tool) : [];
+            const issues    = validationMap.get(tool.id) ?? [];
             const hasIssues = issues.length > 0;
             const issueTitle = issues.map((w) => `${w.severity === 'error' ? '✖' : '⚠'} ${w.message}`).join('\n');
 
@@ -989,3 +1000,5 @@ export default function LibraryTable({
     </div>
   );
 }
+
+export default memo(LibraryTable);

@@ -181,6 +181,8 @@ const COL_LABELS: Record<keyof TableColumnVisibility, string> = {
   supplier:     'Supplier',
   unitCost:     'Unit Cost',
   location:     'Location',
+  condition:    'Condition',
+  useCount:     'Use Count',
 };
 
 // ── Page ─────────────────────────────────────────────────────────────────────

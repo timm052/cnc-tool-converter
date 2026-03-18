@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, type ReactNode } from 'react';
 import { db } from '../db/library';
 import type { LibraryTool } from '../types/libraryTool';
 import type { ToolTemplate } from '../types/template';
@@ -78,13 +78,13 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
 
   // ── Derived ────────────────────────────────────────────────────────────────
 
-  const allMachineGroups = Array.from(
-    new Set(tools.flatMap((t) => t.machineGroups ?? []).filter(Boolean)),
-  ).sort();
+  const allMachineGroups = useMemo(() =>
+    Array.from(new Set(tools.flatMap((t) => t.machineGroups ?? []).filter(Boolean))).sort(),
+  [tools]);
 
-  const allTags = Array.from(
-    new Set(tools.flatMap((t) => t.tags)),
-  ).sort();
+  const allTags = useMemo(() =>
+    Array.from(new Set(tools.flatMap((t) => t.tags))).sort(),
+  [tools]);
 
   // ── Mutations ──────────────────────────────────────────────────────────────
 
@@ -185,14 +185,22 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     return db.transactions.where('toolId').equals(toolId).sortBy('timestamp');
   }, []);
 
+  const value = useMemo(() => ({
+    tools, isLoading,
+    allMachineGroups, allTags,
+    addTool, addTools, updateTool, patchEach, deleteTool, deleteTools,
+    templates, saveTemplate, deleteTemplate,
+    logTransaction, getTransactions,
+  }), [
+    tools, isLoading,
+    allMachineGroups, allTags,
+    addTool, addTools, updateTool, patchEach, deleteTool, deleteTools,
+    templates, saveTemplate, deleteTemplate,
+    logTransaction, getTransactions,
+  ]);
+
   return (
-    <LibraryContext.Provider value={{
-      tools, isLoading,
-      allMachineGroups, allTags,
-      addTool, addTools, updateTool, patchEach, deleteTool, deleteTools,
-      templates, saveTemplate, deleteTemplate,
-      logTransaction, getTransactions,
-    }}>
+    <LibraryContext.Provider value={value}>
       {children}
     </LibraryContext.Provider>
   );
