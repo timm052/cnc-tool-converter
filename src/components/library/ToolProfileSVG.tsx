@@ -1059,14 +1059,14 @@ function VertDimLine({
       <Arrowhead x={x} y={y1} dir="up" />
       <Arrowhead x={x} y={y2} dir="down" />
       <text
-        x={r1(x - 15)}
+        x={r1(x - 11)}
         y={midY}
-        fontSize="13"
+        fontSize="10"
         fontWeight="bold"
         fill="#cbd5e1"
         textAnchor="middle"
         fontFamily="ui-monospace, monospace"
-        transform={`rotate(-90 ${r1(x - 15)} ${midY})`}
+        transform={`rotate(-90 ${r1(x - 11)} ${midY})`}
         dominantBaseline="central"
       >
         {label}
@@ -1094,8 +1094,8 @@ function HorizDimLine({
       <Arrowhead x={x2} y={y} dir="left" />
       <text
         x={midX}
-        y={r1(y + 15)}
-        fontSize="13"
+        y={r1(y + 11)}
+        fontSize="10"
         fontWeight="bold"
         fill="#cbd5e1"
         textAnchor="middle"
@@ -1114,11 +1114,17 @@ export function ToolProfileSVG({
   zoom = 1,
   allHolders = [],
   autoHeight = false,
+  fillContainer = false,
+  hideUnitLabel = false,
 }: {
-  draft:        LibraryTool;
-  zoom?:        number;
-  allHolders?:  ToolHolder[];
-  autoHeight?:  boolean;
+  draft:            LibraryTool;
+  zoom?:            number;
+  allHolders?:      ToolHolder[];
+  autoHeight?:      boolean;
+  /** When true, render height="100%" so the SVG fills its parent div exactly. */
+  fillContainer?:   boolean;
+  /** When true, suppress the in-SVG unit badge (use when the caller renders its own overlay). */
+  hideUnitLabel?:   boolean;
 }) {
   const { settings } = useSettings();
   const clipId     = useId();
@@ -1226,7 +1232,7 @@ export function ToolProfileSVG({
   // Dim lines sit close to the tool — offset from the profile edge, not the SVG edge.
   // When two annotations share a side they're spaced 28 px apart; the shorter span
   // goes in the inner slot (closer to the tool) and the longer span in the outer slot.
-  const DIM_STEP = 28;
+  const DIM_STEP = 20;
   // Right side: BL inner, OAL outer (OAL pushed out only when BL is also visible)
   const oalAnnX  = r1(extX + (showBody ? DIM_STEP * 2 : DIM_STEP));
   const blAnnX   = r1(extX + DIM_STEP);
@@ -1259,7 +1265,7 @@ export function ToolProfileSVG({
     <svg
       viewBox={viewBoxAttr}
       width="100%"
-      height={autoHeight ? undefined : svgH}
+      height={fillContainer ? '100%' : autoHeight ? undefined : svgH}
       className="block"
       aria-label={`${draft.type} profile`}
     >
@@ -1273,17 +1279,19 @@ export function ToolProfileSVG({
       {/* Background */}
       <rect width="480" height="185" fill="#0f172a" />
 
-      {/* Unit badge — top-left of viewBox so it never overlaps the tool at any zoom */}
-      <text
-        x={vbX + 4} y="10"
-        fontSize="10"
-        fill="#475569"
-        fontFamily="ui-monospace, monospace"
-        textAnchor="start"
-        dominantBaseline="hanging"
-      >
-        {unit}
-      </text>
+      {/* Unit badge — omitted when the caller renders its own HTML overlay */}
+      {!hideUnitLabel && (
+        <text
+          x={vbX + 4} y="10"
+          fontSize="10"
+          fill="#475569"
+          fontFamily="ui-monospace, monospace"
+          textAnchor="start"
+          dominantBaseline="hanging"
+        >
+          {unit}
+        </text>
+      )}
 
       {/* Centre axis guide */}
       <line x1="240" y1="10" x2="240" y2="130"
@@ -1458,7 +1466,7 @@ export function ToolProfileSVG({
       )}
 
       {/* Tool type label — centred */}
-      <text x={CX} y="178" fontSize="11" fontWeight="600" fill="#64748b" fontFamily="ui-sans-serif, sans-serif" textAnchor="middle">
+      <text x={CX} y="178" fontSize="9" fontWeight="600" fill="#64748b" fontFamily="ui-sans-serif, sans-serif" textAnchor="middle">
         {getTypeLabel(draft.type, customTypes)}
         {resolved.numberOfFlutes ? `  ·  ${resolved.numberOfFlutes} flutes` : ''}
       </text>

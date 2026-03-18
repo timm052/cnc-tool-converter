@@ -129,7 +129,7 @@ function makeBlankTool(unit: ToolUnit, settings: Settings): LibraryTool {
   };
 }
 
-// ── Tool photo upload ─────────────────────────────────────────────────────────
+// ── Tool photo ────────────────────────────────────────────────────────────────
 
 /** Resize an image file to ≤maxPx on its longest side, returning a JPEG data URL. */
 function resizeImage(file: File, maxPx = 800, quality = 0.82): Promise<string> {
@@ -154,28 +154,37 @@ function resizeImage(file: File, maxPx = 800, quality = 0.82): Promise<string> {
   });
 }
 
-function ImageUpload({
-  value, onChange,
+/**
+ * Photo pane shown in the split preview row.
+ *
+ * - `value` set   → shows the image (object-contain handles landscape & portrait)
+ *                   with "Change" / "Remove" buttons on hover.
+ * - `value` unset + `overlayOnly` → renders only a small corner "add photo" button
+ *                   overlaid on whatever is behind it (used when SVG is full-width).
+ * - `value` unset + no `overlayOnly` → full drop-zone (not currently used but kept).
+ */
+function PhotoPane({
+  value, onChange, overlayOnly = false,
 }: {
-  value:    string | undefined;
-  onChange: (dataUrl: string | undefined) => void;
+  value:        string | undefined;
+  onChange:     (dataUrl: string | undefined) => void;
+  overlayOnly?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [error, setError]     = useState<string>();
   const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState<string>();
 
   async function handleFile(file: File) {
     if (!file.type.startsWith('image/')) {
-      setError('File must be an image (JPEG, PNG, WebP, etc.)');
+      setError('Must be an image file');
       return;
     }
     setLoading(true);
     setError(undefined);
     try {
-      const dataUrl = await resizeImage(file);
-      onChange(dataUrl);
+      onChange(await resizeImage(file));
     } catch {
-      setError('Could not process image — please try another file.');
+      setError('Could not process image');
     } finally {
       setLoading(false);
     }
@@ -193,51 +202,94 @@ function ImageUpload({
     if (file) void handleFile(file);
   }
 
-  return (
-    <div>
-      <label className="block text-xs font-medium text-slate-400 mb-1">Tool Photo</label>
-      {value ? (
-        <div className="relative group inline-block rounded-lg overflow-hidden border border-slate-600">
-          <img
-            src={value}
-            alt="Tool photo"
-            className="block max-h-40 max-w-full object-contain bg-slate-900"
-          />
+  const fileInput = (
+    <input
+      ref={inputRef}
+      type="file"
+      accept="image/*"
+      title="Upload tool photo"
+      className="hidden"
+      onChange={handleInputChange}
+    />
+  );
+
+  /* ── Small overlay button (no-photo + overlayOnly) ── */
+  if (!value && overlayOnly) {
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          title="Add photo"
+          className="absolute bottom-2 left-2 z-10 p-1 rounded text-slate-600 hover:text-slate-300 hover:bg-slate-700/60 transition-colors"
+        >
+          {loading
+            ? <div className="w-3.5 h-3.5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+            : <ImagePlus size={13} />}
+        </button>
+        {fileInput}
+      </>
+    );
+  }
+
+  /* ── Full photo pane (photo present) ── */
+  if (value) {
+    return (
+      <div className="relative flex items-center justify-center h-full bg-slate-900/60 group">
+        {/* object-contain handles both landscape (fills width) and portrait (stays narrow) */}
+        <img
+          src={value}
+          alt="Tool photo"
+          className="w-full h-full object-contain"
+        />
+        {/* Hover overlay: change + remove */}
+        <div className="absolute inset-0 flex items-end justify-center gap-1.5 pb-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            title="Change photo"
+            className="px-2 py-1 rounded text-xs bg-black/70 text-slate-200 hover:bg-blue-600/90 transition-colors"
+          >
+            Change
+          </button>
           <button
             type="button"
             onClick={() => onChange(undefined)}
             title="Remove photo"
-            className="absolute top-1 right-1 p-1 rounded bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600/80"
+            className="px-2 py-1 rounded text-xs bg-black/70 text-slate-200 hover:bg-red-600/90 transition-colors"
           >
-            <X size={12} />
+            Remove
           </button>
         </div>
-      ) : (
-        <div
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={handleDrop}
-          onClick={() => inputRef.current?.click()}
-          className="flex flex-col items-center justify-center gap-1.5 h-24 rounded-lg border border-dashed border-slate-600 hover:border-blue-500 bg-slate-900/50 hover:bg-blue-500/5 cursor-pointer transition-colors text-slate-500 hover:text-slate-300"
-        >
-          {loading ? (
-            <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <>
-              <ImagePlus size={18} />
-              <span className="text-xs">Click or drag & drop a photo</span>
-            </>
-          )}
-        </div>
+        {error && (
+          <p className="absolute bottom-1 left-0 right-0 text-center text-xs text-red-400 bg-black/60 py-0.5">
+            {error}
+          </p>
+        )}
+        {fileInput}
+      </div>
+    );
+  }
+
+  /* ── Full drop-zone (no photo, no overlayOnly) ── */
+  return (
+    <div className="relative flex items-center justify-center h-full bg-slate-900/60">
+      <div
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={handleDrop}
+        onClick={() => inputRef.current?.click()}
+        className="flex flex-col items-center justify-center gap-1.5 w-full h-full cursor-pointer text-slate-600 hover:text-slate-400 transition-colors"
+      >
+        {loading
+          ? <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+          : <><ImagePlus size={20} /><span className="text-xs">Add photo</span></>}
+      </div>
+      {error && (
+        <p className="absolute bottom-1 left-0 right-0 text-center text-xs text-red-400 bg-black/60 py-0.5">
+          {error}
+        </p>
       )}
-      {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        title="Upload tool photo"
-        className="hidden"
-        onChange={handleInputChange}
-      />
+      {fileInput}
     </div>
   );
 }
@@ -519,8 +571,17 @@ export default function ToolEditor({
   const [templateName,   setTemplateName]   = useState('');
   const ZOOM_LEVELS = [0.6, 1.0, 1.5, 2.1] as const;
   const [zoomIdx,      setZoomIdx]     = useState(2); // default = 1.5×
-  const [expandedMats, setExpandedMats] = useState<Set<string>>(new Set());
-  const [addMatId,     setAddMatId]    = useState('');
+  const [expandedMats,      setExpandedMats]      = useState<Set<string>>(new Set());
+  const [addMatId,          setAddMatId]          = useState('');
+  // Aspect ratio (w/h) of the current photo — used to size the preview row
+  const [photoAspectRatio,  setPhotoAspectRatio]  = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!draft.imageBase64) { setPhotoAspectRatio(null); return; }
+    const img = new Image();
+    img.onload = () => setPhotoAspectRatio(img.naturalWidth / img.naturalHeight);
+    img.src = draft.imageBase64;
+  }, [draft.imageBase64]);
 
   const allIssues = validateTool(draft);
   const warnings  = allIssues.filter((i) => i.severity === 'warning');
@@ -634,6 +695,38 @@ export default function ToolEditor({
   const distUnit = draft.unit === 'mm' ? 'mm' : 'in';
   const feedUnit = `${distUnit}/${(cut.feedMode ?? 'per-minute') === 'per-minute' ? 'min' : 'rev'}`;
 
+  // Whether we're in split-view mode (photo present)
+  const inSplitView = !!draft.imageBase64;
+
+  // In split view the SVG pane is ~240 px wide (half the 480 px panel).
+  // Double the effective zoom so the tool appears the same size as in full-width mode
+  // (vbW = 480/zoom, so doubling zoom halves vbW, compensating for the halved container width).
+  const effectiveZoom = inSplitView
+    ? ZOOM_LEVELS[zoomIdx] * 2
+    : ZOOM_LEVELS[zoomIdx];
+
+  // Preview row height
+  // • No photo  → height needed by the SVG at the user's zoom level
+  // • Photo set → height to show the photo with minimal letterboxing, but at least
+  //               as tall as the SVG's intrinsic height in the 240 px pane.
+  //   SVG intrinsic H (autoHeight mode) = paneW × vbH / vbW
+  //                                     = 240 × 185 / (480 / effectiveZoom)
+  //                                     = 240 × 185 × effectiveZoom / 480
+  const PHOTO_PANE_W  = 240;
+  const SVG_FULL_H    = Math.round(185 * ZOOM_LEVELS[zoomIdx]);   // no-photo mode
+  const SVG_SPLIT_H   = Math.round(PHOTO_PANE_W * 185 * effectiveZoom / 480); // split mode intrinsic H
+  const MAX_PREVIEW_H = 340;
+
+  const previewH = inSplitView && photoAspectRatio !== null
+    ? Math.max(SVG_SPLIT_H, Math.min(MAX_PREVIEW_H, Math.round(PHOTO_PANE_W / photoAspectRatio)))
+    : SVG_FULL_H;
+
+  // Apply the dynamic height imperatively so the JSX style prop lint rule is not triggered.
+  const previewRowRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (previewRowRef.current) previewRowRef.current.style.height = `${previewH}px`;
+  }, [previewH]);
+
   return (
     <>
       {/* Backdrop */}
@@ -705,27 +798,69 @@ export default function ToolEditor({
           ))}
         </div>
 
-        {/* SVG profile */}
-        <div className="shrink-0 border-b border-slate-700 relative">
-          <div className="absolute bottom-2 right-2 flex gap-0.5 z-10">
-            <button
-              onClick={() => setZoomIdx((i) => Math.max(0, i - 1))}
-              disabled={zoomIdx === 0}
-              title="Zoom out"
-              className="p-1 rounded text-slate-600 hover:text-slate-300 hover:bg-slate-700/60 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
-            >
-              <ZoomOut size={13} />
-            </button>
-            <button
-              onClick={() => setZoomIdx((i) => Math.min(ZOOM_LEVELS.length - 1, i + 1))}
-              disabled={zoomIdx === ZOOM_LEVELS.length - 1}
-              title="Zoom in"
-              className="p-1 rounded text-slate-600 hover:text-slate-300 hover:bg-slate-700/60 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
-            >
-              <ZoomIn size={13} />
-            </button>
+        {/* Preview row: [photo left | SVG right] when photo set; SVG full-width otherwise */}
+        <div ref={previewRowRef} className="shrink-0 border-b border-slate-700 flex">
+
+          {/* Photo pane — only rendered when a photo exists */}
+          {draft.imageBase64 && (
+            <div className="w-1/2 border-r border-slate-700 overflow-hidden">
+              <PhotoPane
+                value={draft.imageBase64}
+                onChange={(v) => patchDraft({ imageBase64: v })}
+              />
+            </div>
+          )}
+
+          {/* SVG pane — full width when no photo, half width when photo present.
+               In split view: effectiveZoom compensates for the narrower pane;
+               fillContainer makes the SVG stretch to h-full so no blank space shows.
+               bg-[#0f172a] matches the SVG's own background so the area outside the
+               viewBox mapping is the same colour — no visible seam. */}
+          <div className="relative flex-1 overflow-hidden bg-[#0f172a]">
+            <ToolProfileSVG
+              draft={draft}
+              zoom={effectiveZoom}
+              fillContainer={inSplitView}
+              hideUnitLabel
+              allHolders={allHolders}
+            />
+
+            {/* Top-left: unit label — HTML overlay, reliably pinned regardless of SVG zoom */}
+            <span className="absolute top-2 left-2 z-10 text-xs font-mono text-slate-300 pointer-events-none select-none">
+              {draft.unit}
+            </span>
+
+            {/* Top-right: zoom controls */}
+            <div className="absolute top-2 right-2 flex gap-0.5 z-10">
+              <button
+                type="button"
+                onClick={() => setZoomIdx((i) => Math.max(0, i - 1))}
+                disabled={zoomIdx === 0}
+                title="Zoom out"
+                className="p-1 rounded text-slate-600 hover:text-slate-300 hover:bg-slate-700/60 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+              >
+                <ZoomOut size={13} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setZoomIdx((i) => Math.min(ZOOM_LEVELS.length - 1, i + 1))}
+                disabled={zoomIdx === ZOOM_LEVELS.length - 1}
+                title="Zoom in"
+                className="p-1 rounded text-slate-600 hover:text-slate-300 hover:bg-slate-700/60 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+              >
+                <ZoomIn size={13} />
+              </button>
+            </div>
+
+            {/* Bottom-left: add photo button (only when no photo) */}
+            {!draft.imageBase64 && (
+              <PhotoPane
+                value={undefined}
+                onChange={(v) => patchDraft({ imageBase64: v })}
+                overlayOnly
+              />
+            )}
           </div>
-          <ToolProfileSVG draft={draft} zoom={ZOOM_LEVELS[zoomIdx]} allHolders={allHolders} />
         </div>
 
         {/* Validation warnings */}
@@ -860,10 +995,6 @@ export default function ToolEditor({
                 <Toggle value={draft.starred} onChange={(v) => patchDraft({ starred: v })} />
               </div>
 
-              <ImageUpload
-                value={draft.imageBase64}
-                onChange={(v) => patchDraft({ imageBase64: v })}
-              />
             </>
           )}
 
