@@ -32,6 +32,20 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.2.0',
+    date:    'March 2026',
+    items: [
+      'Collapsible main navigation sidebar — saves space on smaller screens',
+      'Collapsible machine group sidebar in Tool Manager',
+      'Usage tracking — log uses per tool and set a regrind/replace threshold',
+      'Progress bar in tool editor shows wear level; turns amber at 80 %, red at 100 %',
+      'Surface speed (Vc) preset library — Quick fill button covers 8 material groups',
+      'Guided Feeds & Speeds Wizard — 3-step tool + material → calculated cut data',
+      'Toolbar overflow fix — selection actions grouped in a "N selected ▾" dropdown',
+      'TYPE column badge no longer wraps text at narrow widths',
+    ],
+  },
+  {
     version: '0.1.0',
     date:    'March 2026',
     items: [

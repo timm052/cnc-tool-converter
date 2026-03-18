@@ -1,6 +1,7 @@
 import { useState, useMemo, type ChangeEvent } from 'react';
 import { X, CheckCircle, Trash2, ChevronDown, Plus } from 'lucide-react';
-import type { LibraryTool, ToolMaterialEntry } from '../../types/libraryTool';
+import type { LibraryTool, ToolMaterialEntry, ToolCondition } from '../../types/libraryTool';
+import { TOOL_CONDITION_LABELS } from '../../types/libraryTool';
 import type { ToolType, ToolMaterial, CoolantMode, FeedMode } from '../../types/tool';
 import type { WorkMaterial } from '../../types/material';
 import { MATERIAL_CATEGORY_COLOURS, MATERIAL_CATEGORY_LABELS } from '../../types/material';
@@ -224,6 +225,7 @@ export default function BulkEditPanel({
   const [supplier,     setSupplier]     = useState('');
   const [unitCost,     setUnitCost]     = useState<number | undefined>(undefined);
   const [location,     setLocation]     = useState('');
+  const [condition,    setCondition]    = useState<ToolCondition | ''>('');
 
   // ── Per-material state ────────────────────────────────────────────────────────
   const [addedMatIds,  setAddedMatIds]  = useState<Set<string>>(new Set());
@@ -527,6 +529,7 @@ export default function BulkEditPanel({
         if (checked.has('supplier'))     patch.supplier     = supplier;
         if (checked.has('unitCost'))     patch.unitCost     = unitCost;
         if (checked.has('location'))     patch.location     = location;
+        if (checked.has('condition'))    patch.condition    = condition as ToolCondition || undefined;
 
         // Per-material
         const hasMatWork = visibleMatIds.some((id) => (matChecked[id]?.size ?? 0) > 0) || matRemovals.size > 0;
@@ -903,6 +906,17 @@ export default function BulkEditPanel({
             </div>
             <FieldRow field="supplier" label="Supplier"      checked={checked} onToggle={toggleChecked}><TextF value={supplier} onChange={setSupplier} placeholder="e.g. MSC Industrial" /></FieldRow>
             <FieldRow field="location" label="Crib location" checked={checked} onToggle={toggleChecked}><TextF value={location} onChange={setLocation} placeholder="e.g. Drawer A3" /></FieldRow>
+            <FieldRow field="condition" label="Condition" checked={checked} onToggle={toggleChecked}>
+              <SelF
+                value={condition as ToolCondition | ''}
+                label="Condition"
+                options={[
+                  { value: '' as ToolCondition | '', label: '— not set —' },
+                  ...(Object.entries(TOOL_CONDITION_LABELS) as [ToolCondition, string][]).map(([v, label]) => ({ value: v as ToolCondition | '', label })),
+                ]}
+                onChange={(v) => setCondition(v as ToolCondition | '')}
+              />
+            </FieldRow>
           </>)}
 
           {isDone && (

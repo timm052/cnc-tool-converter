@@ -1,5 +1,24 @@
 import type { Tool, CoolantMode, FeedMode } from './tool';
 
+/** Physical condition of the tool. */
+export type ToolCondition = 'new' | 'good' | 'worn' | 'regrind' | 'scrapped';
+
+export const TOOL_CONDITION_LABELS: Record<ToolCondition, string> = {
+  new:     'New',
+  good:    'Good',
+  worn:    'Worn',
+  regrind: 'Needs Regrind',
+  scrapped:'Scrapped',
+};
+
+export const TOOL_CONDITION_COLOURS: Record<ToolCondition, string> = {
+  new:     'bg-emerald-500/20 text-emerald-300',
+  good:    'bg-blue-500/20 text-blue-300',
+  worn:    'bg-amber-500/20 text-amber-300',
+  regrind: 'bg-orange-500/20 text-orange-300',
+  scrapped:'bg-red-500/20 text-red-400',
+};
+
 /**
  * Per-material feeds & speeds entry linked to a WorkMaterial by ID.
  * All fields are optional overrides; unset fields inherit the tool's base cutting params.
@@ -58,6 +77,8 @@ export interface LibraryTool extends Tool {
   updatedAt: number;
 
   // ── Inventory / Crib ──────────────────────────────────────────────────────
+  /** Physical condition of the tool */
+  condition?: ToolCondition;
   /** Number of units on hand */
   quantity?: number;
   /** Reorder below this quantity; triggers low-stock badge */
@@ -68,6 +89,12 @@ export interface LibraryTool extends Tool {
   unitCost?: number;
   /** Physical crib location (e.g. "Drawer A3", "Shelf 2") */
   location?: string;
+
+  // ── Lifecycle / Usage ─────────────────────────────────────────────────────
+  /** Total number of times this tool has been manually logged as used */
+  useCount?: number;
+  /** Use-count threshold at which a regrind/replace reminder is triggered */
+  regrindThreshold?: number;
 
   // ── Assembly ──────────────────────────────────────────────────────────────
   /** ID of the linked ToolHolder from the holder library */

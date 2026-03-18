@@ -3,12 +3,14 @@ import type { LibraryTool } from '../types/libraryTool';
 import type { WorkMaterial } from '../types/material';
 import type { ToolHolder } from '../types/holder';
 import type { ToolTemplate } from '../types/template';
+import type { StockTransaction } from '../types/stockTransaction';
 
 class LibraryDatabase extends Dexie {
-  tools!:     Table<LibraryTool>;
-  materials!: Table<WorkMaterial>;
-  holders!:   Table<ToolHolder>;
-  templates!: Table<ToolTemplate>;
+  tools!:        Table<LibraryTool>;
+  materials!:    Table<WorkMaterial>;
+  holders!:      Table<ToolHolder>;
+  templates!:    Table<ToolTemplate>;
+  transactions!: Table<StockTransaction>;
 
   constructor() {
     super('cnc-tool-library');
@@ -21,7 +23,6 @@ class LibraryDatabase extends Dexie {
       holders:   'id, name, type, createdAt',
     });
     // v3 — migrate machineGroup (string) → machineGroups (string[])
-    // *machineGroups is a multi-value index so queries like .where('machineGroups').equals(x) work.
     this.version(3).stores({
       tools:     'id, toolNumber, type, *machineGroups, starred, addedAt',
       materials: 'id, name, category, createdAt',
@@ -40,6 +41,14 @@ class LibraryDatabase extends Dexie {
       materials: 'id, name, category, createdAt',
       holders:   'id, name, type, createdAt',
       templates: 'id, name, createdAt',
+    });
+    // v5 — add stock transaction log
+    this.version(5).stores({
+      tools:        'id, toolNumber, type, *machineGroups, starred, addedAt',
+      materials:    'id, name, category, createdAt',
+      holders:      'id, name, type, createdAt',
+      templates:    'id, name, createdAt',
+      transactions: 'id, toolId, timestamp',
     });
   }
 }

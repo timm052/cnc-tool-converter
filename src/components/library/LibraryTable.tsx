@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { ChevronUp, ChevronDown, Star, Pencil, AlertTriangle, Columns2, Plus, Minus, Layers, X } from 'lucide-react';
 import type { LibraryTool } from '../../types/libraryTool';
+import { TOOL_CONDITION_LABELS, TOOL_CONDITION_COLOURS } from '../../types/libraryTool';
 import type { WorkMaterial } from '../../types/material';
 import type { TableColumnVisibility } from '../../contexts/SettingsContext';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -73,7 +74,7 @@ const ALL_COL_DEFS: ColDef[] = [
   {
     id: 'type', label: 'Type', group: 'Identity', sortKey: 'type',
     render: (t) => (
-      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${getTypeColour(t.type, [])}`}>
+      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${getTypeColour(t.type, [])}`}>
         {getTypeLabel(t.type, [])}
       </span>
     ),
@@ -277,6 +278,42 @@ const ALL_COL_DEFS: ColDef[] = [
     editType: 'text',
     getEditRaw: (t) => t.location ?? '',
     getPatch: (raw) => ({ location: raw || undefined }),
+  },
+  {
+    id: 'condition', label: 'Condition', group: 'Library',
+    render: (t) => t.condition
+      ? <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium whitespace-nowrap ${TOOL_CONDITION_COLOURS[t.condition]}`}>{TOOL_CONDITION_LABELS[t.condition]}</span>
+      : <span className="text-slate-600 text-xs">—</span>,
+    editType: 'select',
+    editOptions: ['', 'new', 'good', 'worn', 'regrind', 'scrapped'],
+    getEditRaw: (t) => t.condition ?? '',
+    getPatch: (raw) => ({ condition: (raw as LibraryTool['condition']) || undefined }),
+  },
+  {
+    id: 'useCount', label: 'Uses', group: 'Library',
+    render: (t) => {
+      const count = t.useCount ?? 0;
+      const threshold = t.regrindThreshold;
+      if (threshold == null || threshold === 0) {
+        return count > 0
+          ? <span className="text-slate-300 tabular-nums">{count}</span>
+          : <span className="text-slate-600">—</span>;
+      }
+      const pct = count / threshold;
+      const badge = pct >= 1
+        ? <span className="ml-1 px-1 py-0.5 rounded text-xs bg-red-500/20 text-red-400">regrind</span>
+        : pct >= 0.8
+          ? <span className="ml-1 px-1 py-0.5 rounded text-xs bg-amber-500/20 text-amber-400">soon</span>
+          : null;
+      return (
+        <span className={pct >= 1 ? 'font-semibold text-red-400 tabular-nums' : pct >= 0.8 ? 'font-semibold text-amber-400 tabular-nums' : 'text-slate-300 tabular-nums'}>
+          {count}/{threshold}{badge}
+        </span>
+      );
+    },
+    editType: 'number',
+    getEditRaw: (t) => t.useCount != null ? String(t.useCount) : '',
+    getPatch: (raw) => ({ useCount: raw ? Math.max(0, parseInt(raw)) : undefined }),
   },
 ];
 

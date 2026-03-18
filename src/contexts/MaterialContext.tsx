@@ -6,6 +6,7 @@ interface MaterialContextValue {
   materials:     WorkMaterial[];
   isLoading:     boolean;
   addMaterial:   (m: WorkMaterial) => Promise<void>;
+  addMaterials:  (ms: WorkMaterial[]) => Promise<{ added: number; skipped: number }>;
   updateMaterial:(id: string, patch: Partial<WorkMaterial>) => Promise<void>;
   deleteMaterial:(id: string) => Promise<void>;
 }
@@ -32,6 +33,20 @@ export function MaterialProvider({ children }: { children: ReactNode }) {
     setMaterials(await loadAll());
   }, []);
 
+  const addMaterials = useCallback(async (ms: WorkMaterial[]): Promise<{ added: number; skipped: number }> => {
+    const existingNames = new Set((await loadAll()).map((m) => m.name.toLowerCase()));
+    let added = 0;
+    let skipped = 0;
+    await db.transaction('rw', db.materials, async () => {
+      for (const m of ms) {
+        if (existingNames.has(m.name.toLowerCase())) { skipped++; }
+        else { await db.materials.add(m); added++; }
+      }
+    });
+    setMaterials(await loadAll());
+    return { added, skipped };
+  }, []);
+
   const updateMaterial = useCallback(async (id: string, patch: Partial<WorkMaterial>) => {
     await db.materials.update(id, { ...patch, updatedAt: Date.now() });
     setMaterials(await loadAll());
@@ -43,7 +58,7 @@ export function MaterialProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <MaterialContext.Provider value={{ materials, isLoading, addMaterial, updateMaterial, deleteMaterial }}>
+    <MaterialContext.Provider value={{ materials, isLoading, addMaterial, addMaterials, updateMaterial, deleteMaterial }}>
       {children}
     </MaterialContext.Provider>
   );

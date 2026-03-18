@@ -1,6 +1,6 @@
 {
   "name": "cnc-tool-converter",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "CNC Tool Definition Converter - Convert tool libraries between CAM and CNC software formats",
   "private": true,
   "type": "module",

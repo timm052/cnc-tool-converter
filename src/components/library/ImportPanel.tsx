@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { X, CheckCircle, AlertCircle, AlertTriangle, ChevronDown, FolderOpen, FileText, Clock } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { X, CheckCircle, AlertCircle, AlertTriangle, ChevronDown, FolderOpen, FileText, Clock, GitMerge } from 'lucide-react';
 import { registry } from '../../converters';
 import type { LibraryTool } from '../../types/libraryTool';
 import type { Tool } from '../../types/tool';
@@ -82,7 +82,7 @@ const REASON_COLOURS: Record<DuplicateMatch['reason'], string> = {
 
 export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
   const { settings } = useSettings();
-  const { tools: libraryTools } = useLibrary();
+  const { tools: libraryTools, updateTool } = useLibrary();
   const importableFormats = registry.getImportableFormats();
 
   const [formatId,      setFormatId]      = useState(importableFormats[0]?.id ?? '');
@@ -98,6 +98,10 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
   const [showDuplicates, setShowDuplicates] = useState(false);
   const [folderMode,     setFolderMode]     = useState(false);
   const [recentFiles,    setRecentFiles]    = useState<RecentFile[]>(loadRecentFiles);
+  /** incomingIndex → Set of field keys to take from the incoming tool */
+  const [mergeSelections, setMergeSelections] = useState<Map<number, Set<string>>>(new Map());
+  /** incomingIndex of the duplicate currently expanded for field-merge editing */
+  const [expandedMerge,   setExpandedMerge]   = useState<number | null>(null);
 
   // Keep recent list in sync across re-mounts
   useEffect(() => { setRecentFiles(loadRecentFiles()); }, []);
@@ -205,6 +209,8 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
     setResult(null);
     setDuplicates([]);
     setSkipIndices(new Set());
+    setMergeSelections(new Map());
+    setExpandedMerge(null);
   }
 
   function toggleSkip(idx: number) {
@@ -215,15 +221,88 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
     });
   }
 
+  // Build mergeable field list for a duplicate
+  const MERGE_FIELDS: { key: string; label: string; getValue: (t: Tool) => unknown }[] = [
+    { key: 'description',    label: 'Description',   getValue: (t) => t.description },
+    { key: 'manufacturer',   label: 'Make/model',    getValue: (t) => t.manufacturer },
+    { key: 'diameter',       label: 'Diameter',      getValue: (t) => t.geometry.diameter },
+    { key: 'overallLength',  label: 'OAL',           getValue: (t) => t.geometry.overallLength },
+    { key: 'fluteLength',    label: 'Flute length',  getValue: (t) => t.geometry.fluteLength },
+    { key: 'numberOfFlutes', label: 'Flutes',        getValue: (t) => t.geometry.numberOfFlutes },
+    { key: 'spindleRpm',     label: 'RPM',           getValue: (t) => t.cutting?.spindleRpm },
+    { key: 'feedCutting',    label: 'Feed rate',     getValue: (t) => t.cutting?.feedCutting },
+    { key: 'feedPlunge',     label: 'Plunge feed',   getValue: (t) => t.cutting?.feedPlunge },
+    { key: 'comment',        label: 'Comment',       getValue: (t) => t.comment },
+  ];
+
+  function getDiffFields(incoming: Tool, existingId: string): typeof MERGE_FIELDS {
+    const existing = libraryTools.find((t) => t.id === existingId);
+    if (!existing) return [];
+    return MERGE_FIELDS.filter((f) => {
+      const iv = f.getValue(incoming);
+      const ev = f.getValue(existing);
+      return iv !== ev && iv !== undefined && iv !== null && iv !== '';
+    });
+  }
+
+  function toggleMergeField(idx: number, field: string) {
+    setMergeSelections((prev) => {
+      const next = new Map(prev);
+      const fields = new Set(next.get(idx) ?? []);
+      if (fields.has(field)) fields.delete(field); else fields.add(field);
+      next.set(idx, fields);
+      return next;
+    });
+    // Selecting a merge field removes the tool from skipIndices
+    setSkipIndices((prev) => { const next = new Set(prev); next.delete(idx); return next; });
+  }
+
   async function handleImport() {
-    if (importCount === 0) return;
+    if (importCount === 0 && mergeSelections.size === 0) return;
     setIsImporting(true);
+
+    // 1. Apply field-level merges for duplicate tools
+    const mergeIndices = new Set(
+      [...mergeSelections.entries()]
+        .filter(([, fields]) => fields.size > 0)
+        .map(([idx]) => idx),
+    );
+    for (const [idx, fields] of mergeSelections) {
+      if (fields.size === 0) continue;
+      const incomingTool = preview[idx];
+      const dup = uniqueDups.find((d) => d.incomingIndex === idx);
+      if (!dup) continue;
+      const patch: Partial<LibraryTool> = {};
+      if (fields.has('description'))    patch.description   = incomingTool.description;
+      if (fields.has('manufacturer'))   patch.manufacturer  = incomingTool.manufacturer;
+      if (fields.has('comment'))        patch.comment       = incomingTool.comment;
+      const geom: Partial<typeof incomingTool.geometry> = {};
+      if (fields.has('diameter'))       geom.diameter       = incomingTool.geometry.diameter;
+      if (fields.has('overallLength'))  geom.overallLength  = incomingTool.geometry.overallLength;
+      if (fields.has('fluteLength'))    geom.fluteLength    = incomingTool.geometry.fluteLength;
+      if (fields.has('numberOfFlutes')) geom.numberOfFlutes = incomingTool.geometry.numberOfFlutes;
+      if (Object.keys(geom).length > 0) {
+        const existing = libraryTools.find((t) => t.id === dup.existingId);
+        if (existing) patch.geometry = { ...existing.geometry, ...geom };
+      }
+      const cut: Record<string, unknown> = {};
+      if (fields.has('spindleRpm'))  cut.spindleRpm  = incomingTool.cutting?.spindleRpm;
+      if (fields.has('feedCutting')) cut.feedCutting = incomingTool.cutting?.feedCutting;
+      if (fields.has('feedPlunge'))  cut.feedPlunge  = incomingTool.cutting?.feedPlunge;
+      if (Object.keys(cut).length > 0) {
+        const existing = libraryTools.find((t) => t.id === dup.existingId);
+        patch.cutting = { ...(existing?.cutting ?? {}), ...cut };
+      }
+      await updateTool(dup.existingId, patch);
+    }
+
+    // 2. Import non-skipped, non-merged tools as new
     const allLibTools = isCsv
       ? (preview as LibraryTool[])
       : preview.map(toolToLibraryTool);
-    const filtered = allLibTools.filter((_, i) => !skipIndices.has(i));
+    const filtered = allLibTools.filter((_, i) => !skipIndices.has(i) && !mergeIndices.has(i));
     const res = await onImport(filtered, overwrite);
-    setResult(res);
+    setResult({ added: res.added + mergeIndices.size, skipped: res.skipped });
     setIsImporting(false);
   }
 
@@ -346,35 +425,79 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
                     <AlertTriangle size={12} className="shrink-0" />
                     <span className="font-medium">
                       {uniqueDups.length} potential duplicate{uniqueDups.length !== 1 ? 's' : ''} found
-                      {skipIndices.size > 0 && ` (${skipIndices.size} skipped)`}
+                      {skipIndices.size > 0 && ` · ${skipIndices.size} skipped`}
+                      {[...mergeSelections.values()].filter((f) => f.size > 0).length > 0 && ` · ${[...mergeSelections.values()].filter((f) => f.size > 0).length} merging`}
                     </span>
                     <ChevronDown size={11} className="ml-auto shrink-0" />
                   </summary>
-                  <div className="px-3 pb-3 space-y-1.5">
-                    <p className="text-xs text-slate-500 mb-2">Check a tool to skip it during import.</p>
+                  <div className="px-3 pb-3 space-y-2">
+                    <p className="text-xs text-slate-500">For each match, choose: skip, merge fields, or add as new.</p>
                     {uniqueDups.map((dup) => {
                       const incoming = preview[dup.incomingIndex];
+                      const isSkipped  = skipIndices.has(dup.incomingIndex);
+                      const isMerging  = expandedMerge === dup.incomingIndex;
+                      const mergeFields = mergeSelections.get(dup.incomingIndex) ?? new Set<string>();
+                      const diffFields  = getDiffFields(incoming, dup.existingId);
                       return (
-                        <label key={dup.incomingIndex} className="flex items-start gap-2.5 cursor-pointer group">
-                          <input
-                            type="checkbox"
-                            checked={skipIndices.has(dup.incomingIndex)}
-                            onChange={() => toggleSkip(dup.incomingIndex)}
-                            className="mt-0.5 w-3.5 h-3.5 rounded border-slate-500 bg-slate-700 text-orange-500"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-mono text-xs text-blue-400">T{incoming.toolNumber}</span>
-                              <span className="text-xs text-slate-300 truncate">{incoming.description}</span>
-                              <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${REASON_COLOURS[dup.reason]}`}>
-                                {REASON_LABELS[dup.reason]}
-                              </span>
-                            </div>
-                            <p className="text-xs text-slate-500 truncate">
-                              Matches: {dup.existingDescription}
-                            </p>
+                        <div key={dup.incomingIndex} className={`rounded-lg border ${isSkipped ? 'border-slate-700 opacity-60' : isMerging ? 'border-blue-500/40 bg-blue-500/5' : 'border-slate-700 bg-slate-800/40'}`}>
+                          {/* Tool header row */}
+                          <div className="flex items-center gap-2 px-2.5 py-2 flex-wrap">
+                            <span className="font-mono text-xs text-blue-400 shrink-0">T{incoming.toolNumber}</span>
+                            <span className="text-xs text-slate-300 truncate flex-1">{incoming.description}</span>
+                            <span className={`text-xs px-1.5 py-0.5 rounded font-medium shrink-0 ${REASON_COLOURS[dup.reason]}`}>
+                              {REASON_LABELS[dup.reason]}
+                            </span>
                           </div>
-                        </label>
+                          <p className="px-2.5 pb-1.5 text-xs text-slate-500">Matches: {dup.existingDescription}</p>
+                          {/* Action buttons */}
+                          <div className="px-2.5 pb-2 flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => { toggleSkip(dup.incomingIndex); if (isMerging) setExpandedMerge(null); }}
+                              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${isSkipped ? 'bg-orange-500/20 text-orange-300 border border-orange-500/40' : 'text-slate-400 hover:bg-slate-700 border border-slate-700'}`}
+                            >
+                              {isSkipped ? '✓ Skip' : 'Skip'}
+                            </button>
+                            {diffFields.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setExpandedMerge(isMerging ? null : dup.incomingIndex);
+                                  if (!isMerging) setSkipIndices((p) => { const n = new Set(p); n.delete(dup.incomingIndex); return n; });
+                                }}
+                                className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${isMerging || mergeFields.size > 0 ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40' : 'text-slate-400 hover:bg-slate-700 border border-slate-700'}`}
+                              >
+                                <GitMerge size={10} />
+                                Merge{mergeFields.size > 0 ? ` (${mergeFields.size})` : ''}
+                              </button>
+                            )}
+                            <span className="ml-auto text-xs text-slate-600">or add as new</span>
+                          </div>
+                          {/* Field-level merge picker */}
+                          {isMerging && diffFields.length > 0 && (
+                            <div className="px-2.5 pb-2.5 space-y-1 border-t border-slate-700/60 pt-2">
+                              <p className="text-xs text-slate-500 mb-1.5">Select fields to copy from incoming tool:</p>
+                              {diffFields.map((f) => {
+                                const existingTool = libraryTools.find((t) => t.id === dup.existingId);
+                                const inVal  = f.getValue(incoming);
+                                const exVal  = existingTool ? f.getValue(existingTool) : undefined;
+                                return (
+                                  <label key={f.key} className="flex items-center gap-2 cursor-pointer group">
+                                    <input
+                                      type="checkbox"
+                                      checked={mergeFields.has(f.key)}
+                                      onChange={() => toggleMergeField(dup.incomingIndex, f.key)}
+                                      className="w-3.5 h-3.5 rounded border-slate-500 bg-slate-700 text-blue-500"
+                                    />
+                                    <span className="text-xs text-slate-400 w-20 shrink-0">{f.label}</span>
+                                    <span className="text-xs text-slate-500 line-through truncate">{String(exVal ?? '—')}</span>
+                                    <span className="text-xs text-blue-300 truncate">→ {String(inVal)}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
@@ -447,23 +570,34 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
 
         {/* Footer */}
         <div className="px-5 py-4 border-t border-slate-700 shrink-0 flex items-center justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-700">
+          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-700">
             {result ? 'Close' : 'Cancel'}
           </button>
-          {!result && (
-            <button
-              onClick={handleImport}
-              disabled={importCount === 0 || isImporting}
-              className={[
-                'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors',
-                importCount > 0 && !isImporting
-                  ? 'bg-blue-600 hover:bg-blue-500 text-white'
-                  : 'bg-slate-700 text-slate-500 cursor-not-allowed',
-              ].join(' ')}
-            >
-              {isImporting ? 'Importing…' : `Add ${importCount > 0 ? importCount : ''} tools to Library`}
-            </button>
-          )}
+          {!result && (() => {
+            const mergeCount = [...mergeSelections.values()].filter((f) => f.size > 0).length;
+            const totalOps = importCount + mergeCount;
+            const canProceed = totalOps > 0 && !isImporting;
+            return (
+              <button
+                type="button"
+                onClick={handleImport}
+                disabled={!canProceed}
+                className={[
+                  'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors',
+                  canProceed ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-slate-700 text-slate-500 cursor-not-allowed',
+                ].join(' ')}
+              >
+                {isImporting ? 'Importing…' : (
+                  <>
+                    {importCount > 0 && `Add ${importCount} tool${importCount !== 1 ? 's' : ''}`}
+                    {importCount > 0 && mergeCount > 0 && ' + '}
+                    {mergeCount > 0 && `merge ${mergeCount}`}
+                    {totalOps === 0 && 'Import'}
+                  </>
+                )}
+              </button>
+            );
+          })()}
         </div>
       </div>
     </>

@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef, ty
 import { db } from '../db/library';
 import type { LibraryTool } from '../types/libraryTool';
 import type { ToolTemplate } from '../types/template';
+import type { StockTransaction, StockReason } from '../types/stockTransaction';
 
 interface LibraryContextValue {
   tools:            LibraryTool[];
@@ -19,6 +20,9 @@ interface LibraryContextValue {
   templates:        ToolTemplate[];
   saveTemplate:     (template: ToolTemplate) => Promise<void>;
   deleteTemplate:   (id: string) => Promise<void>;
+  // ── Stock transactions ─────────────────────────────────────────────────────
+  logTransaction:   (tx: Omit<StockTransaction, 'id' | 'timestamp'>) => Promise<void>;
+  getTransactions:  (toolId: string) => Promise<StockTransaction[]>;
 }
 
 const LibraryContext = createContext<LibraryContextValue | null>(null);
@@ -115,7 +119,25 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   }, [tools]);
 
   const updateTool = useCallback(async (id: string, patch: Partial<LibraryTool>) => {
-    await db.tools.update(id, { ...patch, updatedAt: Date.now() });
+    const now = Date.now();
+    // Auto-log a stock transaction when quantity changes
+    if (patch.quantity !== undefined) {
+      const existing = await db.tools.get(id);
+      const oldQty = existing?.quantity ?? 0;
+      const newQty = patch.quantity;
+      if (oldQty !== newQty) {
+        const reason: StockReason = existing?.quantity === undefined ? 'initial' : 'adjustment';
+        await db.transactions.add({
+          id: crypto.randomUUID(),
+          toolId: id,
+          delta: newQty - oldQty,
+          quantityAfter: newQty,
+          reason,
+          timestamp: now,
+        });
+      }
+    }
+    await db.tools.update(id, { ...patch, updatedAt: now });
     setTools(await loadAll());
     broadcast();
   }, []);
@@ -153,12 +175,23 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     setTemplates((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
+  // ── Stock transactions ──────────────────────────────────────────────────────
+
+  const logTransaction = useCallback(async (tx: Omit<StockTransaction, 'id' | 'timestamp'>) => {
+    await db.transactions.add({ ...tx, id: crypto.randomUUID(), timestamp: Date.now() });
+  }, []);
+
+  const getTransactions = useCallback(async (toolId: string): Promise<StockTransaction[]> => {
+    return db.transactions.where('toolId').equals(toolId).sortBy('timestamp');
+  }, []);
+
   return (
     <LibraryContext.Provider value={{
       tools, isLoading,
       allMachineGroups, allTags,
       addTool, addTools, updateTool, patchEach, deleteTool, deleteTools,
       templates, saveTemplate, deleteTemplate,
+      logTransaction, getTransactions,
     }}>
       {children}
     </LibraryContext.Provider>

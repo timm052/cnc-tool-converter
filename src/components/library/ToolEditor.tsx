@@ -1,14 +1,16 @@
-import { useState, useEffect, useRef, createContext, useContext, type ChangeEvent } from 'react';
-import { X, Trash2, Save, AlertCircle, ZoomIn, ZoomOut, Wand2, Undo2, Redo2, AlertTriangle, Copy, Plus, ChevronDown, BookTemplate, ImagePlus } from 'lucide-react';
+import { useState, useEffect, useRef, useMemo, createContext, useContext, type ChangeEvent } from 'react';
+import { X, Trash2, Save, AlertCircle, ZoomIn, ZoomOut, Wand2, Undo2, Redo2, AlertTriangle, Copy, Plus, ChevronDown, BookTemplate, ImagePlus, Search } from 'lucide-react';
 import { useLibrary } from '../../contexts/LibraryContext';
 import type { ToolTemplate } from '../../types/template';
-import type { LibraryTool, ToolMaterialEntry } from '../../types/libraryTool';
+import type { LibraryTool, ToolMaterialEntry, ToolCondition } from '../../types/libraryTool';
+import { TOOL_CONDITION_LABELS, TOOL_CONDITION_COLOURS } from '../../types/libraryTool';
 import type { ToolType, ToolUnit, CoolantMode, FeedMode, ToolMaterial } from '../../types/tool';
 import type { ToolHolder } from '../../types/holder';
 import type { WorkMaterial } from '../../types/material';
 import { MATERIAL_CATEGORY_COLOURS, MATERIAL_CATEGORY_LABELS } from '../../types/material';
 import { useSettings, type Settings } from '../../contexts/SettingsContext';
 import { ToolProfileSVG } from './ToolProfileSVG';
+import StockTransactionHistory from './StockTransactionHistory';
 import { useUndoRedo } from '../../hooks/useUndoRedo';
 import { validateTool, getErrors } from '../../lib/toolValidation';
 import { getAllToolTypeOptions, getFieldVisibility } from '../../lib/customToolTypes';
@@ -441,6 +443,114 @@ function Row2({ label, children }: { label: string; children: React.ReactNode })
     <div>
       <Label>{label}</Label>
       <RowLabelCtx.Provider value={label}>{children}</RowLabelCtx.Provider>
+    </div>
+  );
+}
+
+// ── Holder typeahead combobox ──────────────────────────────────────────────────
+
+function HolderSearchField({
+  holders,
+  value,
+  onChange,
+}: {
+  holders: import('../../types/holder').ToolHolder[];
+  value:   string | null;
+  onChange:(id: string | null) => void;
+}) {
+  const [query,  setQuery]  = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const boxRef   = useRef<HTMLDivElement>(null);
+
+  const selected = holders.find((h) => h.id === value) ?? null;
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return holders;
+    return holders.filter((h) =>
+      h.name.toLowerCase().includes(q) ||
+      h.type.toLowerCase().includes(q),
+    );
+  }, [holders, query]);
+
+  // Close on outside click
+  useEffect(() => {
+    function onDown(e: MouseEvent) {
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setIsOpen(false);
+    }
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, []);
+
+  function pick(id: string | null) {
+    onChange(id);
+    setQuery('');
+    setIsOpen(false);
+  }
+
+  return (
+    <div ref={boxRef} className="relative mb-1">
+      <Label>Tool holder</Label>
+      {/* Trigger / selected display */}
+      {!isOpen ? (
+        <button
+          type="button"
+          onClick={() => { setIsOpen(true); setTimeout(() => inputRef.current?.focus(), 0); }}
+          className="w-full flex items-center justify-between px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          {selected
+            ? <span className="truncate">{selected.name} <span className="text-slate-500">({selected.type}, GL {selected.gaugeLength} mm)</span></span>
+            : <span className="text-slate-500">— None —</span>}
+          <ChevronDown size={13} className="shrink-0 text-slate-500 ml-1" />
+        </button>
+      ) : (
+        <div className="relative">
+          <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search holders…"
+            className="w-full pl-8 pr-3 py-1.5 text-sm bg-slate-700 border border-blue-500 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      )}
+      {/* Dropdown */}
+      {isOpen && (
+        <div className="absolute z-20 left-0 right-0 mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-xl max-h-52 overflow-y-auto">
+          <button
+            type="button"
+            onMouseDown={() => pick(null)}
+            className="w-full text-left px-3 py-2 text-sm text-slate-500 hover:bg-slate-700 hover:text-slate-300"
+          >
+            — None —
+          </button>
+          {filtered.length === 0 && (
+            <p className="px-3 py-2 text-xs text-slate-600 italic">No holders match</p>
+          )}
+          {filtered.map((h) => (
+            <button
+              key={h.id}
+              type="button"
+              onMouseDown={() => pick(h.id)}
+              className={[
+                'w-full text-left px-3 py-2 text-sm hover:bg-slate-700 transition-colors',
+                h.id === value ? 'bg-blue-600/20 text-blue-300' : 'text-slate-200',
+              ].join(' ')}
+            >
+              <span className="font-medium">{h.name}</span>
+              <span className="ml-2 text-xs text-slate-500">{h.type} · GL {h.gaugeLength} mm
+                {h.colletDiameterMax != null && ` · bore ≤${h.colletDiameterMax} mm`}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+      {holders.length === 0 && (
+        <p className="mt-1 text-xs text-slate-600">No holders in library — add them via the Holders button.</p>
+      )}
     </div>
   );
 }
@@ -1100,28 +1210,35 @@ export default function ToolEditor({
               {/* Assembly — holder + stick-out (not applicable for jet cutters) */}
               {!fv.isJetCutter && <div className="pt-2 border-t border-slate-700/60">
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Assembly</p>
-                <div className="space-y-3">
-                  <Row2 label="Tool holder">
-                    <select
-                      title="Tool holder"
-                      value={draft.holderId ?? ''}
-                      onChange={(e) => patchDraft({ holderId: e.target.value || undefined })}
-                      className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                    >
-                      <option value="">— None —</option>
-                      {allHolders.map((h) => (
-                        <option key={h.id} value={h.id}>{h.name} ({h.type}, GL {h.gaugeLength} mm)</option>
-                      ))}
-                    </select>
-                    {allHolders.length === 0 && (
-                      <p className="mt-1 text-xs text-slate-600">No holders in library — add them via the Holders button.</p>
-                    )}
-                  </Row2>
+                <HolderSearchField
+                  holders={allHolders}
+                  value={draft.holderId ?? null}
+                  onChange={(id) => patchDraft({ holderId: id ?? undefined })}
+                />
+                {/* Compatibility warning */}
+                {(() => {
+                  const h = allHolders.find((hh) => hh.id === draft.holderId);
+                  const shank = draft.geometry.shaftDiameter;
+                  if (!h || shank == null) return null;
+                  const shankMm = draft.unit === 'inch' ? shank * 25.4 : shank;
+                  const tooSmall = h.colletDiameterMin != null && shankMm < h.colletDiameterMin;
+                  const tooBig   = h.colletDiameterMax != null && shankMm > h.colletDiameterMax;
+                  if (!tooSmall && !tooBig) return null;
+                  return (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-500/10 border border-orange-500/30 text-xs text-orange-300">
+                      <AlertTriangle size={12} className="shrink-0" />
+                      {tooBig
+                        ? `Shank Ø${shankMm.toFixed(2)} mm exceeds holder bore max Ø${h.colletDiameterMax} mm`
+                        : `Shank Ø${shankMm.toFixed(2)} mm is below holder bore min Ø${h.colletDiameterMin} mm`}
+                    </div>
+                  );
+                })()}
+                <div className="space-y-3 mt-3">
                   <Row2 label={`Stick-out from holder face (${distUnit})`}>
                     <NumF value={draft.assemblyStickOut} min={0} onChange={(v) => patchDraft({ assemblyStickOut: v })} />
                   </Row2>
                   {(() => {
-                    const h = allHolders.find((h) => h.id === draft.holderId);
+                    const h = allHolders.find((hh) => hh.id === draft.holderId);
                     if (!h || draft.assemblyStickOut == null) return null;
                     const totalMm = h.gaugeLength + draft.assemblyStickOut;
                     return (
@@ -1442,6 +1559,68 @@ export default function ToolEditor({
                   <NumF value={draft.unitCost} min={0} onChange={(v) => patchDraft({ unitCost: v })} />
                 </Row2>
               </div>
+              <Row2 label="Condition">
+                <div className="flex items-center gap-2">
+                  <select
+                    value={draft.condition ?? ''}
+                    title="Tool condition"
+                    onChange={(e) => patchDraft({ condition: (e.target.value as ToolCondition) || undefined })}
+                    className="flex-1 px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  >
+                    <option value="">— not set —</option>
+                    {(Object.entries(TOOL_CONDITION_LABELS) as [ToolCondition, string][]).map(([v, label]) => (
+                      <option key={v} value={v}>{label}</option>
+                    ))}
+                  </select>
+                  {draft.condition && (
+                    <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-medium ${TOOL_CONDITION_COLOURS[draft.condition]}`}>
+                      {TOOL_CONDITION_LABELS[draft.condition]}
+                    </span>
+                  )}
+                </div>
+              </Row2>
+
+              {/* Lifecycle */}
+              <div className="pt-2 border-t border-slate-700/60">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Lifecycle</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <Row2 label="Use count">
+                    <div className="flex items-center gap-2">
+                      <span className="flex-1 px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 text-center tabular-nums">
+                        {draft.useCount ?? 0}
+                      </span>
+                      <button
+                        type="button"
+                        title="Log one use"
+                        onClick={() => patchDraft({ useCount: (draft.useCount ?? 0) + 1 })}
+                        className="shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-700 border border-slate-600 text-slate-300 hover:text-slate-100 hover:bg-slate-600 transition-colors"
+                      >
+                        +1
+                      </button>
+                    </div>
+                  </Row2>
+                  <Row2 label="Regrind at">
+                    <NumF value={draft.regrindThreshold} min={0} step={1} onChange={(v) => patchDraft({ regrindThreshold: v })} />
+                  </Row2>
+                </div>
+                {draft.regrindThreshold != null && draft.regrindThreshold > 0 && (
+                  (() => {
+                    const pct = Math.min(1, (draft.useCount ?? 0) / draft.regrindThreshold);
+                    const colour = pct >= 1 ? 'bg-red-500' : pct >= 0.8 ? 'bg-amber-400' : 'bg-emerald-500';
+                    const label  = pct >= 1 ? 'Due for regrind/replace' : pct >= 0.8 ? 'Approaching regrind' : 'OK';
+                    return (
+                      <div className="mt-2">
+                        <div className="h-1.5 rounded-full bg-slate-700 overflow-hidden">
+                          <div className={`h-full rounded-full transition-all ${colour}`} style={{ width: `${pct * 100}%` }} />
+                        </div>
+                        <p className={`mt-1 text-xs ${pct >= 1 ? 'text-red-400' : pct >= 0.8 ? 'text-amber-400' : 'text-slate-500'}`}>
+                          {draft.useCount ?? 0} / {draft.regrindThreshold} uses — {label}
+                        </p>
+                      </div>
+                    );
+                  })()
+                )}
+              </div>
               <Row2 label="Supplier">
                 <TextF
                   value={draft.supplier ?? ''}
@@ -1456,6 +1635,16 @@ export default function ToolEditor({
                   placeholder="e.g. Drawer A3, Shelf 2"
                 />
               </Row2>
+
+              {/* Stock transaction history */}
+              {draft.id && (
+                <div className="pt-2 border-t border-slate-700/60">
+                  <StockTransactionHistory
+                    toolId={draft.id}
+                    onLog={() => {/* history refreshes internally */}}
+                  />
+                </div>
+              )}
 
               {/* Custom fields */}
               <div className="pt-2 border-t border-slate-700/60">
@@ -1522,14 +1711,15 @@ export default function ToolEditor({
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 border-t border-slate-700 shrink-0 flex items-center gap-3">
+        <div className="px-4 py-3 border-t border-slate-700 shrink-0 flex items-center gap-2">
           {!isNew && !showConfirm && (
             <button
               type="button"
               onClick={() => setShowConfirm(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/30 transition-colors"
+              title="Delete this tool"
+              className="p-2 rounded-lg text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/30 transition-colors"
             >
-              <Trash2 size={13} /> Delete
+              <Trash2 size={14} />
             </button>
           )}
           {!isNew && !showConfirm && onDuplicate && (
@@ -1537,9 +1727,9 @@ export default function ToolEditor({
               type="button"
               onClick={handleDuplicate}
               title="Duplicate this tool"
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-700 border border-slate-600 transition-colors"
+              className="p-2 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-700 border border-slate-600 transition-colors"
             >
-              <Copy size={13} /> Duplicate
+              <Copy size={14} />
             </button>
           )}
           {!showConfirm && !showSaveTmpl && (
@@ -1547,9 +1737,9 @@ export default function ToolEditor({
               type="button"
               onClick={() => { setTemplateName(draft.description || ''); setShowSaveTmpl(true); }}
               title="Save as template"
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-700 border border-slate-600 transition-colors"
+              className="p-2 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-700 border border-slate-600 transition-colors"
             >
-              <BookTemplate size={13} /> Template
+              <BookTemplate size={14} />
             </button>
           )}
           {showSaveTmpl && (

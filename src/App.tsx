@@ -35,7 +35,7 @@ function ThemeWrapper({ children }: { children: ReactNode }) {
   return (
     <div
       data-theme={effectiveTheme}
-      className="flex flex-col h-screen bg-slate-950 text-slate-100 overflow-hidden"
+      className="flex flex-col h-screen bg-slate-950 text-slate-100 overflow-hidden min-w-[320px]"
     >
       {children}
     </div>
@@ -56,7 +56,7 @@ export default function App() {
               <Header />
               <div className="flex flex-1 overflow-hidden">
                 <Sidebar activePage={activePage} onNavigate={setActivePage} />
-                <main className="flex-1 overflow-hidden">
+                <main className="flex-1 overflow-hidden min-w-0">
                   {activePage === 'converter' && <ConverterPage />}
                   {activePage === 'tools'     && <ToolManagerPage />}
                   {activePage === 'settings'  && <SettingsPage />}

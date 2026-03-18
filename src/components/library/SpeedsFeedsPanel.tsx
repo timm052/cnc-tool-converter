@@ -6,10 +6,11 @@
  * write calculated values back with one click.
  */
 
-import { useState, useEffect } from 'react';
-import { X, Calculator, ArrowLeftRight, ChevronDown } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Calculator, ArrowLeftRight, ChevronDown, Zap } from 'lucide-react';
 import type { LibraryTool } from '../../types/libraryTool';
 import type { WorkMaterial } from '../../types/material';
+import { SURFACE_SPEED_GROUPS, vcToSfm, type ToolMaterial } from '../../lib/surfaceSpeedPresets';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -40,15 +41,23 @@ interface Props {
 
 // ── Panel ──────────────────────────────────────────────────────────────────────
 
+const TOOL_MAT_LABELS: Record<ToolMaterial, string> = {
+  carbide: 'Carbide',
+  hss:     'HSS',
+  ceramic: 'Ceramic',
+  cbn:     'CBN',
+  diamond: 'Diamond (PCD)',
+};
+
 export default function SpeedsFeedsPanel({ tool, allMaterials, onApply, onClose }: Props) {
   const isMetric = tool?.unit !== 'inch';
 
   // Inputs
-  const [diameter, setDiameter] = useState(tool?.geometry?.diameter ?? 10);
-  const [flutes,   setFlutes]   = useState(tool?.geometry?.numberOfFlutes ?? 2);
-  const [vc,       setVc]       = useState(0);
-  const [rpm,      setRpm]      = useState(tool?.cutting?.spindleRpm ?? 0);
-  const [chipLoad, setChipLoad] = useState(0.05);
+  const [diameter,  setDiameter]  = useState(tool?.geometry?.diameter ?? 10);
+  const [flutes,    setFlutes]    = useState(tool?.geometry?.numberOfFlutes ?? 2);
+  const [vc,        setVc]        = useState(0);
+  const [rpm,       setRpm]       = useState(tool?.cutting?.spindleRpm ?? 0);
+  const [chipLoad,  setChipLoad]  = useState(0.05);
   const [plungePct, setPlungePct] = useState(50);
 
   // Material reference (optional)
@@ -57,17 +66,25 @@ export default function SpeedsFeedsPanel({ tool, allMaterials, onApply, onClose 
   // Which field was last edited: 'vc' or 'rpm'
   const [driver, setDriver] = useState<'vc' | 'rpm'>('rpm');
 
+  // Quick fill dropdown
+  const [quickOpen, setQuickOpen] = useState(false);
+  const quickRef = useRef<HTMLDivElement>(null);
+
   // ── Derived calculations ──────────────────────────────────────────────────
 
-  const displayRpm   = driver === 'vc' ? calcRpm(vc, diameter, isMetric) : rpm;
-  const displayVc    = driver === 'rpm' ? calcVc(rpm, diameter, isMetric) : vc;
-  const feedRate     = displayRpm * chipLoad * flutes;
-  const plungeRate   = feedRate * (plungePct / 100);
+  const displayRpm = driver === 'vc' ? calcRpm(vc, diameter, isMetric) : rpm;
+  const displayVc  = driver === 'rpm' ? calcVc(rpm, diameter, isMetric) : vc;
+  const feedRate   = displayRpm * chipLoad * flutes;
+  const plungeRate = feedRate * (plungePct / 100);
 
   // Fill Vc bounds from material if selected
-  const mat = allMaterials.find((m) => m.id === matId);
+  const mat   = allMaterials.find((m) => m.id === matId);
   const vcMin = isMetric ? mat?.vcMin : mat?.sfmMin;
   const vcMax = isMetric ? mat?.vcMax : mat?.sfmMax;
+
+  const vcUnit  = isMetric ? 'm/min' : 'SFM';
+  const fedUnit = isMetric ? 'mm/min' : 'in/min';
+  const clUnit  = isMetric ? 'mm/fl' : 'in/fl';
 
   // When tool changes, refresh diameter / flutes / rpm
   useEffect(() => {
@@ -77,16 +94,32 @@ export default function SpeedsFeedsPanel({ tool, allMaterials, onApply, onClose 
     setDriver('rpm');
   }, [tool?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Close quick-fill on outside click
+  useEffect(() => {
+    if (!quickOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (!quickRef.current?.contains(e.target as Node)) setQuickOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [quickOpen]);
+
   // ── Helpers ───────────────────────────────────────────────────────────────
 
-  function handleVcChange(v: number) {
-    setVc(v);
-    setDriver('vc');
-  }
+  function handleVcChange(v: number) { setVc(v); setDriver('vc'); }
+  function handleRpmChange(v: number) { setRpm(v); setDriver('rpm'); }
 
-  function handleRpmChange(v: number) {
-    setRpm(v);
-    setDriver('rpm');
+  function applyPreset(vcMid: number, clFactor?: { min: number; max: number }) {
+    const vcValue = isMetric ? vcMid : vcToSfm(vcMid);
+    setVc(vcValue);
+    setDriver('vc');
+    if (clFactor) {
+      const cl = isMetric
+        ? diameter * ((clFactor.min + clFactor.max) / 2)
+        : (diameter / 25.4) * ((clFactor.min + clFactor.max) / 2);
+      setChipLoad(parseFloat(cl.toFixed(4)));
+    }
+    setQuickOpen(false);
   }
 
   function handleApply() {
@@ -102,10 +135,6 @@ export default function SpeedsFeedsPanel({ tool, allMaterials, onApply, onClose 
     onClose();
   }
 
-  const vcUnit  = isMetric ? 'm/min' : 'SFM';
-  const fedUnit = isMetric ? 'mm/min' : 'in/min';
-  const clUnit  = isMetric ? 'mm/fl' : 'in/fl';
-
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -119,7 +148,7 @@ export default function SpeedsFeedsPanel({ tool, allMaterials, onApply, onClose 
             <Calculator size={16} className="text-slate-400" />
             Speeds &amp; Feeds
           </h2>
-          <button onClick={onClose} title="Close" className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700">
+          <button type="button" onClick={onClose} title="Close" className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700">
             <X size={16} />
           </button>
         </div>
@@ -138,14 +167,10 @@ export default function SpeedsFeedsPanel({ tool, allMaterials, onApply, onClose 
             <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-2">Tool Geometry</p>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">
-                  Diameter ({isMetric ? 'mm' : 'in'})
-                </label>
+                <label className="block text-xs text-slate-400 mb-1">Diameter ({isMetric ? 'mm' : 'in'})</label>
                 <input
-                  type="number"
-                  value={diameter}
-                  min={0.001}
-                  step={0.1}
+                  type="number" title="Tool diameter" value={diameter}
+                  min={0.001} step={0.1}
                   onChange={(e) => setDiameter(parseFloat(e.target.value) || 0)}
                   className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -153,10 +178,8 @@ export default function SpeedsFeedsPanel({ tool, allMaterials, onApply, onClose 
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Flutes</label>
                 <input
-                  type="number"
-                  value={flutes}
-                  min={1}
-                  step={1}
+                  type="number" title="Number of flutes" value={flutes}
+                  min={1} step={1}
                   onChange={(e) => setFlutes(parseInt(e.target.value, 10) || 1)}
                   className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -170,8 +193,7 @@ export default function SpeedsFeedsPanel({ tool, allMaterials, onApply, onClose 
               <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-2">Material Reference (optional)</p>
               <div className="relative">
                 <select
-                  value={matId}
-                  onChange={(e) => setMatId(e.target.value)}
+                  value={matId} onChange={(e) => setMatId(e.target.value)}
                   title="Material reference"
                   className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none"
                 >
@@ -192,17 +214,63 @@ export default function SpeedsFeedsPanel({ tool, allMaterials, onApply, onClose 
 
           {/* Vc ↔ RPM */}
           <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-2">
-              Surface Speed ↔ RPM
-            </p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-medium uppercase tracking-wider text-slate-400">Surface Speed ↔ RPM</p>
+              {/* Quick fill dropdown */}
+              <div className="relative" ref={quickRef}>
+                <button
+                  type="button"
+                  onClick={() => setQuickOpen((o) => !o)}
+                  title="Quick fill from preset"
+                  className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 border border-blue-500/30 transition-colors"
+                >
+                  <Zap size={11} /> Quick fill
+                  <ChevronDown size={10} className={quickOpen ? 'rotate-180 transition-transform' : 'transition-transform'} />
+                </button>
+                {quickOpen && (
+                  <div className="absolute right-0 top-full mt-1 w-72 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-10 overflow-hidden">
+                    <div className="max-h-80 overflow-y-auto">
+                      {SURFACE_SPEED_GROUPS.map((group) => (
+                        <div key={group.material}>
+                          <div className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 bg-slate-800/60 sticky top-0">
+                            {group.material}
+                          </div>
+                          {group.presets.map((preset) => {
+                            const vcMid = (preset.vcMin + preset.vcMax) / 2;
+                            const disp  = isMetric
+                              ? `${preset.vcMin}–${preset.vcMax} m/min`
+                              : `${vcToSfm(preset.vcMin)}–${vcToSfm(preset.vcMax)} SFM`;
+                            return (
+                              <button
+                                key={preset.label}
+                                type="button"
+                                onClick={() => applyPreset(vcMid, preset.chipLoadFactor)}
+                                className="w-full text-left px-3 py-2 hover:bg-slate-700 transition-colors"
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-xs text-slate-200">{TOOL_MAT_LABELS[preset.toolMaterial]}</span>
+                                  <span className="text-xs text-slate-400 tabular-nums">{disp}</span>
+                                </div>
+                                {preset.note && (
+                                  <p className="text-xs text-slate-500 mt-0.5 leading-tight">{preset.note}</p>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
             <div className="grid grid-cols-[1fr,auto,1fr] items-center gap-2">
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Vc ({vcUnit})</label>
                 <input
-                  type="number"
+                  type="number" title={`Surface speed (${vcUnit})`}
                   value={driver === 'vc' ? vc : parseFloat(displayVc.toFixed(1))}
-                  min={0}
-                  step={1}
+                  min={0} step={1}
                   onChange={(e) => handleVcChange(parseFloat(e.target.value) || 0)}
                   className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -211,10 +279,9 @@ export default function SpeedsFeedsPanel({ tool, allMaterials, onApply, onClose 
               <div>
                 <label className="block text-xs text-slate-400 mb-1">RPM</label>
                 <input
-                  type="number"
+                  type="number" title="Spindle speed (RPM)"
                   value={driver === 'rpm' ? rpm : Math.round(displayRpm)}
-                  min={0}
-                  step={100}
+                  min={0} step={100}
                   onChange={(e) => handleRpmChange(parseFloat(e.target.value) || 0)}
                   className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -227,14 +294,10 @@ export default function SpeedsFeedsPanel({ tool, allMaterials, onApply, onClose 
             <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-2">Feed Rate</p>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">
-                  Chip load ({clUnit})
-                </label>
+                <label className="block text-xs text-slate-400 mb-1">Chip load ({clUnit})</label>
                 <input
-                  type="number"
-                  value={chipLoad}
-                  min={0.001}
-                  step={0.001}
+                  type="number" title={`Chip load per flute (${clUnit})`}
+                  value={chipLoad} min={0.001} step={0.001}
                   onChange={(e) => setChipLoad(parseFloat(e.target.value) || 0)}
                   className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -242,11 +305,8 @@ export default function SpeedsFeedsPanel({ tool, allMaterials, onApply, onClose 
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Plunge %</label>
                 <input
-                  type="number"
-                  value={plungePct}
-                  min={1}
-                  max={100}
-                  step={5}
+                  type="number" title="Plunge feed as % of cutting feed"
+                  value={plungePct} min={1} max={100} step={5}
                   onChange={(e) => setPlungePct(parseInt(e.target.value, 10) || 50)}
                   className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -260,10 +320,10 @@ export default function SpeedsFeedsPanel({ tool, allMaterials, onApply, onClose 
               Calculated Results
             </p>
             {[
-              { label: 'RPM',        value: Math.round(displayRpm), unit: 'rpm'    },
-              { label: 'Surface speed', value: parseFloat(displayVc.toFixed(1)),   unit: vcUnit  },
-              { label: 'Feed rate',  value: Math.round(feedRate),   unit: fedUnit  },
-              { label: 'Plunge rate', value: Math.round(plungeRate), unit: fedUnit },
+              { label: 'RPM',           value: Math.round(displayRpm),               unit: 'rpm'    },
+              { label: 'Surface speed', value: parseFloat(displayVc.toFixed(1)),      unit: vcUnit   },
+              { label: 'Feed rate',     value: Math.round(feedRate),                  unit: fedUnit  },
+              { label: 'Plunge rate',   value: Math.round(plungeRate),                unit: fedUnit  },
             ].map(({ label, value, unit: u }) => (
               <div key={label} className="flex items-center justify-between px-4 py-2.5 border-b border-slate-700/60 last:border-0">
                 <span className="text-sm text-slate-400">{label}</span>
@@ -278,11 +338,12 @@ export default function SpeedsFeedsPanel({ tool, allMaterials, onApply, onClose 
 
         {/* Footer */}
         <div className="px-5 py-4 border-t border-slate-700 shrink-0 flex items-center justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-700">
+          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-700">
             Close
           </button>
           {onApply && (
             <button
+              type="button"
               onClick={handleApply}
               className="px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 hover:bg-blue-500 text-white transition-colors"
             >

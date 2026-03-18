@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
-import { X, Plus, Trash2, Pencil, Check, FlaskConical, Search } from 'lucide-react';
+import { X, Plus, Trash2, Pencil, Check, FlaskConical, Search, Download } from 'lucide-react';
 import { useMaterials } from '../../contexts/MaterialContext';
 import type { WorkMaterial, MaterialCategory } from '../../types/material';
+import { getMaterialPresets } from '../../lib/materialPresets';
 import {
   MATERIAL_CATEGORIES,
   MATERIAL_CATEGORY_LABELS,
@@ -137,13 +138,14 @@ function MaterialForm({
 // ── Main panel ────────────────────────────────────────────────────────────────
 
 export default function MaterialLibraryPanel({ onClose }: { onClose: () => void }) {
-  const { materials, isLoading, addMaterial, updateMaterial, deleteMaterial } = useMaterials();
+  const { materials, isLoading, addMaterial, addMaterials, updateMaterial, deleteMaterial } = useMaterials();
 
   const [editingId,     setEditingId]     = useState<string | null>(null);
   const [isAdding,      setIsAdding]      = useState(false);
   const [newDraft,      setNewDraft]      = useState<WorkMaterial>(blank);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [search,        setSearch]        = useState('');
+  const [presetMsg,     setPresetMsg]     = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -175,6 +177,15 @@ export default function MaterialLibraryPanel({ onClose }: { onClose: () => void 
     setIsAdding(true);
     setEditingId(null);
     setNewDraft(blank());
+  }
+
+  async function handleLoadPresets() {
+    const { added, skipped } = await addMaterials(getMaterialPresets());
+    const msg = added > 0
+      ? `Added ${added} preset${added !== 1 ? 's' : ''}${skipped > 0 ? ` (${skipped} already existed)` : ''}`
+      : `All presets already exist`;
+    setPresetMsg(msg);
+    setTimeout(() => setPresetMsg(null), 3000);
   }
 
   return (
@@ -309,14 +320,28 @@ export default function MaterialLibraryPanel({ onClose }: { onClose: () => void 
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-3 border-t border-slate-700 shrink-0">
-          <button
-            onClick={startAdd}
-            disabled={isAdding}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white disabled:bg-slate-700 disabled:text-slate-500 transition-colors"
-          >
-            <Plus size={14} /> Add Material
-          </button>
+        <div className="px-4 py-3 border-t border-slate-700 shrink-0 space-y-2">
+          {presetMsg && (
+            <p className="text-xs text-center text-emerald-400">{presetMsg}</p>
+          )}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleLoadPresets}
+              title="Load preset materials (skips duplicates)"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-700 border border-slate-700 transition-colors shrink-0"
+            >
+              <Download size={14} /> Presets
+            </button>
+            <button
+              type="button"
+              onClick={startAdd}
+              disabled={isAdding}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white disabled:bg-slate-700 disabled:text-slate-500 transition-colors"
+            >
+              <Plus size={14} /> Add Material
+            </button>
+          </div>
         </div>
       </div>
     </>

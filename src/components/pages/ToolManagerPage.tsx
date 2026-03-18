@@ -1,15 +1,16 @@
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import {
   Library, Plus, Upload, Download, Search, Star, X,
-  ChevronDown, Layers, Tag, RotateCcw, Keyboard, SlidersHorizontal, Columns2, Hash,
+  ChevronDown, ChevronLeft, ChevronRight, Layers, Tag, RotateCcw, Keyboard, SlidersHorizontal, Columns2, Hash,
   Printer, QrCode, FlaskConical, Wrench, ScanLine, Copy, Package,
-  Calculator, AlertTriangle, FileText, ArrowRightLeft, BookTemplate,
+  Calculator, AlertTriangle, FileText, ArrowRightLeft, BookTemplate, Wand2,
 } from 'lucide-react';
 import { useLibrary } from '../../contexts/LibraryContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useHolders } from '../../contexts/HolderContext';
 import { useMaterials } from '../../contexts/MaterialContext';
-import type { LibraryTool } from '../../types/libraryTool';
+import type { LibraryTool, ToolCondition } from '../../types/libraryTool';
+import { TOOL_CONDITION_LABELS } from '../../types/libraryTool';
 import LibraryTable from '../library/LibraryTable';
 import ToolEditor from '../library/ToolEditor';
 import ImportPanel from '../library/ImportPanel';
@@ -24,15 +25,17 @@ import MaterialLibraryPanel from '../library/MaterialLibraryPanel';
 import HolderLibraryPanel from '../library/HolderLibraryPanel';
 import QrScannerPanel from '../library/QrScannerPanel';
 import SpeedsFeedsPanel from '../library/SpeedsFeedsPanel';
+import CuttingWizardPanel from '../library/CuttingWizardPanel';
 import ValidationPanel from '../library/ValidationPanel';
 import TemplatePickerPanel from '../library/TemplatePickerPanel';
+import LowStockPanel from '../library/LowStockPanel';
 import { downloadGcodeOffsetSheet } from '../../lib/gcodeOffsetSheet';
 import { recordBackup } from '../../lib/backupNudge';
 import { convertToolUnit } from '../../lib/unitConvert';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Panel = 'import' | 'export' | 'edit' | 'bulk-edit' | 'compare' | 'renumber' | 'label-print' | 'sheet-print' | 'materials' | 'holders' | 'duplicates' | 'qr-scan' | 'feeds' | 'validation' | 'copy-group' | 'templates' | null;
+type Panel = 'import' | 'export' | 'edit' | 'bulk-edit' | 'compare' | 'renumber' | 'label-print' | 'sheet-print' | 'materials' | 'holders' | 'duplicates' | 'qr-scan' | 'feeds' | 'validation' | 'copy-group' | 'templates' | 'low-stock' | 'wizard' | null;
 
 // ── Machine group sidebar ─────────────────────────────────────────────────────
 
@@ -42,20 +45,67 @@ function MachineGroupSidebar({
   totalCount,
   active,
   onSelect,
+  inventoryValue,
+  lowStockCount,
 }: {
   groups:            string[];
   toolCountByGroup:  Record<string, number>;
   totalCount:        number;
   active:            string | null;
   onSelect:          (group: string | null) => void;
+  inventoryValue?:   number;
+  lowStockCount?:    number;
 }) {
+  const [collapsed, setCollapsed] = useState(() =>
+    localStorage.getItem('machine-sidebar-collapsed') === 'true',
+  );
+
+  function toggle() {
+    const next = !collapsed;
+    setCollapsed(next);
+    localStorage.setItem('machine-sidebar-collapsed', String(next));
+  }
+
+  /* ── Collapsed strip ── */
+  if (collapsed) {
+    return (
+      <aside className="w-9 shrink-0 border-r border-slate-700 flex flex-col items-center pt-2 gap-2">
+        <button
+          type="button"
+          onClick={toggle}
+          title="Expand machine groups"
+          className="p-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700 transition-colors"
+        >
+          <ChevronRight size={14} />
+        </button>
+        {/* Active group indicator dot */}
+        <div
+          title={active ?? 'All tools'}
+          className={`w-2 h-2 rounded-full ${active !== null ? 'bg-blue-400' : 'bg-slate-600'}`}
+        />
+      </aside>
+    );
+  }
+
+  /* ── Expanded sidebar ── */
   return (
     <aside className="w-44 shrink-0 border-r border-slate-700 flex flex-col overflow-y-auto">
-      <p className="px-3 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
-        Machines
-      </p>
+      <div className="flex items-center justify-between px-3 pt-3 pb-1">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          Machines
+        </p>
+        <button
+          type="button"
+          onClick={toggle}
+          title="Collapse machine groups"
+          className="p-1 rounded text-slate-500 hover:text-slate-300 hover:bg-slate-700 transition-colors"
+        >
+          <ChevronLeft size={13} />
+        </button>
+      </div>
 
       <button
+        type="button"
         onClick={() => onSelect(null)}
         className={[
           'flex items-center justify-between px-3 py-2 text-sm transition-colors text-left',
@@ -75,6 +125,7 @@ function MachineGroupSidebar({
           {groups.map((group) => (
             <button
               key={group}
+              type="button"
               onClick={() => onSelect(group)}
               className={[
                 'w-full flex items-center justify-between px-3 py-2 text-sm transition-colors text-left',
@@ -89,6 +140,23 @@ function MachineGroupSidebar({
               </span>
             </button>
           ))}
+        </div>
+      )}
+
+      {/* Inventory summary — only when cost data exists */}
+      {inventoryValue != null && inventoryValue > 0 && (
+        <div className="mt-auto p-3 border-t border-slate-700/60 space-y-1.5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Inventory</p>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-slate-400">Total value</span>
+            <span className="font-mono font-semibold text-emerald-400">${inventoryValue.toFixed(2)}</span>
+          </div>
+          {lowStockCount != null && lowStockCount > 0 && (
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-400">Low stock</span>
+              <span className="font-semibold text-red-400">{lowStockCount} tool{lowStockCount !== 1 ? 's' : ''}</span>
+            </div>
+          )}
         </div>
       )}
     </aside>
@@ -474,20 +542,43 @@ export default function ToolManagerPage() {
   const [machineFilter,   setMachineFilter]   = useState<string | null>(null);
   const [starredOnly,     setStarredOnly]     = useState(false);
   const [lowStockOnly,    setLowStockOnly]    = useState(false);
+  const [conditionFilter, setConditionFilter] = useState<ToolCondition | null>(null);
   const [tagFilter,       setTagFilter]       = useState<string[]>([]);
   const [tagDropdownOpen, setTagDropdownOpen] = useState(false);
   const [selectedIds,     setSelectedIds]     = useState<Set<string>>(new Set());
   const [focusedId,       setFocusedId]       = useState<string | null>(null);
   const [showShortcuts,   setShowShortcuts]   = useState(false);
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [openDropdown,    setOpenDropdown]    = useState<'libraries' | 'maintenance' | 'print' | 'selection' | null>(null);
+  const searchInputRef    = useRef<HTMLInputElement>(null);
+  const librariesRef      = useRef<HTMLDivElement>(null);
+  const maintenanceRef    = useRef<HTMLDivElement>(null);
+  const printRef          = useRef<HTMLDivElement>(null);
+  const selectionRef      = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!openDropdown) return;
+    function handleClick(e: MouseEvent) {
+      const target = e.target as Node;
+      if (
+        librariesRef.current?.contains(target) ||
+        maintenanceRef.current?.contains(target) ||
+        printRef.current?.contains(target) ||
+        selectionRef.current?.contains(target)
+      ) return;
+      setOpenDropdown(null);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [openDropdown]);
 
   // ── Derived / filtered list ───────────────────────────────────────────────
   const filteredTools = useMemo(() => {
     let list = tools;
     if (machineFilter !== null) list = list.filter((t) => (t.machineGroups ?? []).includes(machineFilter));
     if (starredOnly)            list = list.filter((t) => t.starred);
-    if (lowStockOnly)           list = list.filter((t) => t.reorderPoint != null && t.quantity != null && t.quantity <= t.reorderPoint);
-    if (tagFilter.length > 0)   list = list.filter((t) => tagFilter.every((tag) => t.tags.includes(tag)));
+    if (lowStockOnly)             list = list.filter((t) => t.reorderPoint != null && t.quantity != null && t.quantity <= t.reorderPoint);
+    if (conditionFilter !== null) list = list.filter((t) => t.condition === conditionFilter);
+    if (tagFilter.length > 0)     list = list.filter((t) => tagFilter.every((tag) => t.tags.includes(tag)));
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter((t) =>
@@ -502,7 +593,7 @@ export default function ToolManagerPage() {
       );
     }
     return list;
-  }, [tools, machineFilter, starredOnly, lowStockOnly, tagFilter, searchQuery]);
+  }, [tools, machineFilter, starredOnly, lowStockOnly, conditionFilter, tagFilter, searchQuery]);
 
   const toolCountByGroup = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -515,7 +606,20 @@ export default function ToolManagerPage() {
   }, [tools]);
 
   const selectedTools = filteredTools.filter((t) => selectedIds.has(t.id));
-  const hasFilters    = starredOnly || lowStockOnly || tagFilter.length > 0 || searchQuery.trim() !== '' || machineFilter !== null;
+  const hasFilters    = starredOnly || lowStockOnly || conditionFilter !== null || tagFilter.length > 0 || searchQuery.trim() !== '' || machineFilter !== null;
+
+  const inventoryValue = useMemo(() => {
+    const total = tools.reduce((sum, t) => {
+      if (t.unitCost == null || t.quantity == null) return sum;
+      return sum + t.unitCost * t.quantity;
+    }, 0);
+    return total > 0 ? total : null;
+  }, [tools]);
+
+  const lowStockCount = useMemo(
+    () => tools.filter((t) => t.reorderPoint != null && t.quantity != null && t.quantity <= t.reorderPoint).length,
+    [tools],
+  );
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -594,6 +698,7 @@ export default function ToolManagerPage() {
     setSearchQuery('');
     setStarredOnly(false);
     setLowStockOnly(false);
+    setConditionFilter(null);
     setTagFilter([]);
     setMachineFilter(null);
   }
@@ -665,9 +770,10 @@ export default function ToolManagerPage() {
     <div className="flex flex-col h-full overflow-hidden">
 
       {/* ── Toolbar ─────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700 shrink-0 gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
-          <h1 className="text-lg font-semibold text-slate-100">Tool Library</h1>
+      <div className="flex items-center gap-3 px-6 py-3 border-b border-slate-700 shrink-0 flex-wrap">
+        {/* Title */}
+        <div className="flex items-center gap-2 mr-2 shrink-0">
+          <h1 className="text-lg font-semibold text-slate-100 whitespace-nowrap">Tool Library</h1>
           {tools.length > 0 && (
             <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-700 text-slate-400">
               {tools.length}
@@ -675,72 +781,61 @@ export default function ToolManagerPage() {
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          {selectedIds.size === 1 && selectedTools.length === 1 && (
-            <button
-              onClick={() => handleDuplicate({ ...selectedTools[0], id: crypto.randomUUID(), toolNumber: selectedTools[0].toolNumber + 1000, description: `${selectedTools[0].description} (copy)`, addedAt: Date.now(), updatedAt: Date.now() })}
-              title="Duplicate selected tool (Ctrl+D)"
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
-            >
-              <Copy size={14} />
-              Duplicate
-            </button>
-          )}
+        {/* Right-side actions — flex-wrap so they reflow at any width */}
+        <div className="flex items-center gap-2 flex-wrap flex-1 justify-end">
+
+          {/* ── Selection dropdown (shown when ≥1 tool selected) ── */}
           {selectedIds.size > 0 && (
-            <button
-              onClick={() => setActivePanel('copy-group')}
-              title="Copy selected tools to a machine group"
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
-            >
-              <ArrowRightLeft size={14} />
-              Copy to Group
-            </button>
-          )}
-          {selectedIds.size > 0 && (
-            <button
-              onClick={() => setActivePanel('feeds')}
-              title="Speeds & Feeds calculator"
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
-            >
-              <Calculator size={14} />
-              F&amp;S
-            </button>
-          )}
-          {selectedIds.size > 0 && (
-            <div className="flex rounded-lg overflow-hidden border border-slate-600 text-sm" title="Convert selected tools to metric or imperial">
+            <div className="relative" ref={selectionRef}>
               <button
                 type="button"
-                onClick={() => void handleConvertUnits('mm')}
-                className="flex items-center gap-1 px-2.5 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors font-medium"
+                onClick={() => setOpenDropdown((o) => o === 'selection' ? null : 'selection')}
+                title="Actions for selected tools"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 transition-colors whitespace-nowrap"
               >
-                <ArrowRightLeft size={13} />
-                → mm
+                {selectedIds.size} selected
+                <ChevronDown size={13} className={`transition-transform ${openDropdown === 'selection' ? 'rotate-180' : ''}`} />
               </button>
-              <div className="w-px bg-slate-600" />
-              <button
-                type="button"
-                onClick={() => void handleConvertUnits('inch')}
-                className="px-2.5 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors font-medium"
-              >
-                → in
-              </button>
+              {openDropdown === 'selection' && (
+                <div className="absolute left-0 top-full mt-1 w-52 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-30 py-1 overflow-hidden">
+                  {selectedIds.size === 1 && selectedTools.length === 1 && (
+                    <button type="button" onClick={() => { handleDuplicate({ ...selectedTools[0], id: crypto.randomUUID(), toolNumber: selectedTools[0].toolNumber + 1000, description: `${selectedTools[0].description} (copy)`, addedAt: Date.now(), updatedAt: Date.now() }); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
+                      <Copy size={14} className="text-slate-400 shrink-0" /> Duplicate
+                    </button>
+                  )}
+                  <button type="button" onClick={() => { setActivePanel('copy-group'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
+                    <ArrowRightLeft size={14} className="text-slate-400 shrink-0" /> Copy to Group
+                  </button>
+                  <button type="button" onClick={() => { setActivePanel('feeds'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
+                    <Calculator size={14} className="text-slate-400 shrink-0" /> F&amp;S Calculator
+                  </button>
+                  <div className="border-t border-slate-700 my-1" />
+                  <button type="button" onClick={() => { void handleConvertUnits('mm'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
+                    <ArrowRightLeft size={14} className="text-slate-400 shrink-0" /> Convert → mm
+                  </button>
+                  <button type="button" onClick={() => { void handleConvertUnits('inch'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
+                    <ArrowRightLeft size={14} className="text-slate-400 shrink-0" /> Convert → in
+                  </button>
+                  {selectedIds.size >= 2 && (
+                    <>
+                      <div className="border-t border-slate-700 my-1" />
+                      <button type="button" onClick={() => { setActivePanel('compare'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
+                        <Columns2 size={14} className="text-slate-400 shrink-0" /> Compare {selectedIds.size}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           )}
-          {selectedIds.size >= 2 && (
-            <button
-              onClick={() => setActivePanel('compare')}
-              title="Compare selected tools"
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
-            >
-              <Columns2 size={14} />
-              Compare {selectedIds.size}
-            </button>
-          )}
+
+          {/* Primary selection actions — always visible */}
           {selectedIds.size > 0 && (
             <button
+              type="button"
               onClick={() => setActivePanel('bulk-edit')}
-              title="Bulk edit selected tools"
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
+              title="Edit selected tools"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors whitespace-nowrap"
             >
               <SlidersHorizontal size={14} />
               Edit {selectedIds.size}
@@ -748,30 +843,59 @@ export default function ToolManagerPage() {
           )}
           {selectedIds.size > 0 && (
             <button
+              type="button"
               onClick={() => setActivePanel('export')}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
+              title="Export selected tools"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors whitespace-nowrap"
             >
               <Download size={14} />
-              Export {selectedIds.size} tool{selectedIds.size !== 1 ? 's' : ''}
+              Export {selectedIds.size}
             </button>
           )}
+
+          {selectedIds.size > 0 && <div className="w-px h-6 bg-slate-600 shrink-0" />}
+
+          {/* ── Always-visible actions ── */}
+
+          {tools.some((t) => t.reorderPoint != null && t.quantity != null && t.quantity <= t.reorderPoint) && (
+            <button
+              type="button"
+              onClick={() => setActivePanel('low-stock')}
+              title="View tools at or below reorder point"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-red-600/80 hover:bg-red-600 text-white border border-red-500/40 transition-colors whitespace-nowrap"
+            >
+              <AlertTriangle size={14} />
+              Low Stock
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setActivePanel('import')}
+            title="Import tools from a file"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors whitespace-nowrap"
+          >
+            <Upload size={14} />
+            Import
+          </button>
+
           {tools.length > 0 && (
             <button
+              type="button"
               onClick={handleBackup}
               title="Download all tools as JSON backup"
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
+              className="p-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 bg-slate-700 hover:bg-slate-600 border border-slate-600 transition-colors"
             >
               <Download size={14} />
-              Backup
             </button>
           )}
           <button
+            type="button"
             onClick={() => restoreInputRef.current?.click()}
             title="Restore tools from a JSON backup"
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
+            className="p-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 bg-slate-700 hover:bg-slate-600 border border-slate-600 transition-colors"
           >
             <RotateCcw size={14} />
-            Restore
           </button>
           <input
             ref={restoreInputRef}
@@ -781,117 +905,109 @@ export default function ToolManagerPage() {
             onChange={handleRestore}
             className="hidden"
           />
-          <button
-            onClick={() => setActivePanel('materials')}
-            title="Material library"
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
-          >
-            <FlaskConical size={14} />
-            Materials
-          </button>
-          <button
-            onClick={() => setActivePanel('holders')}
-            title="Holder library"
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
-          >
-            <Wrench size={14} />
-            Holders
-          </button>
-          <button
-            onClick={() => setActivePanel('templates')}
-            title="Create a tool from a saved template"
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
-          >
-            <BookTemplate size={14} />
-            Templates
-          </button>
-          <button
-            onClick={() => setActivePanel('import')}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
-          >
-            <Upload size={14} />
-            Import
-          </button>
-          {tools.length > 0 && (
+
+          {/* ── Libraries dropdown ── */}
+          <div className="relative" ref={librariesRef}>
             <button
-              onClick={() => setActivePanel('duplicates')}
-              title="Find duplicate tools"
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
+              type="button"
+              onClick={() => setOpenDropdown((o) => o === 'libraries' ? null : 'libraries')}
+              title="Reference libraries"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors whitespace-nowrap"
             >
-              <Wrench size={14} className="rotate-0" />
-              Duplicates
+              Libraries
+              <ChevronDown size={13} className={`transition-transform ${openDropdown === 'libraries' ? 'rotate-180' : ''}`} />
             </button>
-          )}
+            {openDropdown === 'libraries' && (
+              <div className="absolute right-0 top-full mt-1 w-44 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-30 py-1 overflow-hidden">
+                <button type="button" onClick={() => { setActivePanel('materials'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
+                  <FlaskConical size={14} className="text-slate-400 shrink-0" /> Materials
+                </button>
+                <button type="button" onClick={() => { setActivePanel('holders'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
+                  <Wrench size={14} className="text-slate-400 shrink-0" /> Holders
+                </button>
+                <button type="button" onClick={() => { setActivePanel('templates'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
+                  <BookTemplate size={14} className="text-slate-400 shrink-0" /> Templates
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* ── Maintenance dropdown ── */}
           {tools.length > 0 && (
-            <button
-              onClick={() => setActivePanel('renumber')}
-              title="Renumber tools"
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
-            >
-              <Hash size={14} />
-              Renumber
-            </button>
+            <div className="relative" ref={maintenanceRef}>
+              <button
+                type="button"
+                onClick={() => setOpenDropdown((o) => o === 'maintenance' ? null : 'maintenance')}
+                title="Library maintenance tools"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors whitespace-nowrap"
+              >
+                Maintain
+                <ChevronDown size={13} className={`transition-transform ${openDropdown === 'maintenance' ? 'rotate-180' : ''}`} />
+              </button>
+              {openDropdown === 'maintenance' && (
+                <div className="absolute right-0 top-full mt-1 w-44 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-30 py-1 overflow-hidden">
+                  <button type="button" onClick={() => { setActivePanel('duplicates'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
+                    <Layers size={14} className="text-slate-400 shrink-0" /> Find Duplicates
+                  </button>
+                  <button type="button" onClick={() => { setActivePanel('renumber'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
+                    <Hash size={14} className="text-slate-400 shrink-0" /> Renumber
+                  </button>
+                  <button type="button" onClick={() => { setActivePanel('validation'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
+                    <AlertTriangle size={14} className="text-slate-400 shrink-0" /> Issues
+                  </button>
+                  <button type="button" onClick={() => { setActivePanel('qr-scan'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
+                    <ScanLine size={14} className="text-slate-400 shrink-0" /> Scan QR
+                  </button>
+                  {tools.length > 0 && materials.length > 0 && (
+                    <button type="button" onClick={() => { setActivePanel('wizard'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
+                      <Wand2 size={14} className="text-slate-400 shrink-0" /> F&amp;S Wizard
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           )}
+
+          {/* ── Print dropdown ── */}
           {filteredTools.length > 0 && (
-            <button
-              onClick={() => setActivePanel('sheet-print')}
-              title="Print tool data sheet"
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
-            >
-              <Printer size={14} />
-              Print Sheet
-            </button>
+            <div className="relative" ref={printRef}>
+              <button
+                type="button"
+                onClick={() => setOpenDropdown((o) => o === 'print' ? null : 'print')}
+                title="Print and export output"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors whitespace-nowrap"
+              >
+                Print
+                <ChevronDown size={13} className={`transition-transform ${openDropdown === 'print' ? 'rotate-180' : ''}`} />
+              </button>
+              {openDropdown === 'print' && (
+                <div className="absolute right-0 top-full mt-1 w-44 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-30 py-1 overflow-hidden">
+                  <button type="button" onClick={() => { setActivePanel('sheet-print'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
+                    <Printer size={14} className="text-slate-400 shrink-0" /> Tool Sheet
+                  </button>
+                  <button type="button" onClick={() => { downloadGcodeOffsetSheet(selectedTools.length > 0 ? selectedTools : filteredTools); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
+                    <FileText size={14} className="text-slate-400 shrink-0" /> Offset Sheet
+                  </button>
+                  <button type="button" onClick={() => { setActivePanel('label-print'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
+                    <QrCode size={14} className="text-slate-400 shrink-0" /> Labels
+                  </button>
+                </div>
+              )}
+            </div>
           )}
-          {tools.length > 0 && (
-            <button
-              onClick={() => downloadGcodeOffsetSheet(selectedTools.length > 0 ? selectedTools : filteredTools)}
-              title="Download G-code tool offset reference sheet (.txt)"
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
-            >
-              <FileText size={14} />
-              Offset Sheet
-            </button>
-          )}
-          {tools.length > 0 && (
-            <button
-              onClick={() => setActivePanel('validation')}
-              title="Scan library for data quality issues"
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
-            >
-              <AlertTriangle size={14} />
-              Issues
-            </button>
-          )}
-          {tools.length > 0 && (
-            <button
-              onClick={() => setActivePanel('qr-scan')}
-              title="Scan a tool QR code to open it"
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
-            >
-              <ScanLine size={14} />
-              Scan QR
-            </button>
-          )}
-          {filteredTools.length > 0 && (
-            <button
-              onClick={() => setActivePanel('label-print')}
-              title="Print labels with QR codes"
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
-            >
-              <QrCode size={14} />
-              Print Labels
-            </button>
-          )}
+
           <button
+            type="button"
             onClick={() => setShowShortcuts((s) => !s)}
             title="Keyboard shortcuts (?)"
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
+            className="p-2 rounded-lg text-slate-400 hover:text-slate-200 bg-slate-700 hover:bg-slate-600 border border-slate-600 transition-colors"
           >
             <Keyboard size={14} />
           </button>
           <button
+            type="button"
             onClick={openNew}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 hover:bg-blue-500 text-white transition-colors whitespace-nowrap"
           >
             <Plus size={14} />
             New Tool
@@ -945,6 +1061,27 @@ export default function ToolManagerPage() {
             <Package size={13} />
             Low Stock
           </button>
+
+          {/* Condition filter */}
+          <div className="relative">
+            <select
+              value={conditionFilter ?? ''}
+              onChange={(e) => setConditionFilter((e.target.value as ToolCondition) || null)}
+              title="Filter by condition"
+              className={[
+                'appearance-none flex items-center gap-1.5 pl-3 pr-7 py-1.5 rounded-lg text-sm transition-colors border cursor-pointer',
+                conditionFilter !== null
+                  ? 'bg-violet-500/10 text-violet-300 border-violet-500/40'
+                  : 'text-slate-400 hover:text-slate-200 border-slate-700 hover:border-slate-600 bg-slate-800',
+              ].join(' ')}
+            >
+              <option value="">Condition</option>
+              {(Object.entries(TOOL_CONDITION_LABELS) as [ToolCondition, string][]).map(([v, label]) => (
+                <option key={v} value={v}>{label}</option>
+              ))}
+            </select>
+            <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500" />
+          </div>
 
           {allTags.length > 0 && (
             <div className="relative">
@@ -1037,6 +1174,8 @@ export default function ToolManagerPage() {
             totalCount={tools.length}
             active={machineFilter}
             onSelect={setMachineFilter}
+            inventoryValue={inventoryValue ?? undefined}
+            lowStockCount={lowStockCount}
           />
           <div className="flex flex-col flex-1 overflow-hidden">
             <LibraryTable
@@ -1166,6 +1305,26 @@ export default function ToolManagerPage() {
         <TemplatePickerPanel
           nextToolNumber={nextToolNumber}
           onStamp={(tool) => { void addTool(tool); openEdit(tool); }}
+          onClose={closePanel}
+        />
+      )}
+      {activePanel === 'low-stock' && (
+        <LowStockPanel tools={tools} onClose={closePanel} />
+      )}
+      {activePanel === 'wizard' && (
+        <CuttingWizardPanel
+          tools={tools}
+          allMaterials={materials}
+          onApply={(toolId, entry) => {
+            const t = tools.find((x) => x.id === toolId);
+            if (!t) return;
+            const existing = t.toolMaterials ?? [];
+            const idx = existing.findIndex((e) => e.materialId === entry.materialId);
+            const updated = idx >= 0
+              ? existing.map((e, i) => i === idx ? { ...e, ...entry } : e)
+              : [...existing, entry];
+            updateTool(toolId, { toolMaterials: updated });
+          }}
           onClose={closePanel}
         />
       )}

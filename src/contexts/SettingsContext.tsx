@@ -27,6 +27,8 @@ export interface TableColumnVisibility {
   supplier:     boolean;
   unitCost:     boolean;
   location:     boolean;
+  condition:    boolean;
+  useCount:     boolean;
 }
 
 export interface Settings {
@@ -128,6 +130,8 @@ export const DEFAULT_SETTINGS: Settings = {
     supplier:     false,
     unitCost:     false,
     location:     false,
+    condition:    false,
+    useCount:     false,
   },
 
   mergeBehavior:  'merge',

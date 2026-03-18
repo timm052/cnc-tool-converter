@@ -40,35 +40,36 @@ _Goal: Fill the most obvious gaps. Each item is self-contained and shippable ind
 
 ---
 
-## Phase 2 — Advanced Library Features
+## Phase 2 — Advanced Library Features ✅ Complete
 
 _Goal: Make the tool library the single source of truth for a real toolroom._
 
-### 2.1 Inventory & Stock Management
-- **Stock transaction log** — Record every stock-in / stock-out event (quantity, date, reason, user note). Display a per-tool history. Currently only the current quantity is stored.
-- **Low-stock dashboard** — Dedicated view showing all tools at or below reorder point, grouped by supplier. One-click generates a purchase order CSV.
-- **Cost tracking** — Use `unitCost` (already stored) to calculate total inventory value per machine group or material category. Summary card in the sidebar.
-- **Reorder point bulk edit** — Set reorder points for all tools of a given type or diameter range in one operation.
+### 2.1 Inventory & Stock Management ✅ Complete
+- ✅ **Stock transaction log** — `StockTransaction` type + DB v5 `transactions` table. `updateTool` auto-logs a transaction whenever `quantity` changes (reason: `initial` for first entry, `adjustment` otherwise). Manual entries via "+ Log entry" form. (`src/types/stockTransaction.ts`, `src/db/library.ts` v5, `src/contexts/LibraryContext.tsx`)
+- ✅ **Low-stock dashboard** — `LowStockPanel` slide-over shows all tools at/below reorder point grouped by supplier; red toolbar button appears automatically when any tool is low. "Export PO CSV" downloads a purchasing CSV. (`src/components/library/LowStockPanel.tsx`)
+- ✅ **Inventory value summary** — Total inventory value (`unitCost × quantity`) computed in real time; displayed in the machine group sidebar footer. Low-stock tool count shown alongside. (`src/components/pages/ToolManagerPage.tsx`)
+- ✅ **Reorder point bulk edit** — `BulkEditPanel` Crib tab includes reorder point field; batch-set for all selected tools in one operation.
 
-### 2.2 Tool Assembly
-- **Stick-out visualisation** — When a tool has a linked holder (`holderId`), display a combined SVG profile: holder + tool, with the effective reach / stick-out dimension annotated. Uses `assemblyStickOut` field.
-- **Assembly compatibility check** — Warn when the tool shank diameter doesn't match the holder bore, or when stick-out exceeds a configurable max.
-- **Holder search in tool editor** — Typeahead search in the holder dropdown, instead of a flat list.
+### 2.2 Tool Assembly ✅ Complete
+- ✅ **Stick-out visualisation** — `ToolProfileSVG` already rendered holder silhouette when `holderId` is set; `allHolders` prop passed from `ToolEditor` enables combined assembly view with annotated stick-out. (`src/components/library/ToolProfileSVG.tsx`)
+- ✅ **Assembly compatibility check** — Orange warning banner in ToolEditor Assembly section when tool `shaftDiameter` is outside the holder's `colletDiameterMin`/`Max` range. (`src/components/library/ToolEditor.tsx`)
+- ✅ **Holder search in tool editor** — `HolderSearchField` inline typeahead combobox replaces flat `<select>` in the Assembly section; filters by name/type, highlights current selection, shows bore info in dropdown. (`src/components/library/ToolEditor.tsx`)
 
-### 2.3 Tool Lifecycle
-- **Usage tracking** — Record when a tool is loaded into a machine (via QR scan or manual entry). Log cumulative run time or part count. Basis for a tool life model.
-- **Maintenance reminders** — Set a "regrind / replace" threshold (hours or part count). Flag tools approaching the threshold in the library table and on the label.
-- **Tool condition notes** — Quick status tag: New / Good / Worn / Requires regrind / Scrapped. Filterable from the sidebar.
+### 2.3 Tool Lifecycle ✅ Complete
+- ✅ **Usage tracking** — `useCount` field on `LibraryTool`. Manual "+1" button in ToolEditor Crib tab increments the use count. `Uses` column in LibraryTable (toggleable, hidden by default) shows count/threshold ratio. (`src/types/libraryTool.ts`, `src/components/library/ToolEditor.tsx`, `src/components/library/LibraryTable.tsx`)
+- ✅ **Maintenance reminders** — `regrindThreshold` field on `LibraryTool`. Progress bar in Crib tab turns amber at 80% and red at 100%. LibraryTable `Uses` column shows amber "soon" or red "regrind" badge when approaching/exceeding threshold.
+- ✅ **Tool condition** — `ToolCondition` type: New / Good / Worn / Needs Regrind / Scrapped. Colour-coded badge in LibraryTable (toggleable column). Dropdown in ToolEditor Crib tab with live colour preview. Condition filter in sidebar. (`src/types/libraryTool.ts`, `src/components/library/LibraryTable.tsx`, `src/components/library/ToolEditor.tsx`)
+- ✅ **Stock transaction history in Crib tab** — `StockTransactionHistory` component shows newest-first timeline per tool: reason badge, ±delta, qty-after, note, date. Manual "+ Log entry" form. (`src/components/library/StockTransactionHistory.tsx`)
 
-### 2.4 Improved Import Workflow
-- **Merge on duplicate** — During import, when a matching tool is found, offer a field-level merge: choose which fields to take from the incoming tool and which to keep from the existing record. Currently only skip or overwrite.
-- **Import preview diff** — Show a before/after diff for overwrite candidates before committing.
-- **Supplier catalogue import** — Import directly from supplier CSV formats (e.g. Sandvik CoroPlus, Kennametal, Iscar) with pre-built column maps.
+### 2.4 Improved Import Workflow ✅ Complete
+- ✅ **Merge on duplicate** — During import, each duplicate tool has its own card with Skip / Merge / Add as new buttons. Merge expands a field-diff view: only changed fields shown with old→new values and individual checkboxes. Selected field patches applied via `updateTool`; footer button shows combined "Add N + merge M" count. (`src/components/library/ImportPanel.tsx`)
+- ✅ **Import preview diff** — Covered by the per-field merge UI above; each field shown individually with old→new values and individual accept checkboxes.
+- ⏳ **Supplier catalogue import** — Import directly from supplier CSV formats (e.g. Sandvik CoroPlus, Kennametal, Iscar). Deferred to Phase 3 — requires real sample files from each supplier.
 
-### 2.5 Materials & Cutting Data
-- **Material database presets** — Ship a default material library (6061 aluminium, 304 stainless, 4140 steel, Ti-6Al-4V, nylon, MDF, etc.) that users can customise. Currently the library starts empty.
-- **Cutting data wizard** — Step-by-step guided entry for a new tool+material combination. Prompts for tool geometry, material hardness, and machine type, then suggests starting F&S values based on a built-in lookup table.
-- **Surface speed library** — Per-material, per-tool-material (carbide vs HSS vs ceramics) recommended Vc ranges. Used by the F&S calculator.
+### 2.5 Materials & Cutting Data ✅ Complete
+- ✅ **Material database presets** — 14 preset materials (Al 6061/7075/2024, Steel 1018/4140/D2, SS 304/316/17-4PH, Ti-6Al-4V, gray cast iron, brass C360, Delrin) with SFM/Vc ranges, hardness, machinability, and notes. "Presets" button in MaterialLibraryPanel footer — skips any that already exist by name. (`src/lib/materialPresets.ts`, `src/contexts/MaterialContext.tsx`, `src/components/library/MaterialLibraryPanel.tsx`)
+- ✅ **Cutting data wizard** — 3-step guided entry: (1) pick tool + material, (2) choose tool grade + machine type + DOC/WOC, (3) review suggested Vc/RPM/feed/plunge/DoC/WoC and apply to the tool's per-material entry. Accessible via Maintain ▾ → F&S Wizard. (`src/components/library/CuttingWizardPanel.tsx`)
+- ✅ **Surface speed library** — `src/lib/surfaceSpeedPresets.ts` — per-material, per-tool-grade (carbide/HSS/ceramic/CBN/PCD) Vc ranges with chip-load factors and notes. Used by the F&S calculator "Quick fill ▾" dropdown and the cutting data wizard.
 
 ---
 
