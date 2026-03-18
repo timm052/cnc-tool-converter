@@ -13,10 +13,9 @@ import { parseHSMLib }       from '../../converters/hsmlib/parser';
 import { parseLinuxCNC }     from '../../converters/linuxcnc/parser';
 import { parseFusion360JSON } from '../../converters/fusion360json/parser';
 import { parseRhinoCamVKB }  from '../../converters/rhinocam/parser';
-// TODO — add parsers here once example files are obtained:
-// import { parseHaas }   from '../../converters/haas/parser';
-// import { parseFanuc }  from '../../converters/fanuc/parser';
-// import { parseMach3 }  from '../../converters/mach3/parser';
+import { parseHaas }   from '../../converters/haas/parser';
+import { parseFanuc }  from '../../converters/fanuc/parser';
+import { parseMach3 }  from '../../converters/mach3/parser';
 
 // ── Path helpers ──────────────────────────────────────────────────────────────
 
@@ -268,58 +267,122 @@ describe('RhinoCAM integration — RhinoCAM.vkb', () => {
 });
 
 // ── HAAS / .ofs ───────────────────────────────────────────────────────────────
-// TODO: obtain a real HAAS Format A .ofs file and add it to Example Files/Tool Libs/HAAS/
-// then uncomment and fill in the expected values below.
-//
-// describe('HAAS integration — example.ofs', () => {
-//   const FILE = examplePath('HAAS', 'example.ofs');
-//   it('parses without errors', async () => {
-//     const result = await parseHaas(readFileSync(FILE, 'utf-8'), FILE);
-//     expect(result.errors).toHaveLength(0);
-//   });
-//   it('every tool has toolNumber > 0 and diameter ≥ 0', async () => {
-//     const result = await parseHaas(readFileSync(FILE, 'utf-8'), FILE);
-//     for (const tool of result.tools) {
-//       expect(tool.toolNumber).toBeGreaterThan(0);
-//       expect(tool.geometry.diameter).toBeGreaterThanOrEqual(0);
-//     }
-//   });
-// });
+
+describe('HAAS integration — example.ofs', () => {
+  const FILE = examplePath('HAAS', 'example.ofs');
+
+  it('parses without errors', async () => {
+    const result = await parseHaas(readFileSync(FILE, 'utf-8'), FILE);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it('returns 8 tools', async () => {
+    const result = await parseHaas(readFileSync(FILE, 'utf-8'), FILE);
+    expect(result.tools).toHaveLength(8);
+  });
+
+  it('every tool has toolNumber > 0 and diameter ≥ 0', async () => {
+    const result = await parseHaas(readFileSync(FILE, 'utf-8'), FILE);
+    for (const tool of result.tools) {
+      expect(tool.toolNumber).toBeGreaterThan(0);
+      expect(tool.geometry.diameter).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('first tool has correct offset and diameter', async () => {
+    const result = await parseHaas(readFileSync(FILE, 'utf-8'), FILE);
+    const t1 = result.tools.find((t) => t.toolNumber === 1)!;
+    expect(t1).toBeDefined();
+    expect(t1.offsets?.z).toBeCloseTo(203.2, 3);
+    expect(t1.geometry.diameter).toBeCloseTo(12.7, 3);
+  });
+
+  it('all tools have sourceData with haasLengthWear and haasDiaWear', async () => {
+    const result = await parseHaas(readFileSync(FILE, 'utf-8'), FILE);
+    for (const tool of result.tools) {
+      expect(tool.sourceData).toHaveProperty('haasLengthWear');
+      expect(tool.sourceData).toHaveProperty('haasDiaWear');
+    }
+  });
+});
 
 // ── Fanuc G10 / .nc ───────────────────────────────────────────────────────────
-// TODO: obtain a real Fanuc G10 Memory C .nc file and add it to Example Files/Tool Libs/Fanuc/
-// then uncomment and fill in the expected values below.
-//
-// describe('Fanuc integration — example.nc', () => {
-//   const FILE = examplePath('Fanuc', 'example.nc');
-//   it('parses without errors', async () => {
-//     const result = await parseFanuc(readFileSync(FILE, 'utf-8'), FILE);
-//     expect(result.errors).toHaveLength(0);
-//   });
-//   it('every tool has toolNumber > 0 and diameter ≥ 0', async () => {
-//     const result = await parseFanuc(readFileSync(FILE, 'utf-8'), FILE);
-//     for (const tool of result.tools) {
-//       expect(tool.toolNumber).toBeGreaterThan(0);
-//       expect(tool.geometry.diameter).toBeGreaterThanOrEqual(0);
-//     }
-//   });
-// });
+
+describe('Fanuc integration — example.nc', () => {
+  const FILE = examplePath('Fanuc', 'example.nc');
+
+  it('parses without errors', async () => {
+    const result = await parseFanuc(readFileSync(FILE, 'utf-8'), FILE);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it('returns 5 tools', async () => {
+    const result = await parseFanuc(readFileSync(FILE, 'utf-8'), FILE);
+    expect(result.tools).toHaveLength(5);
+  });
+
+  it('every tool has toolNumber > 0 and diameter ≥ 0', async () => {
+    const result = await parseFanuc(readFileSync(FILE, 'utf-8'), FILE);
+    for (const tool of result.tools) {
+      expect(tool.toolNumber).toBeGreaterThan(0);
+      expect(tool.geometry.diameter).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('first tool has correct length geometry and diameter', async () => {
+    const result = await parseFanuc(readFileSync(FILE, 'utf-8'), FILE);
+    const t1 = result.tools.find((t) => t.toolNumber === 1)!;
+    expect(t1).toBeDefined();
+    expect(t1.offsets?.z).toBeCloseTo(203.2, 3);
+    expect(t1.geometry.diameter).toBeCloseTo(12.7, 3);
+  });
+
+  it('all tools have sourceData with fanucLenWear and fanucDiaWear', async () => {
+    const result = await parseFanuc(readFileSync(FILE, 'utf-8'), FILE);
+    for (const tool of result.tools) {
+      expect(tool.sourceData).toHaveProperty('fanucLenWear');
+      expect(tool.sourceData).toHaveProperty('fanucDiaWear');
+    }
+  });
+});
 
 // ── Mach3 / .csv ─────────────────────────────────────────────────────────────
-// TODO: obtain a real Mach3 tool table .csv export and add it to Example Files/Tool Libs/Mach3/
-// then uncomment and fill in the expected values below.
-//
-// describe('Mach3 integration — tooltable.csv', () => {
-//   const FILE = examplePath('Mach3', 'tooltable.csv');
-//   it('parses without errors', async () => {
-//     const result = await parseMach3(readFileSync(FILE, 'utf-8'), FILE);
-//     expect(result.errors).toHaveLength(0);
-//   });
-//   it('every tool has toolNumber > 0 and diameter ≥ 0', async () => {
-//     const result = await parseMach3(readFileSync(FILE, 'utf-8'), FILE);
-//     for (const tool of result.tools) {
-//       expect(tool.toolNumber).toBeGreaterThan(0);
-//       expect(tool.geometry.diameter).toBeGreaterThanOrEqual(0);
-//     }
-//   });
-// });
+
+describe('Mach3 integration — tooltable.csv', () => {
+  const FILE = examplePath('Mach3', 'tooltable.csv');
+
+  it('parses without errors', async () => {
+    const result = await parseMach3(readFileSync(FILE, 'utf-8'), FILE);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it('returns 8 tools', async () => {
+    const result = await parseMach3(readFileSync(FILE, 'utf-8'), FILE);
+    expect(result.tools).toHaveLength(8);
+  });
+
+  it('every tool has toolNumber > 0 and diameter ≥ 0', async () => {
+    const result = await parseMach3(readFileSync(FILE, 'utf-8'), FILE);
+    for (const tool of result.tools) {
+      expect(tool.toolNumber).toBeGreaterThan(0);
+      expect(tool.geometry.diameter).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('first tool has correct description and diameter', async () => {
+    const result = await parseMach3(readFileSync(FILE, 'utf-8'), FILE);
+    const t1 = result.tools.find((t) => t.toolNumber === 1)!;
+    expect(t1).toBeDefined();
+    expect(t1.description).toBe('1/2 Flat End Mill');
+    expect(t1.geometry.diameter).toBeCloseTo(0.5, 4);
+    expect(t1.offsets?.z).toBeCloseTo(4.25, 4);
+  });
+
+  it('all tools have sourceData with mach3DiaWear and mach3HeightWear', async () => {
+    const result = await parseMach3(readFileSync(FILE, 'utf-8'), FILE);
+    for (const tool of result.tools) {
+      expect(tool.sourceData).toHaveProperty('mach3DiaWear');
+      expect(tool.sourceData).toHaveProperty('mach3HeightWear');
+    }
+  });
+});

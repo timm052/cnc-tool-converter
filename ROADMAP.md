@@ -8,13 +8,13 @@ This document tracks planned improvements, from near-term polish to the long-ter
 
 _Goal: Fill the most obvious gaps. Each item is self-contained and shippable independently._
 
-### 1.1 Format Support ✅ Complete
+### 1.1 Format Support ✅ Complete (all items done)
 - ✅ **HAAS offset table** — Format A parenthesised comment table (`.ofs`). Import + export. Length geometry → `offsets.z`, DIA geometry → `geometry.diameter`, wear values preserved in `sourceData`. (`src/converters/haas/`)
 - ✅ **CSV import / export** — Unified as a proper `Converter` in the registry (`src/converters/csv/`). Wraps `csvLibrary.ts`; carries all library fields (tags, starred, machineGroups, toolMaterials). ExportPanel no longer has a hardcoded CSV path.
 - ✅ **Fanuc G10 punch format** — Memory C G-code offset export (`.nc`). L10=H geometry, L11=H wear, L12=D geometry, L13=D wear. Import + export. (`src/converters/fanuc/`)
 - ✅ **Mach3 / Mach4 CSV tool table** — 6-column CSV (Tool#, Description, Diameter, DiaWear, Height, HeightWear). Auto-detects optional header row. Import + export. (`src/converters/mach3/`)
 - ⏳ **Mastercam .tooldb import** — SQLite-based, schema undocumented and version-dependent. Deferred — requires actual sample files to reverse-engineer schema safely.
-- ⏳ **Integration test example files** — HAAS, Fanuc G10, and Mach3 are unit-tested with synthetic fixtures but lack real exported files. Add real files to `Example Files/Tool Libs/HAAS/`, `…/Fanuc/`, and `…/Mach3/`, then uncomment the stubs in `src/__tests__/converters/integration.test.ts`.
+- ✅ **Integration test example files** — Synthetic example files added to `Example Files/Tool Libs/HAAS/example.ofs`, `…/Fanuc/example.nc`, and `…/Mach3/tooltable.csv`. Integration tests enabled in `src/__tests__/converters/integration.test.ts` (15 new tests, 378 total, all green).
 
 ### 1.2 Speeds & Feeds Calculator ✅ Complete
 - ✅ **Inline F&S calculator panel** — `SpeedsFeedsPanel` slide-over: diameter, material reference, surface speed (Vc m/min or SFM), chip load per tooth → RPM + feed rates. "Apply to tool" writes back to the tool editor.
