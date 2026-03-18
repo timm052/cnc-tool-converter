@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, Download, Plus, Trash2, MapPin } from 'lucide-react';
+import { X, Download, FileText, Plus, Trash2, MapPin } from 'lucide-react';
 import {
   DIALECTS, getDialect, defaultEntries,
-  renderOffsetSheet, renderOffsetCsv,
-  loadStoredEntries, saveStoredEntries,
+  renderOffsetPdf, renderOffsetCsv,
+  loadMachineRecord, saveMachineRecord,
+  DEFAULT_MACHINE_KEY,
 } from '../../lib/workOffsetSheet';
 import type { WcsDialect, WcsEntry } from '../../lib/workOffsetSheet';
 import { triggerDownload } from '../../lib/downloadUtils';
@@ -14,29 +15,38 @@ interface WorkOffsetSheetPanelProps {
 }
 
 export default function WorkOffsetSheetPanel({ machineGroups, onClose }: WorkOffsetSheetPanelProps) {
-  const [dialectId,   setDialectId]   = useState<WcsDialect>('fanuc');
-  const [machineName, setMachineName] = useState('');
-  const [entries,     setEntries]     = useState<WcsEntry[]>([]);
+  const [machineKey, setMachineKey] = useState<string>(
+    machineGroups[0] ?? DEFAULT_MACHINE_KEY,
+  );
+  const [dialectId, setDialectId] = useState<WcsDialect>('fanuc');
+  const [entries,   setEntries]   = useState<WcsEntry[]>([]);
 
   const dialect = getDialect(dialectId);
 
-  // Load persisted entries when dialect changes
+  // Load this machine's record whenever the selected machine changes
   useEffect(() => {
-    const stored = loadStoredEntries(dialectId);
-    setEntries(defaultEntries(dialect, stored));
-  }, [dialectId]); // eslint-disable-line react-hooks/exhaustive-deps
+    const rec = loadMachineRecord(machineKey);
+    const loadedDialect: WcsDialect = rec?.dialect ?? 'fanuc';
+    setDialectId(loadedDialect);
+    setEntries(defaultEntries(getDialect(loadedDialect), rec?.entries));
+  }, [machineKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Persist whenever entries change
+  // When the user manually changes the dialect, reset entries to defaults for new dialect
+  const handleDialectChange = useCallback((id: WcsDialect) => {
+    setDialectId(id);
+    setEntries(defaultEntries(getDialect(id)));
+  }, []);
+
+  // Persist whenever entries or dialect change
   useEffect(() => {
-    saveStoredEntries(dialectId, entries);
-  }, [dialectId, entries]);
+    saveMachineRecord(machineKey, { dialect: dialectId, entries });
+  }, [machineKey, dialectId, entries]);
 
   const updateEntry = useCallback((idx: number, patch: Partial<WcsEntry>) => {
     setEntries((prev) => prev.map((e, i) => i === idx ? { ...e, ...patch } : e));
   }, []);
 
   const addSlot = useCallback(() => {
-    // Pick the next slot from the dialect definition that isn't already in entries
     const usedCodes = new Set(entries.map((e) => e.slotCode));
     const next = dialect.slots.find((s) => !usedCodes.has(s.code));
     if (!next) return;
@@ -51,20 +61,19 @@ export default function WorkOffsetSheetPanel({ machineGroups, onClose }: WorkOff
     setEntries((prev) => prev.map((e, i) => i === idx ? { ...e, slotCode: code } : e));
   }, []);
 
-  function handleDownload(format: 'txt' | 'csv') {
+  function handleDownload(format: 'pdf' | 'csv') {
+    const displayName = machineKey === DEFAULT_MACHINE_KEY ? '' : machineKey;
     const date = new Date().toISOString().slice(0, 10);
-    if (format === 'txt') {
-      const content = renderOffsetSheet(entries, dialect, machineName);
-      triggerDownload(content, 'text/plain', `work-offsets-${date}.txt`);
+    if (format === 'pdf') {
+      renderOffsetPdf(entries, dialect, displayName);
     } else {
-      const content = renderOffsetCsv(entries);
-      triggerDownload(content, 'text/csv', `work-offsets-${date}.csv`);
+      triggerDownload(renderOffsetCsv(entries), 'text/csv', `work-offsets-${date}.csv`);
     }
   }
 
-  // All slot codes for this dialect (for the dropdown)
-  const usedCodes = new Set(entries.map((e) => e.slotCode));
+  const usedCodes     = new Set(entries.map((e) => e.slotCode));
   const availableSlots = dialect.slots.filter((s) => !usedCodes.has(s.code));
+  const displayMachine = machineKey === DEFAULT_MACHINE_KEY ? 'Default' : machineKey;
 
   return (
     <>
@@ -76,6 +85,9 @@ export default function WorkOffsetSheetPanel({ machineGroups, onClose }: WorkOff
           <div className="flex items-center gap-2">
             <MapPin size={16} className="text-slate-400" />
             <h2 className="text-base font-semibold text-slate-100">Work Offset Sheet</h2>
+            <span className="ml-1 px-2 py-0.5 rounded text-xs font-medium bg-slate-700 text-slate-300">
+              {displayMachine}
+            </span>
           </div>
           <button type="button" onClick={onClose} title="Close" className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700">
             <X size={16} />
@@ -85,12 +97,33 @@ export default function WorkOffsetSheetPanel({ machineGroups, onClose }: WorkOff
         {/* Config strip */}
         <div className="px-5 py-3 border-b border-slate-700 shrink-0 space-y-3">
           <div className="flex gap-3">
+            {/* Machine selector */}
+            <div className="flex-1">
+              <label className="block text-xs font-medium uppercase tracking-wider text-slate-400 mb-1">Machine</label>
+              <select
+                title="Machine"
+                value={machineKey}
+                onChange={(e) => setMachineKey(e.target.value)}
+                className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {machineGroups.length === 0 && (
+                  <option value={DEFAULT_MACHINE_KEY}>Default</option>
+                )}
+                {machineGroups.map((g) => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
+                {machineGroups.length > 0 && (
+                  <option value={DEFAULT_MACHINE_KEY}>Default (no group)</option>
+                )}
+              </select>
+            </div>
+            {/* Dialect selector */}
             <div className="flex-1">
               <label className="block text-xs font-medium uppercase tracking-wider text-slate-400 mb-1">Control dialect</label>
               <select
                 title="Control dialect"
                 value={dialectId}
-                onChange={(e) => setDialectId(e.target.value as WcsDialect)}
+                onChange={(e) => handleDialectChange(e.target.value as WcsDialect)}
                 className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {DIALECTS.map((d) => (
@@ -98,19 +131,9 @@ export default function WorkOffsetSheetPanel({ machineGroups, onClose }: WorkOff
                 ))}
               </select>
             </div>
-            <div className="flex-1">
-              <label className="block text-xs font-medium uppercase tracking-wider text-slate-400 mb-1">Machine name</label>
-              <input
-                type="text"
-                value={machineName}
-                onChange={(e) => setMachineName(e.target.value)}
-                placeholder="e.g. VMC-01"
-                className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-slate-500"
-              />
-            </div>
           </div>
           <p className="text-xs text-slate-500">
-            Enter X/Y/Z offsets for each work coordinate system. Values are saved per dialect. Download as a reference card to hang on the machine.
+            Offsets are saved per machine. Switch machines to manage separate offset sets. Download as a PDF card to hang near the machine.
           </p>
         </div>
 
@@ -126,7 +149,7 @@ export default function WorkOffsetSheetPanel({ machineGroups, onClose }: WorkOff
                 <th className="px-2 py-2 text-right w-24">Z</th>
                 <th className="px-2 py-2 text-right w-16">A</th>
                 <th className="px-2 py-2 text-right w-16">B</th>
-                <th className="w-8" />
+                <th className="w-8" aria-label="Actions" />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/60">
@@ -148,29 +171,13 @@ export default function WorkOffsetSheetPanel({ machineGroups, onClose }: WorkOff
                   </td>
                   {/* Name / machine group */}
                   <td className="px-3 py-1.5">
-                    {machineGroups.length > 0 ? (
-                      <input
-                        list={`mg-list-${idx}`}
-                        type="text"
-                        value={entry.name}
-                        onChange={(e) => updateEntry(idx, { name: e.target.value })}
-                        placeholder="Fixture / setup name"
-                        className="w-full px-1.5 py-1 text-xs bg-slate-700 border border-slate-600 rounded text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder:text-slate-500"
-                      />
-                    ) : (
-                      <input
-                        type="text"
-                        value={entry.name}
-                        onChange={(e) => updateEntry(idx, { name: e.target.value })}
-                        placeholder="Fixture / setup name"
-                        className="w-full px-1.5 py-1 text-xs bg-slate-700 border border-slate-600 rounded text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder:text-slate-500"
-                      />
-                    )}
-                    {machineGroups.length > 0 && (
-                      <datalist id={`mg-list-${idx}`}>
-                        {machineGroups.map((g) => <option key={g} value={g} />)}
-                      </datalist>
-                    )}
+                    <input
+                      type="text"
+                      value={entry.name}
+                      onChange={(e) => updateEntry(idx, { name: e.target.value })}
+                      placeholder="Fixture / setup name"
+                      className="w-full px-1.5 py-1 text-xs bg-slate-700 border border-slate-600 rounded text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder:text-slate-500"
+                    />
                   </td>
                   {/* X Y Z A B */}
                   {(['x', 'y', 'z', 'a', 'b'] as const).map((axis) => (
@@ -234,11 +241,11 @@ export default function WorkOffsetSheetPanel({ machineGroups, onClose }: WorkOff
             </button>
             <button
               type="button"
-              onClick={() => handleDownload('txt')}
+              onClick={() => handleDownload('pdf')}
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 hover:bg-blue-500 text-white transition-colors"
             >
-              <Download size={14} />
-              Download .txt
+              <FileText size={14} />
+              PDF Card
             </button>
           </div>
         </div>

@@ -49,22 +49,34 @@ Columns: T#, Description, Length Offset (H), Diameter Offset (D), Notes.
 
 **Print ▾ → Work Offsets**
 
-Opens the **Work Offset Sheet** panel, which lets you record and print G54–G59 (and extended) work coordinate offsets.
+Opens the **Work Offset Sheet** panel, which lets you record and download G54–G59 (and extended) work coordinate offsets for each machine.
+
+Offsets are stored **per machine** — switching the machine selector loads that machine's saved offsets, dialect, and fixture labels independently.
 
 ### Using the Work Offset Sheet
 
-1. Select the **Machine dialect** (Fanuc / HAAS / Mach3 / LinuxCNC / Siemens).
-2. Enter a **Machine name** (appears in the sheet header).
+1. Select your **Machine** from the dropdown (populated from your machine groups in the library). Choose *Default (no group)* if you haven't set up machine groups yet.
+2. Select the **Control dialect** for that machine (Fanuc / HAAS / Mach3 / LinuxCNC / Siemens). The dialect is remembered per machine.
 3. The table shows the WCS slots available for that dialect:
-   - **Fanuc**: G54–G59 + G54.1 P1–P48
+   - **Fanuc / ISO**: G54–G59 + G54.1 P1–P48
    - **HAAS**: G54–G59 + G110–G129
    - **LinuxCNC**: G54–G59 + G59.1–G59.3
-   - **Siemens**: G54–G59 + G505 D-frames
-4. For each row: choose a **slot code**, enter a **fixture label**, and enter X/Y/Z offsets (A/B optional).
-5. Click **+ Add slot** to add more rows; click the trash icon to remove.
-6. Download as **.txt** (formatted table) or **.csv** (spreadsheet-ready).
+   - **Siemens Sinumerik**: G54–G57 + G505 D-frames
+   - **Mach3**: G54–G59
+4. For each row: choose a **slot code**, enter a **fixture / setup label**, and enter X/Y/Z offsets (A/B optional).
+5. Click **+ Add slot** to add more rows; click the trash icon to remove a row.
+6. Download as **PDF Card** (formatted reference card, ready to hang at the machine) or **CSV** (spreadsheet-ready).
 
-Entries are saved to localStorage automatically and restored on next open.
+Entries are saved to localStorage automatically per machine and restored on next open.
+
+### PDF Card
+
+The PDF card output includes:
+
+- Machine name and dialect in the header
+- A clean table: Offset Code | Fixture / Label | X | Y | Z (+ A/B columns only when used)
+- Monospace offset values right-aligned for easy reading at a glance
+- Date stamped in the corner
 
 ---
 

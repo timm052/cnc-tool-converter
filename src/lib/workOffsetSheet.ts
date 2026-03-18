@@ -1,10 +1,12 @@
 /**
  * G54–G59 Work Offset Reference Sheet
  *
- * Generates a formatted plaintext or G-code comment block listing work
- * coordinate system assignments.  Each dialect has a different set of
- * extended offset codes beyond the standard G54–G59.
+ * Generates a formatted PDF card or CSV listing work coordinate system
+ * assignments.  Each dialect has a different set of extended offset codes
+ * beyond the standard G54–G59.
  */
+
+import jsPDF from 'jspdf';
 
 export type WcsDialect = 'fanuc' | 'haas' | 'mach3' | 'linuxcnc' | 'siemens';
 
@@ -165,27 +167,197 @@ export function renderOffsetCsv(entries: WcsEntry[]): string {
   return [header, ...rows].join('\n');
 }
 
-// ── localStorage persistence ──────────────────────────────────────────────────
+// ── PDF card renderer ─────────────────────────────────────────────────────────
+
+function clampWcsText(doc: jsPDF, text: string, maxW: number): string {
+  if (doc.getTextWidth(text) <= maxW) return text;
+  let t = text;
+  while (t.length > 1 && doc.getTextWidth(t + '\u2026') > maxW) t = t.slice(0, -1);
+  return t + '\u2026';
+}
+
+export function renderOffsetPdf(
+  entries:     WcsEntry[],
+  dialect:     WcsDialectInfo,
+  machineName: string,
+): void {
+  const filled = entries.filter((e) => e.name || e.x || e.y || e.z || e.a || e.b);
+  const hasA   = filled.some((e) => e.a);
+  const hasB   = filled.some((e) => e.b);
+
+  const doc    = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const PAGE_W = 210;
+  const MARGIN = 12;
+  const tableW = PAGE_W - MARGIN * 2;
+
+  // Column widths — nameW fills remaining space
+  const codeW   = 28;
+  const axisW   = 22;
+  const rotW    = 18;
+  const fixedW  = codeW + axisW * 3 + (hasA ? rotW : 0) + (hasB ? rotW : 0);
+  const nameW   = tableW - fixedW;
+
+  const COL_H   = 7;
+  const ROW_H   = 6.5;
+
+  const now     = new Date();
+  const dateStr = now.toLocaleDateString(undefined, { dateStyle: 'medium' });
+
+  // ── Title bar ──────────────────────────────────────────────────────────────
+  doc.setFillColor(30, 53, 96);
+  doc.rect(MARGIN, MARGIN, tableW, 12, 'F');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(255, 255, 255);
+  doc.text('Work Offset Reference Sheet', MARGIN + 3, MARGIN + 7.5);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6.5);
+  doc.setTextColor(147, 197, 253);
+  const subInfo = [dialect.label, machineName].filter(Boolean).join(' · ');
+  doc.text(subInfo, PAGE_W - MARGIN - 3, MARGIN + 5.5, { align: 'right' });
+  doc.text(dateStr, PAGE_W - MARGIN - 3, MARGIN + 10,  { align: 'right' });
+
+  const tableTop = MARGIN + 16;
+
+  // ── Column headers ─────────────────────────────────────────────────────────
+  doc.setFillColor(51, 65, 85);
+  doc.rect(MARGIN, tableTop, tableW, COL_H, 'F');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(6);
+  doc.setTextColor(148, 163, 184);
+
+  doc.text('OFFSET',          MARGIN + 3,        tableTop + 4.5);
+  doc.text('FIXTURE / LABEL', MARGIN + codeW + 3, tableTop + 4.5);
+
+  let ax = MARGIN + codeW + nameW;
+  doc.text('X', ax + axisW - 2, tableTop + 4.5, { align: 'right' }); ax += axisW;
+  doc.text('Y', ax + axisW - 2, tableTop + 4.5, { align: 'right' }); ax += axisW;
+  doc.text('Z', ax + axisW - 2, tableTop + 4.5, { align: 'right' }); ax += axisW;
+  if (hasA) { doc.text('A', ax + rotW - 2, tableTop + 4.5, { align: 'right' }); ax += rotW; }
+  if (hasB) { doc.text('B', ax + rotW - 2, tableTop + 4.5, { align: 'right' }); }
+
+  // ── Data rows ──────────────────────────────────────────────────────────────
+  let ry = tableTop + COL_H;
+  const fmt = (v: string) => v || '\u2014';
+
+  if (filled.length === 0) {
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(7);
+    doc.setTextColor(148, 163, 184);
+    doc.text('No entries', MARGIN + tableW / 2, ry + 10, { align: 'center' });
+    ry += 20;
+  } else {
+    for (let i = 0; i < filled.length; i++) {
+      const e = filled[i];
+
+      // Alternating row shading
+      if (i % 2 === 1) {
+        doc.setFillColor(241, 245, 249);
+        doc.rect(MARGIN, ry, tableW, ROW_H, 'F');
+      }
+
+      const textY = ry + 4.2;
+
+      // Offset code (courier + blue)
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(7);
+      doc.setTextColor(37, 99, 235);
+      doc.text(e.slotCode, MARGIN + 3, textY);
+
+      // Fixture label
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.setTextColor(30, 41, 59);
+      doc.text(clampWcsText(doc, e.name || '\u2014', nameW - 6), MARGIN + codeW + 3, textY);
+
+      // Axis values (right-aligned, monospace)
+      doc.setFont('courier', 'normal');
+      doc.setFontSize(7);
+      doc.setTextColor(51, 65, 85);
+
+      let axv = MARGIN + codeW + nameW;
+      doc.text(fmt(e.x), axv + axisW - 2, textY, { align: 'right' }); axv += axisW;
+      doc.text(fmt(e.y), axv + axisW - 2, textY, { align: 'right' }); axv += axisW;
+      doc.text(fmt(e.z), axv + axisW - 2, textY, { align: 'right' }); axv += axisW;
+      if (hasA) { doc.text(fmt(e.a), axv + rotW - 2, textY, { align: 'right' }); axv += rotW; }
+      if (hasB) { doc.text(fmt(e.b), axv + rotW - 2, textY, { align: 'right' }); }
+
+      ry += ROW_H;
+    }
+  }
+
+  // ── Table border + column dividers ─────────────────────────────────────────
+  const tableH = COL_H + (filled.length > 0 ? ROW_H * filled.length : 20);
+
+  doc.setDrawColor(203, 213, 225);
+  doc.setLineWidth(0.25);
+  doc.rect(MARGIN, tableTop, tableW, tableH, 'S');
+
+  // Vertical column separators
+  const divOffsets = [codeW, codeW + nameW, codeW + nameW + axisW, codeW + nameW + axisW * 2];
+  if (hasA || hasB) divOffsets.push(codeW + nameW + axisW * 3);
+  if (hasA && hasB) divOffsets.push(codeW + nameW + axisW * 3 + rotW);
+
+  doc.setLineWidth(0.15);
+  for (const d of divOffsets) {
+    doc.line(MARGIN + d, tableTop, MARGIN + d, tableTop + tableH);
+  }
+
+  // Header bottom rule
+  doc.setLineWidth(0.3);
+  doc.setDrawColor(30, 53, 96);
+  doc.line(MARGIN, tableTop + COL_H, MARGIN + tableW, tableTop + COL_H);
+
+  // ── Footer ─────────────────────────────────────────────────────────────────
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(5);
+  doc.setTextColor(148, 163, 184);
+  doc.text('CNC Tool Converter \u2014 Work Offset Reference Sheet', MARGIN, 286);
+  doc.text(dateStr, PAGE_W - MARGIN, 286, { align: 'right' });
+
+  doc.save(`work-offsets-${now.toISOString().slice(0, 10)}.pdf`);
+}
+
+// ── localStorage persistence (per-machine) ────────────────────────────────────
+//
+// Storage shape: { [machineKey: string]: { dialect: WcsDialect; entries: WcsEntry[] } }
+// machineKey is the machine-group name, or '__default__' when no group is selected.
 
 const LS_KEY = 'cnc-tool-converter:workOffsets';
 
-interface StoredOffsets {
-  [dialectId: string]: WcsEntry[];
+export const DEFAULT_MACHINE_KEY = '__default__';
+
+export interface MachineOffsetRecord {
+  dialect: WcsDialect;
+  entries: WcsEntry[];
 }
 
-export function loadStoredEntries(dialectId: WcsDialect): WcsEntry[] | undefined {
+type StoredOffsets = Record<string, MachineOffsetRecord>;
+
+export function loadMachineRecord(machineKey: string): MachineOffsetRecord | undefined {
   try {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return undefined;
-    return (JSON.parse(raw) as StoredOffsets)[dialectId];
+    return (JSON.parse(raw) as StoredOffsets)[machineKey];
   } catch { return undefined; }
 }
 
-export function saveStoredEntries(dialectId: WcsDialect, entries: WcsEntry[]): void {
+export function saveMachineRecord(machineKey: string, record: MachineOffsetRecord): void {
   try {
     const raw = localStorage.getItem(LS_KEY);
     const all: StoredOffsets = raw ? JSON.parse(raw) as StoredOffsets : {};
-    all[dialectId] = entries;
+    all[machineKey] = record;
     localStorage.setItem(LS_KEY, JSON.stringify(all));
   } catch { /* ignore */ }
+}
+
+export function loadAllMachineKeys(): string[] {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return [];
+    return Object.keys(JSON.parse(raw) as StoredOffsets);
+  } catch { return []; }
 }

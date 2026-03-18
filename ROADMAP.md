@@ -79,7 +79,7 @@ _Goal: Connect the tool library to the broader CNC workflow._
 
 ### 3.1 Advanced Export
 - ✅ **Split-by-machine-group export** — `ExportPanel` already supports "Split by machine group" and "Split by material" modes; staggered multi-file downloads. One file per group, with tools pinned to a single group per file.
-- ✅ **G54–G59 offset sheet export** — `WorkOffsetSheetPanel` (Print → Work Offsets): dialect selector (Fanuc, HAAS, Mach3, LinuxCNC, Siemens), editable X/Y/Z/A/B per offset slot, autocomplete from library machine groups, persisted per dialect to localStorage. Downloads .txt reference card or .csv. Dialect-specific extended slots (Fanuc G54.1 P1–P48, HAAS G110–G129, LinuxCNC G59.1–G59.3, Siemens G505 D-frames).
+- ✅ **G54–G59 offset sheet export** — `WorkOffsetSheetPanel` (Print → Work Offsets): machine-group selector (each machine stores its own dialect + entries independently), dialect selector (Fanuc, HAAS, Mach3, LinuxCNC, Siemens), editable X/Y/Z/A/B per offset slot, persisted per machine to localStorage. Downloads a formatted **PDF card** (jsPDF, with title bar, bordered table, alternating rows, monospace values) or .csv. Dialect-specific extended slots (Fanuc G54.1 P1–P48, HAAS G110–G129, LinuxCNC G59.1–G59.3, Siemens G505 D-frames).
 - ✅ **BOM / tool list for a job** — `JobsPanel` slide-over (Libraries ▾ → Jobs): create named jobs, pick tools from a searchable checklist, export as PDF (jsPDF) or CSV. Jobs persisted to localStorage (`cnc-tool-jobs`). (`src/types/job.ts`, `src/lib/jobStore.ts`, `src/components/library/JobsPanel.tsx`)
 - ✅ **CAM post-processor snippet** — `src/lib/camSnippet.ts` generates tool-call blocks for Fanuc, HAAS, Mach3, LinuxCNC, Siemens Sinumerik. `CamSnippetPanel` slide-over: dialect picker, live preview, Copy + Download buttons. Accessible from the "N selected ▾" toolbar dropdown (falls back to all tools when none selected).
 
@@ -197,6 +197,39 @@ These can be picked up opportunistically when they fit alongside other work.
 | **Column width memory** | — | Persist resized column widths to settings, restored on reload. |
 | **Mastercam .tooldb import** | Blocked | Requires real sample files to reverse-engineer. |
 | **SFM / Vc lookup table in F&S panel** | — | Drop-down of common material + tool-material combos with recommended Vc ranges pre-filled. |
+| **Setup sheet generator** | — | One-click PDF that combines: work offsets, tool list (T# / description / offset), and part program header. Machine-group scoped. |
+| **Tool checkout / check-in** | — | Mark a tool as checked out to an operator/machine with a due-back date. Checked-out tools show a badge in the library table. Overdue returns highlighted in red. |
+| **Tool life prediction** | — | Based on use count history and regrind threshold, predict the expected regrind date using average uses per day. Show a projected timeline in the Crib tab. |
+| **Inventory aging report** | — | Flag tools that haven't been used in N days (configurable). Useful for identifying dead stock and freeing up crib space. |
+| **Cost-per-use tracking** | — | Divide unit cost by uses to show cost-per-use in Crib tab and in reports. Reset on regrind. |
+| **ISO 13399 import / export** | — | Industry standard for CNC tool data exchange. Would enable direct interop with tool management software like Zoller, TDM Systems, Cribmaster. |
+| **CAM system export (extended)** | — | Exports for HyperMill, GibbsCAM, WorkNC, Edgecam, SolidCAM, Mastercam toolpaths in addition to existing Fanuc/HAAS/LinuxCNC. |
+| **Supplier invoice CSV import** | — | Parse packing slips or delivery notes from common distributors (MSC, Grainger, RS Components) to auto-update stock quantities. |
+| **Tool reservation** | — | Reserve a tool for a specific job / machine / time window so others know it is spoken for. Visible in library table and low-stock panel. |
+| **Tool family / parent-child grouping** | — | Link tools that are the same geometry in different wear states (New → Used → Reground). Navigate between family members in the editor. |
+| **PWA install support** | — | Add a web app manifest and service worker so the app can be installed from the browser on desktop and mobile. Already fully offline; just needs the install prompt. |
+| **Preventive maintenance scheduler** | — | Set a calendar-based maintenance interval (independent of use count) per tool. Notify when an interval is overdue. |
+
+---
+
+## Phase 5 — Cloud & Multi-Site (Future)
+
+_Goal: Support shops with multiple sites or teams that need a shared, always-in-sync tool library beyond what a self-hosted REST endpoint can offer._
+
+### 5.1 Hosted Backend Option
+- **Managed sync endpoint** — Optional hosted backend (e.g. Supabase / Firebase) so teams can collaborate without self-hosting a WebDAV/REST server. Free tier for single-machine shops; paid tier for multi-machine.
+- **Real-time push** — WebSocket-based live updates; changes made on one workstation appear instantly on others without a manual sync. Replace polling with server-sent events.
+- **Per-user accounts** — Named user accounts instead of just an operator name string. Role-based access: read-only (operator), edit (programmer), admin (full library management).
+- **Conflict resolution UI** — When two users edit the same tool simultaneously, show a side-by-side diff and let a human decide which value to keep (rather than auto-merging by `updatedAt`).
+
+### 5.2 Mobile Companion
+- **Progressive Web App (mobile)** — Responsive layout for phones/tablets. Crib staff can scan a QR code, view tool details, and update use count or stock without going to a desktop.
+- **Offline-first mobile sync** — Queue edits made offline (e.g. inside a Faraday-shielded machine enclosure); push when connectivity resumes.
+
+### 5.3 ERP / MES Integration
+- **Outbound webhooks** — Fire a JSON webhook when a tool drops below reorder point, reaches regrind threshold, or is checked out. Plug into Slack, Teams, or any automation platform.
+- **Purchase order generation** — Draft a PO in PDF/CSV format from the low-stock panel, pre-filled with supplier, product ID, and unit cost from the library.
+- **MES tool-call feed** — Expose a read-only REST endpoint that a machine control or MES can poll to get tool data by T number (replaces manual tool table entry at the machine).
 
 ---
 
@@ -206,6 +239,7 @@ These can be picked up opportunistically when they fit alongside other work.
 |---|---|---|
 | **v0.2** | Phase 1 complete — HAAS/Fanuc/Mach3/CSV/XLSX converters, F&S calculator, templates, backup nudge | ✅ Done |
 | **v0.3** | Phase 2 complete — inventory tracking, assembly view, improved import, material presets, audit log | ✅ Done |
-| **v0.4** | Phase 3 complete — table virtualisation, remote sync (REST + WebDAV), CAM snippets, work offset sheet, snapshots | ✅ Done |
+| **v0.4** | Phase 3 complete — table virtualisation, remote sync (REST + WebDAV), CAM snippets, work offset sheet (per-machine PDF card), snapshots, Jobs/BOM, sticky columns | ✅ Done |
 | **v1.0** | Phase 4 complete — Electron desktop app, SQLite, native dialogs, auto-updater | Planned |
-| **v1.x** | Nice-to-have features, community language packs, supplier integrations | Future |
+| **v1.x** | Nice-to-have features: setup sheet generator, tool checkout, tool life prediction, ISO 13399, PWA install | Future |
+| **v2.0** | Phase 5 — Hosted backend, real-time sync, mobile PWA, MES integration | Future |

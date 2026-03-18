@@ -60,6 +60,39 @@ Fields that have no equivalent in the target format are silently dropped. If **W
 
 ---
 
+---
+
+## Jobs (BOM for a job)
+
+**Libraries ▾ → Jobs**
+
+The **Jobs panel** lets you create named jobs and associate a set of tools with each one — a BOM (bill of materials) for a machining operation.
+
+### Creating a job
+
+1. Open **Libraries ▾ → Jobs**.
+2. Click **+ New Job**.
+3. Enter a job name, optional description, and optionally assign it to a machine group.
+4. Use the searchable tool checklist to tick the tools required for this job.
+5. Click **Save**.
+
+### Exporting a job
+
+Each job card has two export buttons:
+
+| Button | Output |
+|--------|--------|
+| **PDF** | A formatted job sheet listing all tools with T#, type, diameter, OAL, flutes, and cutting data |
+| **CSV** | A flat spreadsheet with the same fields |
+
+### Tips
+
+- Use jobs as setup sheets for a specific part or operation.
+- A tool can appear in multiple jobs.
+- Delete a job when it is no longer needed — this does not affect the tools in your library.
+
+---
+
 ## Tips
 
 - Export to **Generic CSV** or **XLSX** when you need to bring tool data into a spreadsheet or ERP system.

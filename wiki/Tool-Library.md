@@ -18,7 +18,7 @@ The **Print ▾** dropdown gives access to output options:
 
 ![Print dropdown](screenshots/print-dropdown.png)
 
-The **Libraries ▾** dropdown gives access to Materials, Holders, and Templates:
+The **Libraries ▾** dropdown gives access to Materials, Holders, Templates, and Jobs:
 
 ![Libraries dropdown](screenshots/libraries-dropdown.png)
 

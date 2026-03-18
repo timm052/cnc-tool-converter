@@ -30,6 +30,7 @@ Press **`?`** anywhere in the app to open the shortcut help overlay.
 
 | Key | Action |
 |-----|--------|
+| `Ctrl+I` | Open Import panel |
 | `Ctrl+Q` | Open QR scanner (Maintain ▾ → Scan QR) |
 
 ---
