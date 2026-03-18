@@ -73,14 +73,14 @@ _Goal: Make the tool library the single source of truth for a real toolroom._
 
 ---
 
-## Phase 3 — Integration & Intelligence ✅ Complete
+## Phase 3 — Integration & Intelligence ✅ Complete (v0.4)
 
 _Goal: Connect the tool library to the broader CNC workflow._
 
 ### 3.1 Advanced Export
 - ✅ **Split-by-machine-group export** — `ExportPanel` already supports "Split by machine group" and "Split by material" modes; staggered multi-file downloads. One file per group, with tools pinned to a single group per file.
 - ✅ **G54–G59 offset sheet export** — `WorkOffsetSheetPanel` (Print → Work Offsets): dialect selector (Fanuc, HAAS, Mach3, LinuxCNC, Siemens), editable X/Y/Z/A/B per offset slot, autocomplete from library machine groups, persisted per dialect to localStorage. Downloads .txt reference card or .csv. Dialect-specific extended slots (Fanuc G54.1 P1–P48, HAAS G110–G129, LinuxCNC G59.1–G59.3, Siemens G505 D-frames).
-- **BOM / tool list for a job** — Create a named "job" that links to a subset of library tools. Export the job's tool list as a formatted PDF or CSV for the machine operator.
+- ✅ **BOM / tool list for a job** — `JobsPanel` slide-over (Libraries ▾ → Jobs): create named jobs, pick tools from a searchable checklist, export as PDF (jsPDF) or CSV. Jobs persisted to localStorage (`cnc-tool-jobs`). (`src/types/job.ts`, `src/lib/jobStore.ts`, `src/components/library/JobsPanel.tsx`)
 - ✅ **CAM post-processor snippet** — `src/lib/camSnippet.ts` generates tool-call blocks for Fanuc, HAAS, Mach3, LinuxCNC, Siemens Sinumerik. `CamSnippetPanel` slide-over: dialect picker, live preview, Copy + Download buttons. Accessible from the "N selected ▾" toolbar dropdown (falls back to all tools when none selected).
 
 ### 3.2 Sync
@@ -91,11 +91,11 @@ _Goal: Connect the tool library to the broader CNC workflow._
 
 ### 3.4 UI & UX Polish
 - ✅ **Table virtualisation** — `@tanstack/react-virtual` v3; `useVirtualizer` in `LibraryTable` with top/bottom spacer rows. Renders only visible rows; estimates 33 px (compact) / 45 px (normal). Fixes performance at 300+ tools.
-- **Resizable sidebar** — Drag the machine group sidebar to a preferred width. Persisted to settings.
-- **Pinned columns** — Pin T# and description columns so they stay visible when scrolling right through many geometry columns.
-- **Keyboard shortcut cheat sheet overlay** — Already triggered by `?` key; improve the layout and add the new shortcuts from Phase 1–2.
+- ✅ **Resizable sidebar** — Drag handle on the machine group sidebar right edge; width clamped 140–320 px, persisted to localStorage `machine-sidebar-width`.
+- ✅ **Pinned columns** — Star, checkbox, edit, and T# columns are `position: sticky` with `left-0/8/16/24` offsets; T# has a right-border separator. Virtualizer spacer heights set via callback refs (no inline-style lint warnings).
+- ✅ **Keyboard shortcut cheat sheet overlay** — Reorganised into four sections (Navigation, Selection, Panels, Editor) in a two-column grid; `Ctrl+I` (Import) added as functional shortcut.
 - **Dark / light mode auto-follow OS** — Detect `prefers-color-scheme` and switch theme automatically (with a "manual override" option in Settings).
-- **Internationalisation (i18n)** — Extract all UI strings to a translation file. Ship English by default; allow community language packs.
+- **Internationalisation (i18n)** — Extract all UI strings to a translation file. Ship English by default; allow community language packs. _(Deferred to Phase 4+)_
 
 ---
 
