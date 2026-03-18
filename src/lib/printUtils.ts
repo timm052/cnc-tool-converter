@@ -252,8 +252,10 @@ const PDF_SECTION_H = 3.2;   // mm — section divider height
 const PDF_HEADER_H  = 6.5;   // mm — card header height
 const PDF_CARD_PAD  = 0.8;   // mm — extra padding below last row
 
-function pdfCardHeight(rows: SheetRow[]): number {
-  return PDF_HEADER_H +
+const PDF_PHOTO_H = 16; // mm — photo strip height when present
+
+function pdfCardHeight(rows: SheetRow[], hasPhoto = false): number {
+  return (hasPhoto ? PDF_PHOTO_H : 0) + PDF_HEADER_H +
     rows.reduce((s, r) => s + (r.kind === 'section' ? PDF_SECTION_H : PDF_ROW_H), 0) +
     PDF_CARD_PAD;
 }
@@ -296,8 +298,9 @@ export function generateToolSheetPdf(tools: LibraryTool[], opts: SheetOptions): 
   let y   = contentY;
 
   for (const tool of tools) {
-    const rows  = buildPdfRows(tool, opts);
-    const cardH = pdfCardHeight(rows);
+    const rows     = buildPdfRows(tool, opts);
+    const hasPhoto = !!tool.imageBase64;
+    const cardH    = pdfCardHeight(rows, hasPhoto);
 
     // Move to next column or new page if card doesn't fit
     if (y + cardH > PAGE_H - MARGIN) {
@@ -315,19 +318,29 @@ export function generateToolSheetPdf(tools: LibraryTool[], opts: SheetOptions): 
     // ── Card border ───────────────────────────────────────────────────────
     doc.setDrawColor(190, 190, 190);
     doc.setLineWidth(0.2);
-    doc.roundedRect(x, y, cardW, cardH, 0.8, 0.8, 'S');
+    doc.roundedRect(x, y, cardW, cardH, 0.8, 0.8, 'S');  // cardH already includes PDF_PHOTO_H
+
+    // ── Tool photo (optional image strip above card) ───────────────────
+    if (hasPhoto && tool.imageBase64) {
+      const imgFormat = tool.imageBase64.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+      doc.addImage(tool.imageBase64, imgFormat, x, y, cardW, PDF_PHOTO_H, undefined, 'FAST');
+      doc.setDrawColor(190, 190, 190);
+      doc.setLineWidth(0.2);
+      doc.line(x, y + PDF_PHOTO_H, x + cardW, y + PDF_PHOTO_H);
+    }
 
     // ── Card header ───────────────────────────────────────────────────────
+    const hdrY = y + (hasPhoto ? PDF_PHOTO_H : 0);
     doc.setFillColor(30, 53, 96);
-    doc.roundedRect(x, y, cardW, PDF_HEADER_H, 0.8, 0.8, 'F');
-    doc.rect(x, y + PDF_HEADER_H - 1.5, cardW, 1.5, 'F'); // square off bottom corners
+    doc.roundedRect(x, hdrY, cardW, PDF_HEADER_H, 0.8, 0.8, 'F');
+    doc.rect(x, hdrY + PDF_HEADER_H - 1.5, cardW, 1.5, 'F'); // square off bottom corners
 
     // T#
     doc.setFont('courier', 'bold');
     doc.setFontSize(6.5);
     doc.setTextColor(147, 197, 253);
     const tLabel = `T${tool.toolNumber}`;
-    doc.text(tLabel, x + 2, y + PDF_HEADER_H - 1.8);
+    doc.text(tLabel, x + 2, hdrY + PDF_HEADER_H - 1.8);
     const tLabelW = doc.getTextWidth(tLabel) + 2.5;
 
     // Pocket number (right-aligned)
@@ -337,7 +350,7 @@ export function generateToolSheetPdf(tools: LibraryTool[], opts: SheetOptions): 
       doc.setFontSize(5.5);
       doc.setTextColor(148, 163, 184);
       const pLabel = `P${tool.pocketNumber}`;
-      doc.text(pLabel, x + cardW - 2, y + PDF_HEADER_H - 1.8, { align: 'right' });
+      doc.text(pLabel, x + cardW - 2, hdrY + PDF_HEADER_H - 1.8, { align: 'right' });
       pLabelW = doc.getTextWidth(pLabel) + 3;
     }
 
@@ -346,10 +359,10 @@ export function generateToolSheetPdf(tools: LibraryTool[], opts: SheetOptions): 
     doc.setFontSize(6.5);
     doc.setTextColor(255, 255, 255);
     const descMaxW = cardW - tLabelW - pLabelW;
-    doc.text(clampText(doc, tool.description, descMaxW), x + tLabelW, y + PDF_HEADER_H - 1.8);
+    doc.text(clampText(doc, tool.description, descMaxW), x + tLabelW, hdrY + PDF_HEADER_H - 1.8);
 
     // ── Data rows ─────────────────────────────────────────────────────────
-    let ry = y + PDF_HEADER_H;
+    let ry = hdrY + PDF_HEADER_H;
 
     for (const row of rows) {
       if (row.kind === 'section') {

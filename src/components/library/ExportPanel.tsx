@@ -4,8 +4,8 @@ import { registry } from '../../converters';
 import type { LibraryTool } from '../../types/libraryTool';
 import type { WorkMaterial } from '../../types/material';
 import { useSettings } from '../../contexts/SettingsContext';
-import { toolsToCsv } from '../../lib/csvLibrary';
-import { triggerDownload } from '../../lib/downloadUtils';
+import { triggerDownload, triggerBinaryDownload } from '../../lib/downloadUtils';
+import { exportToolsToXlsx } from '../../lib/xlsxExport';
 
 interface ExportPanelProps {
   selectedTools: LibraryTool[];
@@ -13,27 +13,28 @@ interface ExportPanelProps {
   onClose:       () => void;
 }
 
-const CSV_FORMAT_ID = 'csv';
-
 type SplitMode = 'none' | 'material' | 'machine';
+
+/** Formats where splitting doesn't add value (CSV/XLSX already contains all fields) */
+const NO_SPLIT_FORMATS = new Set(['csv', 'mach3', 'xlsx']);
 
 export default function ExportPanel({ selectedTools, allMaterials, onClose }: ExportPanelProps) {
   const { settings } = useSettings();
   const exportableFormats = registry.getExportableFormats();
 
-  const [formatId,    setFormatId]    = useState(exportableFormats[0]?.id ?? '');
+  const [formatId,    setFormatId]    = useState(exportableFormats[0]?.id ?? 'xlsx');
   const [splitMode,   setSplitMode]   = useState<SplitMode>('none');
   const [isExporting, setIsExporting] = useState(false);
 
-  const isCsv = formatId === CSV_FORMAT_ID;
+  const noSplit = NO_SPLIT_FORMATS.has(formatId);
 
   // Tools that have at least one material entry
   const toolsWithMaterials = selectedTools.filter((t) => (t.toolMaterials?.length ?? 0) > 0);
   // Unique machine groups across selected tools
   const allGroups = Array.from(new Set(selectedTools.flatMap((t) => t.machineGroups ?? []))).sort();
 
-  const canSplitMaterial = !isCsv && toolsWithMaterials.length > 0;
-  const canSplitMachine  = !isCsv && allGroups.length > 0;
+  const canSplitMaterial = !noSplit && toolsWithMaterials.length > 0;
+  const canSplitMachine  = !noSplit && allGroups.length > 0;
 
   const writerOpts = {
     filename:                     'library-export',
@@ -49,7 +50,8 @@ export default function ExportPanel({ selectedTools, allMaterials, onClose }: Ex
   async function staggeredDownload(items: { content: string | Uint8Array; mimeType: string; filename: string }[]) {
     for (let i = 0; i < items.length; i++) {
       await new Promise<void>((resolve) => setTimeout(() => {
-        triggerDownload(items[i].content, items[i].mimeType, items[i].filename);
+        const c = items[i].content;
+        triggerDownload(typeof c === 'string' ? c : new TextDecoder().decode(c), items[i].mimeType, items[i].filename);
         resolve();
       }, i * 300));
     }
@@ -58,9 +60,11 @@ export default function ExportPanel({ selectedTools, allMaterials, onClose }: Ex
   async function handleDownload() {
     setIsExporting(true);
     try {
-      if (isCsv) {
-        const csv = toolsToCsv(selectedTools);
-        triggerDownload(csv, 'text/csv', 'library-export.csv');
+      // ── Excel (.xlsx) ────────────────────────────────────────────────────────
+      if (formatId === 'xlsx') {
+        const date = new Date().toISOString().slice(0, 10);
+        const bytes = exportToolsToXlsx(selectedTools);
+        triggerBinaryDownload(bytes.buffer as ArrayBuffer, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', `tool-library-${date}.xlsx`);
         onClose();
         return;
       }
@@ -234,15 +238,15 @@ export default function ExportPanel({ selectedTools, allMaterials, onClose }: Ex
               onChange={(e) => { setFormatId(e.target.value); setSplitMode('none'); }}
               className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
             >
+              <option value="xlsx">Excel (.xlsx)</option>
               {exportableFormats.map((f) => (
                 <option key={f.id} value={f.id}>{f.name}</option>
               ))}
-              <option value={CSV_FORMAT_ID}>CSV (spreadsheet)</option>
             </select>
           </div>
 
-          {/* Split options */}
-          {!isCsv && (
+          {/* Split options — hidden for formats that don't benefit from splitting */}
+          {!noSplit && (
             <div>
               <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-2">Split output</p>
               <div className="space-y-2">
@@ -273,15 +277,26 @@ export default function ExportPanel({ selectedTools, allMaterials, onClose }: Ex
           )}
 
           {/* Notes */}
-          {!isCsv && (
+          {formatId === 'xlsx' && (
+            <p className="text-xs text-slate-500">
+              Exports a spreadsheet with all tool fields including geometry, cutting parameters, tags, and machine groups. Open in Excel or Google Sheets.
+            </p>
+          )}
+          {formatId === 'csv' && (
+            <p className="text-xs text-slate-500">
+              Exports a flat spreadsheet with tool geometry, cutting parameters, tags, and machine groups.
+            </p>
+          )}
+          {formatId === 'linuxcnc' && (
             <p className="text-xs text-slate-500">
               Format-specific options are applied from{' '}
               <span className="text-slate-400">Settings → LinuxCNC Writer</span>.
             </p>
           )}
-          {isCsv && (
+          {(formatId === 'haas' || formatId === 'fanuc') && (
             <p className="text-xs text-slate-500">
-              Exports a flat spreadsheet with tool geometry, cutting parameters, tags, and machine groups.
+              Exports tool length and diameter offsets. Length offset sourced from Z-offset field; geometry
+              is not carried by these formats.
             </p>
           )}
 

@@ -64,7 +64,7 @@ function makeTool(type: ToolType, geoOverrides: Record<string, unknown> = {}): L
     },
     tags:         [],
     starred:      false,
-    machineGroup: undefined,
+    machineGroups: [],
     addedAt:      Date.now(),
     updatedAt:    Date.now(),
   } as LibraryTool;

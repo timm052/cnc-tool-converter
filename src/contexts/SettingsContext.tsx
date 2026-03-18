@@ -77,8 +77,11 @@ export interface Settings {
   // Custom Tool Types
   customToolTypes: CustomToolTypeDefinition[];
 
+  // Display unit override — shows all geometry values in the chosen unit regardless of stored unit
+  tableDisplayUnit: 'stored' | 'mm' | 'inch';
+
   // Appearance
-  theme: 'dark' | 'retro90s' | 'winxp' | 'macos9' | 'light';
+  theme: 'dark' | 'retro90s' | 'winxp' | 'macos9' | 'light' | 'auto';
 
   // Developer
   devMode: boolean;
@@ -144,6 +147,8 @@ export const DEFAULT_SETTINGS: Settings = {
   validationWarningsEnabled: true,
 
   customToolTypes: [],
+
+  tableDisplayUnit: 'stored',
 
   theme: 'dark',
 

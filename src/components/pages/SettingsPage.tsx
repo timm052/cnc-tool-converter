@@ -267,6 +267,24 @@ export default function SettingsPage() {
         <Section title="Appearance">
           <div className="px-4 py-4 bg-slate-800/50">
             <p className="text-sm text-slate-200 mb-3">Theme</p>
+            <div className="flex gap-3 mb-2">
+              {/* Auto (OS) */}
+              <button
+                type="button"
+                onClick={() => set('theme', 'auto')}
+                className={[
+                  'flex-1 flex flex-col gap-2 p-3 border-2 text-left transition-all',
+                  settings.theme === 'auto'
+                    ? 'border-blue-500 bg-slate-700'
+                    : 'border-slate-600 bg-slate-800 hover:border-slate-500',
+                ].join(' ')}
+              >
+                <div className="w-full h-16 rounded overflow-hidden flex items-center justify-center bg-gradient-to-br from-slate-950 to-slate-100 pointer-events-none select-none">
+                  <span className="text-2xl">⚙️</span>
+                </div>
+                <span className="text-xs font-medium text-slate-300">Auto (OS)</span>
+              </button>
+            </div>
             <div className="flex gap-3">
 
               {/* Dark theme card */}

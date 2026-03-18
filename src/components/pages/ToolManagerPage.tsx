@@ -3,9 +3,10 @@ import {
   Library, Plus, Upload, Download, Search, Star, X,
   ChevronDown, Layers, Tag, RotateCcw, Keyboard, SlidersHorizontal, Columns2, Hash,
   Printer, QrCode, FlaskConical, Wrench, ScanLine, Copy, Package,
-  Calculator, AlertTriangle, FileText, ArrowRightLeft,
+  Calculator, AlertTriangle, FileText, ArrowRightLeft, BookTemplate,
 } from 'lucide-react';
 import { useLibrary } from '../../contexts/LibraryContext';
+import { useSettings } from '../../contexts/SettingsContext';
 import { useHolders } from '../../contexts/HolderContext';
 import { useMaterials } from '../../contexts/MaterialContext';
 import type { LibraryTool } from '../../types/libraryTool';
@@ -24,12 +25,14 @@ import HolderLibraryPanel from '../library/HolderLibraryPanel';
 import QrScannerPanel from '../library/QrScannerPanel';
 import SpeedsFeedsPanel from '../library/SpeedsFeedsPanel';
 import ValidationPanel from '../library/ValidationPanel';
+import TemplatePickerPanel from '../library/TemplatePickerPanel';
 import { downloadGcodeOffsetSheet } from '../../lib/gcodeOffsetSheet';
 import { recordBackup } from '../../lib/backupNudge';
+import { convertToolUnit } from '../../lib/unitConvert';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Panel = 'import' | 'export' | 'edit' | 'bulk-edit' | 'compare' | 'renumber' | 'label-print' | 'sheet-print' | 'materials' | 'holders' | 'duplicates' | 'qr-scan' | 'feeds' | 'validation' | 'copy-group' | null;
+type Panel = 'import' | 'export' | 'edit' | 'bulk-edit' | 'compare' | 'renumber' | 'label-print' | 'sheet-print' | 'materials' | 'holders' | 'duplicates' | 'qr-scan' | 'feeds' | 'validation' | 'copy-group' | 'templates' | null;
 
 // ── Machine group sidebar ─────────────────────────────────────────────────────
 
@@ -137,6 +140,16 @@ function RenumberModal({
   const [start,      setStart]      = useState(1);
   const [step,       setStep]       = useState(1);
   const [isApplying, setIsApplying] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+
+  // Smart presets: suggest start/step based on tool type group
+  const PRESETS = [
+    { label: '1, 2, 3…',  start: 1,   step: 1  },
+    { label: '10, 20…',   start: 10,  step: 10 },
+    { label: 'Mills@100', start: 100, step: 1  },
+    { label: 'Drills@200',start: 200, step: 1  },
+    { label: 'Taps@300',  start: 300, step: 1  },
+  ];
 
   const preview = sorted.map((t, i) => ({ tool: t, newNumber: start + i * step }));
   const hasConflict = new Set(preview.map((p) => p.newNumber)).size !== preview.length;
@@ -196,6 +209,27 @@ function RenumberModal({
             </div>
           </div>
 
+          {/* Quick presets */}
+          <div>
+            <p className="text-xs font-medium text-slate-400 mb-1.5">Quick presets</p>
+            <div className="flex flex-wrap gap-1.5">
+              {PRESETS.map((p) => (
+                <button
+                  key={p.label}
+                  type="button"
+                  onClick={() => { setStart(p.start); setStep(p.step); }}
+                  className={`px-2.5 py-1 rounded text-xs font-medium transition-colors border ${
+                    start === p.start && step === p.step
+                      ? 'bg-blue-600/30 border-blue-500/60 text-blue-300'
+                      : 'bg-slate-700 border-slate-600 text-slate-400 hover:text-slate-200 hover:bg-slate-600'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {hasConflict && (
             <p className="text-xs text-amber-400">Warning: duplicate T numbers will result — increase the step.</p>
           )}
@@ -221,21 +255,41 @@ function RenumberModal({
         </div>
 
         <div className="px-5 py-4 border-t border-slate-700 shrink-0 flex items-center justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-700">
-            Cancel
-          </button>
-          <button
-            onClick={handleApply}
-            disabled={isApplying || hasConflict}
-            className={[
-              'px-4 py-2 rounded-lg text-sm font-semibold transition-colors',
-              !isApplying && !hasConflict
-                ? 'bg-blue-600 hover:bg-blue-500 text-white'
-                : 'bg-slate-700 text-slate-500 cursor-not-allowed',
-            ].join(' ')}
-          >
-            {isApplying ? 'Applying…' : `Apply to ${tools.length} tool${tools.length !== 1 ? 's' : ''}`}
-          </button>
+          {confirming ? (
+            <>
+              <span className="text-sm text-slate-400 mr-auto">Renumber {tools.length} tool{tools.length !== 1 ? 's' : ''}?</span>
+              <button type="button" onClick={() => setConfirming(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-700">
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => { setConfirming(false); void handleApply(); }}
+                disabled={isApplying}
+                className="px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+              >
+                Confirm
+              </button>
+            </>
+          ) : (
+            <>
+              <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-700">
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirming(true)}
+                disabled={isApplying || hasConflict}
+                className={[
+                  'px-4 py-2 rounded-lg text-sm font-semibold transition-colors',
+                  !isApplying && !hasConflict
+                    ? 'bg-blue-600 hover:bg-blue-500 text-white'
+                    : 'bg-slate-700 text-slate-500 cursor-not-allowed',
+                ].join(' ')}
+              >
+                {isApplying ? 'Applying…' : `Apply to ${tools.length} tool${tools.length !== 1 ? 's' : ''}`}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </>
@@ -365,10 +419,51 @@ export default function ToolManagerPage() {
     allMachineGroups, allTags,
     addTool, addTools, updateTool, patchEach, deleteTool, deleteTools,
   } = useLibrary();
+  const nextToolNumber = Math.max(0, ...tools.map((t) => t.toolNumber)) + 1;
+  const { settings, updateSettings } = useSettings();
   const { holders }   = useHolders();
   const { materials } = useMaterials();
 
   const restoreInputRef  = useRef<HTMLInputElement>(null);
+
+  // ── Bulk undo ─────────────────────────────────────────────────────────────
+  const [lastBulkUndo, setLastBulkUndo] = useState<{ id: string; patch: Partial<LibraryTool> }[] | null>(null);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const snapAndPatchEach = useCallback(async (updates: { id: string; patch: Partial<LibraryTool> }[]) => {
+    // Snapshot only the keys that are about to change for each affected tool
+    const originals = updates.map(({ id, patch }) => {
+      const tool = tools.find((t) => t.id === id);
+      if (!tool) return { id, patch: {} as Partial<LibraryTool> };
+      const orig: Partial<LibraryTool> = {};
+      for (const key of Object.keys(patch) as (keyof LibraryTool)[]) {
+        (orig as Record<string, unknown>)[key] = tool[key];
+      }
+      return { id, patch: orig };
+    });
+    await patchEach(updates);
+    setLastBulkUndo(originals);
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    undoTimerRef.current = setTimeout(() => setLastBulkUndo(null), 8000);
+  }, [tools, patchEach]);
+
+  async function handleBulkUndo() {
+    if (!lastBulkUndo) return;
+    setLastBulkUndo(null);
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    await patchEach(lastBulkUndo);
+  }
+
+  async function handleConvertUnits(toUnit: 'mm' | 'inch') {
+    const updates = selectedTools
+      .filter((t) => t.unit !== toUnit)
+      .map((t) => {
+        const converted = convertToolUnit(t, toUnit);
+        return { id: t.id, patch: { unit: converted.unit, geometry: converted.geometry, cutting: converted.cutting, updatedAt: converted.updatedAt } as Partial<LibraryTool> };
+      });
+    if (updates.length === 0) return;
+    await snapAndPatchEach(updates);
+  }
 
   // ── Panel / editor state ──────────────────────────────────────────────────
   const [activePanel, setActivePanel] = useState<Panel>(null);
@@ -611,6 +706,26 @@ export default function ToolManagerPage() {
               F&amp;S
             </button>
           )}
+          {selectedIds.size > 0 && (
+            <div className="flex rounded-lg overflow-hidden border border-slate-600 text-sm" title="Convert selected tools to metric or imperial">
+              <button
+                type="button"
+                onClick={() => void handleConvertUnits('mm')}
+                className="flex items-center gap-1 px-2.5 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors font-medium"
+              >
+                <ArrowRightLeft size={13} />
+                → mm
+              </button>
+              <div className="w-px bg-slate-600" />
+              <button
+                type="button"
+                onClick={() => void handleConvertUnits('inch')}
+                className="px-2.5 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors font-medium"
+              >
+                → in
+              </button>
+            </div>
+          )}
           {selectedIds.size >= 2 && (
             <button
               onClick={() => setActivePanel('compare')}
@@ -681,6 +796,14 @@ export default function ToolManagerPage() {
           >
             <Wrench size={14} />
             Holders
+          </button>
+          <button
+            onClick={() => setActivePanel('templates')}
+            title="Create a tool from a saved template"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
+          >
+            <BookTemplate size={14} />
+            Templates
           </button>
           <button
             onClick={() => setActivePanel('import')}
@@ -869,8 +992,28 @@ export default function ToolManagerPage() {
             </span>
           ))}
 
+          {/* Display unit toggle */}
+          <div className="flex rounded-lg overflow-hidden border border-slate-700 text-xs ml-auto shrink-0" title="Display unit for geometry columns">
+            {(['stored', 'mm', 'inch'] as const).map((u) => (
+              <button
+                key={u}
+                type="button"
+                onClick={() => updateSettings({ tableDisplayUnit: u })}
+                className={[
+                  'px-2 py-1.5 transition-colors',
+                  settings.tableDisplayUnit === u
+                    ? 'bg-blue-600 text-white font-medium'
+                    : 'bg-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-700',
+                  u !== 'stored' ? 'border-l border-slate-700' : '',
+                ].join(' ')}
+              >
+                {u === 'stored' ? 'as-is' : u}
+              </button>
+            ))}
+          </div>
+
           {hasFilters && (
-            <button onClick={clearFilters} className="text-xs text-slate-500 hover:text-slate-300 transition-colors ml-auto">
+            <button onClick={clearFilters} className="text-xs text-slate-500 hover:text-slate-300 transition-colors shrink-0">
               Clear filters
             </button>
           )}
@@ -907,6 +1050,8 @@ export default function ToolManagerPage() {
               showMachineCol={machineFilter === null && allMachineGroups.length > 0}
               focusedId={focusedId ?? undefined}
               onFocusId={setFocusedId}
+              allMaterials={materials}
+              displayUnit={settings.tableDisplayUnit !== 'stored' ? settings.tableDisplayUnit : undefined}
             />
           </div>
         </div>
@@ -938,7 +1083,7 @@ export default function ToolManagerPage() {
           allGroups={allMachineGroups}
           allTags={allTags}
           allMaterials={materials}
-          onApply={async (updates) => { await patchEach(updates); }}
+          onApply={snapAndPatchEach}
           onClose={closePanel}
         />
       )}
@@ -951,7 +1096,7 @@ export default function ToolManagerPage() {
       {activePanel === 'renumber' && (
         <RenumberModal
           tools={filteredTools}
-          onApply={async (updates) => { await patchEach(updates); closePanel(); }}
+          onApply={async (updates) => { await snapAndPatchEach(updates); closePanel(); }}
           onClose={closePanel}
         />
       )}
@@ -1017,8 +1162,38 @@ export default function ToolManagerPage() {
           onClose={closePanel}
         />
       )}
+      {activePanel === 'templates' && (
+        <TemplatePickerPanel
+          nextToolNumber={nextToolNumber}
+          onStamp={(tool) => { void addTool(tool); openEdit(tool); }}
+          onClose={closePanel}
+        />
+      )}
 
       {/* ── Keyboard shortcuts legend ─────────────────────────────────────── */}
+      {/* ── Bulk undo toast ───────────────────────────────────────────────── */}
+      {lastBulkUndo && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl shadow-2xl text-sm text-slate-200 animate-in fade-in slide-in-from-bottom-2">
+          <span>Changes applied to {lastBulkUndo.length} tool{lastBulkUndo.length !== 1 ? 's' : ''}.</span>
+          <button
+            type="button"
+            onClick={() => void handleBulkUndo()}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+          >
+            <RotateCcw size={12} />
+            Undo
+          </button>
+          <button
+            type="button"
+            onClick={() => { setLastBulkUndo(null); if (undoTimerRef.current) clearTimeout(undoTimerRef.current); }}
+            title="Dismiss"
+            className="p-1 rounded text-slate-500 hover:text-slate-200 transition-colors"
+          >
+            <X size={13} />
+          </button>
+        </div>
+      )}
+
       {showShortcuts && (
         <>
           <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setShowShortcuts(false)} />

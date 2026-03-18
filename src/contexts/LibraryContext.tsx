@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { db } from '../db/library';
 import type { LibraryTool } from '../types/libraryTool';
+import type { ToolTemplate } from '../types/template';
 
 interface LibraryContextValue {
   tools:            LibraryTool[];
@@ -14,6 +15,10 @@ interface LibraryContextValue {
   patchEach:        (updates: { id: string; patch: Partial<LibraryTool> }[]) => Promise<void>;
   deleteTool:       (id: string) => Promise<void>;
   deleteTools:      (ids: string[]) => Promise<void>;
+  // ── Templates ──────────────────────────────────────────────────────────────
+  templates:        ToolTemplate[];
+  saveTemplate:     (template: ToolTemplate) => Promise<void>;
+  deleteTemplate:   (id: string) => Promise<void>;
 }
 
 const LibraryContext = createContext<LibraryContextValue | null>(null);
@@ -22,19 +27,52 @@ async function loadAll(): Promise<LibraryTool[]> {
   return db.tools.orderBy('addedAt').toArray();
 }
 
+async function loadTemplates(): Promise<ToolTemplate[]> {
+  return db.templates.orderBy('createdAt').toArray();
+}
+
+/** BroadcastChannel name shared across all tabs of this app */
+const BC_NAME = 'cnc-tool-library';
+
 export function LibraryProvider({ children }: { children: ReactNode }) {
   const [tools,     setTools]     = useState<LibraryTool[]>([]);
+  const [templates, setTemplates] = useState<ToolTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // BroadcastChannel for cross-tab sync
+  const channelRef  = useRef<BroadcastChannel | null>(null);
+  // Suppress echo of our own broadcasts
+  const suppressRef = useRef(false);
 
   // Initial load
   useEffect(() => {
-    loadAll()
-      .then(setTools)
+    Promise.all([loadAll(), loadTemplates()])
+      .then(([t, tmpl]) => { setTools(t); setTemplates(tmpl); })
       .catch(console.error)
       .finally(() => setIsLoading(false));
   }, []);
 
-  // ── Derived ──────────────────────────────────────────────────────────────
+  // Cross-tab sync via BroadcastChannel
+  useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') return;
+    const ch = new BroadcastChannel(BC_NAME);
+    channelRef.current = ch;
+    ch.onmessage = () => {
+      if (suppressRef.current) return;
+      // Another tab mutated the library — reload our in-memory state
+      loadAll().then(setTools).catch(console.error);
+      loadTemplates().then(setTemplates).catch(console.error);
+    };
+    return () => { ch.close(); channelRef.current = null; };
+  }, []);
+
+  function broadcast() {
+    suppressRef.current = true;
+    channelRef.current?.postMessage({ type: 'changed' });
+    setTimeout(() => { suppressRef.current = false; }, 50);
+  }
+
+  // ── Derived ────────────────────────────────────────────────────────────────
 
   const allMachineGroups = Array.from(
     new Set(tools.flatMap((t) => t.machineGroups ?? []).filter(Boolean)),
@@ -44,11 +82,12 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     new Set(tools.flatMap((t) => t.tags)),
   ).sort();
 
-  // ── Mutations ─────────────────────────────────────────────────────────────
+  // ── Mutations ──────────────────────────────────────────────────────────────
 
   const addTool = useCallback(async (tool: LibraryTool) => {
     await db.tools.add(tool);
     setTools(await loadAll());
+    broadcast();
   }, []);
 
   const addTools = useCallback(async (
@@ -64,19 +103,21 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         if (existingNums.has(tool.toolNumber) && !overwrite) {
           skipped++;
         } else {
-          await db.tools.put(tool);   // put = insert or replace
+          await db.tools.put(tool);
           added++;
         }
       }
     });
 
     setTools(await loadAll());
+    broadcast();
     return { added, skipped };
   }, [tools]);
 
   const updateTool = useCallback(async (id: string, patch: Partial<LibraryTool>) => {
     await db.tools.update(id, { ...patch, updatedAt: Date.now() });
     setTools(await loadAll());
+    broadcast();
   }, []);
 
   const patchEach = useCallback(async (updates: { id: string; patch: Partial<LibraryTool> }[]) => {
@@ -85,16 +126,31 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       for (const { id, patch } of updates) await db.tools.update(id, { ...patch, updatedAt: now });
     });
     setTools(await loadAll());
+    broadcast();
   }, []);
 
   const deleteTool = useCallback(async (id: string) => {
     await db.tools.delete(id);
     setTools((prev) => prev.filter((t) => t.id !== id));
+    broadcast();
   }, []);
 
   const deleteTools = useCallback(async (ids: string[]) => {
     await db.tools.bulkDelete(ids);
     setTools((prev) => prev.filter((t) => !ids.includes(t.id)));
+    broadcast();
+  }, []);
+
+  // ── Templates ──────────────────────────────────────────────────────────────
+
+  const saveTemplate = useCallback(async (template: ToolTemplate) => {
+    await db.templates.put(template);
+    setTemplates(await loadTemplates());
+  }, []);
+
+  const deleteTemplate = useCallback(async (id: string) => {
+    await db.templates.delete(id);
+    setTemplates((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
   return (
@@ -102,6 +158,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       tools, isLoading,
       allMachineGroups, allTags,
       addTool, addTools, updateTool, patchEach, deleteTool, deleteTools,
+      templates, saveTemplate, deleteTemplate,
     }}>
       {children}
     </LibraryContext.Provider>

@@ -103,13 +103,19 @@ describe('buildQrText', () => {
     expect(text).not.toContain('flutes');
   });
 
-  it('"full" mode includes machineGroup when present', () => {
-    const withMachine: LibraryTool = { ...BASE_TOOL, machineGroup: 'VF-2' };
+  it('"full" mode includes machineGroups when present', () => {
+    const withMachine: LibraryTool = { ...BASE_TOOL, machineGroups: ['VF-2'] };
     const text = buildQrText(withMachine, 'full');
     expect(text).toContain('Machine: VF-2');
   });
 
-  it('"full" mode omits Machine line when machineGroup is absent', () => {
+  it('"full" mode shows multiple machine groups joined', () => {
+    const withMachines: LibraryTool = { ...BASE_TOOL, machineGroups: ['VF-2', 'VF-4'] };
+    const text = buildQrText(withMachines, 'full');
+    expect(text).toContain('Machine: VF-2, VF-4');
+  });
+
+  it('"full" mode omits Machine line when machineGroups is absent', () => {
     const text = buildQrText(BASE_TOOL, 'full');
     expect(text).not.toContain('Machine:');
   });

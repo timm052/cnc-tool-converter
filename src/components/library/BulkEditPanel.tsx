@@ -167,8 +167,9 @@ export default function BulkEditPanel({
 }: BulkEditPanelProps) {
   const [activeTab,  setActiveTab]  = useState<Tab>('library');
   const [checked,    setChecked]    = useState<Set<string>>(new Set());
-  const [isDone,     setIsDone]     = useState(false);
-  const [isApplying, setIsApplying] = useState(false);
+  const [isDone,      setIsDone]      = useState(false);
+  const [isApplying,  setIsApplying]  = useState(false);
+  const [confirming,  setConfirming]  = useState(false);
 
   // ── Library ──────────────────────────────────────────────────────────────────
   const [description,  setDescription]  = useState('');
@@ -914,19 +915,36 @@ export default function BulkEditPanel({
 
         {/* Footer */}
         <div className="px-4 py-3 border-t border-slate-700 shrink-0 flex items-center justify-end gap-3">
-          <button type="button" onClick={onClose}
-            className="px-3 py-1.5 rounded text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-700">
-            {isDone ? 'Close' : 'Cancel'}
-          </button>
-          {!isDone && (
-            <button type="button" onClick={handleApply}
-              disabled={isApplying || !hasChanges}
-              className={['px-3 py-1.5 rounded text-xs font-semibold transition-colors',
-                hasChanges && !isApplying ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-slate-700 text-slate-500 cursor-not-allowed',
-              ].join(' ')}
-            >
-              {isApplying ? 'Applying…' : `Apply to ${tools.length} tool${tools.length !== 1 ? 's' : ''}`}
-            </button>
+          {confirming ? (
+            <>
+              <span className="text-xs text-slate-400 mr-auto">Apply changes to {tools.length} tool{tools.length !== 1 ? 's' : ''}?</span>
+              <button type="button" onClick={() => setConfirming(false)}
+                className="px-3 py-1.5 rounded text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-700">
+                Cancel
+              </button>
+              <button type="button" onClick={() => { setConfirming(false); void handleApply(); }}
+                disabled={isApplying}
+                className="px-3 py-1.5 rounded text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white transition-colors">
+                Confirm
+              </button>
+            </>
+          ) : (
+            <>
+              <button type="button" onClick={onClose}
+                className="px-3 py-1.5 rounded text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-700">
+                {isDone ? 'Close' : 'Cancel'}
+              </button>
+              {!isDone && (
+                <button type="button" onClick={() => setConfirming(true)}
+                  disabled={isApplying || !hasChanges}
+                  className={['px-3 py-1.5 rounded text-xs font-semibold transition-colors',
+                    hasChanges && !isApplying ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-slate-700 text-slate-500 cursor-not-allowed',
+                  ].join(' ')}
+                >
+                  {isApplying ? 'Applying…' : `Apply to ${tools.length} tool${tools.length !== 1 ? 's' : ''}`}
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>

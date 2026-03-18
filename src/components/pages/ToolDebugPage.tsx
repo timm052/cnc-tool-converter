@@ -37,7 +37,7 @@ function makeTool(type: ToolType, geo: Record<string, number | boolean | undefin
     },
     tags:         [],
     starred:      false,
-    machineGroup: undefined,
+    machineGroups: [],
     addedAt:      0,
     updatedAt:    0,
   } as LibraryTool;

@@ -82,4 +82,12 @@ export interface LibraryTool extends Tool {
   // ── Custom fields ─────────────────────────────────────────────────────────
   /** User-defined key-value metadata */
   customFields?: Record<string, string>;
+
+  // ── Photo ──────────────────────────────────────────────────────────────────
+  /**
+   * Base64 data URL of a tool photo (e.g. "data:image/jpeg;base64,…").
+   * Stored directly in IndexedDB alongside the tool record.
+   * Resized client-side to ≤800px / ~100 KB before storing.
+   */
+  imageBase64?: string;
 }

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { X, CheckCircle, AlertCircle, AlertTriangle, ChevronDown, FolderOpen, FileText } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, CheckCircle, AlertCircle, AlertTriangle, ChevronDown, FolderOpen, FileText, Clock } from 'lucide-react';
 import { registry } from '../../converters';
 import type { LibraryTool } from '../../types/libraryTool';
 import type { Tool } from '../../types/tool';
@@ -9,6 +9,7 @@ import { useSettings } from '../../contexts/SettingsContext';
 import { useLibrary } from '../../contexts/LibraryContext';
 import { validateTool, findDuplicates, type DuplicateMatch } from '../../lib/toolValidation';
 import { csvToTools } from '../../lib/csvLibrary';
+import { importToolsFromXlsx } from '../../lib/xlsxImport';
 import type { FormatInfo } from '../../types/converter';
 
 interface ImportPanelProps {
@@ -32,6 +33,40 @@ const CSV_FORMAT: FormatInfo = {
   canExport:      true,
   readAs:         'text',
 };
+
+const XLSX_FORMAT: FormatInfo = {
+  id:             'xlsx',
+  name:           'Excel (.xlsx)',
+  description:    'Microsoft Excel workbook',
+  fileExtensions: ['.xlsx'],
+  mimeTypes:      ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+  canImport:      true,
+  canExport:      true,
+  readAs:         'arraybuffer',
+};
+
+// ── Recent files ──────────────────────────────────────────────────────────────
+
+const RECENT_FILES_KEY = 'cnc-tool-converter:recent-import-files';
+
+interface RecentFile { name: string; formatId: string; lastUsed: number; }
+
+function loadRecentFiles(): RecentFile[] {
+  try {
+    const stored = localStorage.getItem(RECENT_FILES_KEY);
+    return stored ? (JSON.parse(stored) as RecentFile[]) : [];
+  } catch { return []; }
+}
+
+function saveRecentFile(name: string, formatId: string): void {
+  try {
+    const existing = loadRecentFiles().filter((f) => f.name !== name);
+    existing.unshift({ name, formatId, lastUsed: Date.now() });
+    localStorage.setItem(RECENT_FILES_KEY, JSON.stringify(existing.slice(0, 5)));
+  } catch { /* quota — ignore */ }
+}
+
+// ── Duplicate reason labels ───────────────────────────────────────────────────
 
 const REASON_LABELS: Record<DuplicateMatch['reason'], string> = {
   'same-number':         'Same T#',
@@ -62,9 +97,14 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
   const [skipIndices,   setSkipIndices]   = useState<Set<number>>(new Set());
   const [showDuplicates, setShowDuplicates] = useState(false);
   const [folderMode,     setFolderMode]     = useState(false);
+  const [recentFiles,    setRecentFiles]    = useState<RecentFile[]>(loadRecentFiles);
 
-  const isCsv = formatId === 'csv';
-  const sourceFormat = isCsv ? CSV_FORMAT : importableFormats.find((f) => f.id === formatId);
+  // Keep recent list in sync across re-mounts
+  useEffect(() => { setRecentFiles(loadRecentFiles()); }, []);
+
+  const isCsv  = formatId === 'csv';
+  const isXlsx = formatId === 'xlsx';
+  const sourceFormat = isCsv ? CSV_FORMAT : isXlsx ? XLSX_FORMAT : importableFormats.find((f) => f.id === formatId);
 
   // Compute validation warnings for the current preview
   const validationWarnings = settings.validationWarningsEnabled
@@ -111,6 +151,27 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
       } else {
         setPreview(tools);
         setDuplicates(findDuplicates(tools, libraryTools));
+        files.forEach((f) => { saveRecentFile(f.name, 'csv'); });
+        setRecentFiles(loadRecentFiles());
+      }
+      return;
+    }
+
+    if (isXlsx) {
+      const allTools: Tool[] = [];
+      const allErrors: string[] = [];
+      for (const file of files) {
+        const { tools, errors } = importToolsFromXlsx(file.content as ArrayBuffer);
+        allTools.push(...tools);
+        allErrors.push(...errors);
+      }
+      if (allErrors.length > 0) {
+        setParseError(allErrors.join(' | '));
+      } else {
+        setPreview(allTools);
+        setDuplicates(findDuplicates(allTools, libraryTools));
+        files.forEach((f) => { saveRecentFile(f.name, 'xlsx'); });
+        setRecentFiles(loadRecentFiles());
       }
       return;
     }
@@ -132,6 +193,8 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
     } else {
       setPreview(allTools);
       setDuplicates(findDuplicates(allTools, libraryTools));
+      files.forEach((f) => { saveRecentFile(f.name, formatId); });
+      setRecentFiles(loadRecentFiles());
     }
   }
 
@@ -195,8 +258,28 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
                 <option key={f.id} value={f.id}>{f.name}</option>
               ))}
               <option value="csv">CSV (spreadsheet)</option>
+              <option value="xlsx">Excel (.xlsx)</option>
             </select>
           </div>
+
+          {/* Recent files */}
+          {recentFiles.length > 0 && loadedFiles.length === 0 && (
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
+                <Clock size={11} />
+                Recent
+              </p>
+              <div className="rounded-lg border border-slate-700 divide-y divide-slate-700/60 overflow-hidden">
+                {recentFiles.map((rf) => (
+                  <div key={rf.name} className="flex items-center gap-2 px-3 py-1.5 text-xs bg-slate-800/60">
+                    <FileText size={11} className="text-slate-500 shrink-0" />
+                    <span className="flex-1 truncate text-slate-400" title={rf.name}>{rf.name}</span>
+                    <span className="text-slate-600 shrink-0">{rf.formatId}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* File drop */}
           <div>

@@ -236,6 +236,75 @@ export function getProfileShape(
   }
 }
 
+/**
+ * Returns a Tailwind border-left class string for use as a row accent.
+ * All class strings are written as complete literals so Tailwind includes them.
+ * Applied to the first <td> of each row (border on <tr> doesn't render in
+ * collapsed-border tables).
+ */
+export function getTypeBorderClass(
+  typeId: string,
+  customTypes: CustomToolTypeDefinition[],
+): string {
+  const BORDER_CLASSES: Record<string, string> = {
+    // Milling
+    'flat end mill':          'border-l-2 border-l-blue-400',
+    'ball end mill':          'border-l-2 border-l-purple-400',
+    'bull nose end mill':     'border-l-2 border-l-violet-400',
+    'chamfer mill':           'border-l-2 border-l-orange-400',
+    'face mill':              'border-l-2 border-l-cyan-400',
+    'tapered mill':           'border-l-2 border-l-pink-400',
+    'dovetail mill':          'border-l-2 border-l-fuchsia-400',
+    'slot mill':              'border-l-2 border-l-sky-400',
+    'lollipop mill':          'border-l-2 border-l-lime-400',
+    'form mill':              'border-l-2 border-l-indigo-400',
+    'engraving':              'border-l-2 border-l-rose-400',
+    // Circle segment
+    'circle segment barrel':  'border-l-2 border-l-violet-400',
+    'circle segment lens':    'border-l-2 border-l-purple-400',
+    'circle segment oval':    'border-l-2 border-l-fuchsia-400',
+    // Hole making
+    'drill':                  'border-l-2 border-l-green-400',
+    'center drill':           'border-l-2 border-l-emerald-400',
+    'spot drill':             'border-l-2 border-l-yellow-400',
+    'counter bore':           'border-l-2 border-l-teal-400',
+    'counter sink':           'border-l-2 border-l-amber-400',
+    'reamer':                 'border-l-2 border-l-lime-400',
+    'boring bar':             'border-l-2 border-l-teal-400',
+    // Threading
+    'thread mill':            'border-l-2 border-l-amber-400',
+    'tap right hand':         'border-l-2 border-l-orange-400',
+    'tap left hand':          'border-l-2 border-l-orange-400',
+    // Special
+    'probe':                  'border-l-2 border-l-sky-400',
+    'laser cutter':           'border-l-2 border-l-red-400',
+    'plasma cutter':          'border-l-2 border-l-red-400',
+    'waterjet':               'border-l-2 border-l-blue-400',
+    'holder':                 'border-l-2 border-l-slate-400',
+    'custom':                 'border-l-2 border-l-slate-400',
+  };
+  // For custom types derive a border class from the same Tailwind colour name
+  const custom = customTypes.find((c) => c.id === typeId);
+  if (custom) {
+    const COLOUR_TO_BORDER: Record<string, string> = {
+      indigo:   'border-l-2 border-l-indigo-400',
+      sky:      'border-l-2 border-l-sky-400',
+      emerald:  'border-l-2 border-l-emerald-400',
+      lime:     'border-l-2 border-l-lime-400',
+      fuchsia:  'border-l-2 border-l-fuchsia-400',
+      rose:     'border-l-2 border-l-rose-400',
+      orange:   'border-l-2 border-l-orange-400',
+      yellow:   'border-l-2 border-l-yellow-400',
+      teal:     'border-l-2 border-l-teal-400',
+      slate:    'border-l-2 border-l-slate-400',
+    };
+    for (const [name, cls] of Object.entries(COLOUR_TO_BORDER)) {
+      if (custom.colour.includes(name)) return cls;
+    }
+  }
+  return BORDER_CLASSES[typeId] ?? 'border-l-2 border-l-slate-500';
+}
+
 export const CUSTOM_TYPE_COLOUR_OPTIONS = [
   { value: 'bg-indigo-500/20 text-indigo-300',   label: 'Indigo'   },
   { value: 'bg-sky-500/20 text-sky-300',          label: 'Sky'      },

@@ -25,7 +25,7 @@ export default function MachineGroupInput({
 
   const trimmed  = inputVal.trim();
   const filtered = allGroups.filter(
-    (g) => !values.includes(g) && g.toLowerCase().includes(inputVal.toLowerCase()),
+    (g) => !values.includes(g) && (trimmed === '' || g.toLowerCase().includes(inputVal.toLowerCase())),
   );
   const showCreate = trimmed !== '' && !values.includes(trimmed) &&
     !allGroups.some((g) => g.toLowerCase() === trimmed.toLowerCase());
@@ -80,7 +80,7 @@ export default function MachineGroupInput({
           value={inputVal}
           placeholder={values.length === 0 ? placeholder : ''}
           onChange={(e) => { setInputVal(e.target.value); setOpen(true); }}
-          onFocus={() => setOpen(true)}
+          onFocus={() => { setOpen(true); }}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           onKeyDown={handleKeyDown}
           className="flex-1 min-w-[80px] bg-transparent text-sm text-slate-200 placeholder-slate-500 outline-none"

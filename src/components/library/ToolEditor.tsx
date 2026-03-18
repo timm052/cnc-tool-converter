@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, createContext, useContext, type ChangeEvent } from 'react';
-import { X, Trash2, Save, AlertCircle, ZoomIn, ZoomOut, Wand2, Undo2, Redo2, AlertTriangle, Copy, Plus, ChevronDown } from 'lucide-react';
+import { X, Trash2, Save, AlertCircle, ZoomIn, ZoomOut, Wand2, Undo2, Redo2, AlertTriangle, Copy, Plus, ChevronDown, BookTemplate, ImagePlus } from 'lucide-react';
+import { useLibrary } from '../../contexts/LibraryContext';
+import type { ToolTemplate } from '../../types/template';
 import type { LibraryTool, ToolMaterialEntry } from '../../types/libraryTool';
 import type { ToolType, ToolUnit, CoolantMode, FeedMode, ToolMaterial } from '../../types/tool';
 import type { ToolHolder } from '../../types/holder';
@@ -125,6 +127,119 @@ function makeBlankTool(unit: ToolUnit, settings: Settings): LibraryTool {
     addedAt:      Date.now(),
     updatedAt:    Date.now(),
   };
+}
+
+// ── Tool photo upload ─────────────────────────────────────────────────────────
+
+/** Resize an image file to ≤maxPx on its longest side, returning a JPEG data URL. */
+function resizeImage(file: File, maxPx = 800, quality = 0.82): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+      const w = Math.round(img.width  * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width  = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { reject(new Error('Canvas not available')); return; }
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image load failed')); };
+    img.src = url;
+  });
+}
+
+function ImageUpload({
+  value, onChange,
+}: {
+  value:    string | undefined;
+  onChange: (dataUrl: string | undefined) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [error, setError]     = useState<string>();
+  const [loading, setLoading] = useState(false);
+
+  async function handleFile(file: File) {
+    if (!file.type.startsWith('image/')) {
+      setError('File must be an image (JPEG, PNG, WebP, etc.)');
+      return;
+    }
+    setLoading(true);
+    setError(undefined);
+    try {
+      const dataUrl = await resizeImage(file);
+      onChange(dataUrl);
+    } catch {
+      setError('Could not process image — please try another file.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleInputChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) void handleFile(file);
+    e.target.value = '';
+  }
+
+  function handleDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) void handleFile(file);
+  }
+
+  return (
+    <div>
+      <label className="block text-xs font-medium text-slate-400 mb-1">Tool Photo</label>
+      {value ? (
+        <div className="relative group inline-block rounded-lg overflow-hidden border border-slate-600">
+          <img
+            src={value}
+            alt="Tool photo"
+            className="block max-h-40 max-w-full object-contain bg-slate-900"
+          />
+          <button
+            type="button"
+            onClick={() => onChange(undefined)}
+            title="Remove photo"
+            className="absolute top-1 right-1 p-1 rounded bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600/80"
+          >
+            <X size={12} />
+          </button>
+        </div>
+      ) : (
+        <div
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={handleDrop}
+          onClick={() => inputRef.current?.click()}
+          className="flex flex-col items-center justify-center gap-1.5 h-24 rounded-lg border border-dashed border-slate-600 hover:border-blue-500 bg-slate-900/50 hover:bg-blue-500/5 cursor-pointer transition-colors text-slate-500 hover:text-slate-300"
+        >
+          {loading ? (
+            <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <>
+              <ImagePlus size={18} />
+              <span className="text-xs">Click or drag & drop a photo</span>
+            </>
+          )}
+        </div>
+      )}
+      {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        title="Upload tool photo"
+        className="hidden"
+        onChange={handleInputChange}
+      />
+    </div>
+  );
 }
 
 // ── UUID display row ──────────────────────────────────────────────────────────
@@ -396,9 +511,12 @@ export default function ToolEditor({
     reset:   resetDraft,
   } = useUndoRedo<LibraryTool>(initialDraft);
 
-  const [activeTab,    setActiveTab]   = useState<Tab>('library');
-  const [isSaving,     setIsSaving]    = useState(false);
-  const [showConfirm,  setShowConfirm] = useState(false);
+  const { saveTemplate } = useLibrary();
+  const [activeTab,      setActiveTab]      = useState<Tab>('library');
+  const [isSaving,       setIsSaving]       = useState(false);
+  const [showConfirm,    setShowConfirm]    = useState(false);
+  const [showSaveTmpl,   setShowSaveTmpl]   = useState(false);
+  const [templateName,   setTemplateName]   = useState('');
   const ZOOM_LEVELS = [0.6, 1.0, 1.5, 2.1] as const;
   const [zoomIdx,      setZoomIdx]     = useState(2); // default = 1.5×
   const [expandedMats, setExpandedMats] = useState<Set<string>>(new Set());
@@ -741,6 +859,11 @@ export default function ToolEditor({
                 <span className="text-sm text-slate-300">Starred / Favourite</span>
                 <Toggle value={draft.starred} onChange={(v) => patchDraft({ starred: v })} />
               </div>
+
+              <ImageUpload
+                value={draft.imageBase64}
+                onChange={(v) => patchDraft({ imageBase64: v })}
+              />
             </>
           )}
 
@@ -1287,6 +1410,54 @@ export default function ToolEditor({
             >
               <Copy size={13} /> Duplicate
             </button>
+          )}
+          {!showConfirm && !showSaveTmpl && (
+            <button
+              type="button"
+              onClick={() => { setTemplateName(draft.description || ''); setShowSaveTmpl(true); }}
+              title="Save as template"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-700 border border-slate-600 transition-colors"
+            >
+              <BookTemplate size={13} /> Template
+            </button>
+          )}
+          {showSaveTmpl && (
+            <div className="flex items-center gap-2">
+              <input
+                autoFocus
+                type="text"
+                placeholder="Template name…"
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') setShowSaveTmpl(false);
+                  if (e.key === 'Enter' && templateName.trim()) {
+                    const { id: _id, toolNumber: _n, addedAt: _a, updatedAt: _u, ...toolData } = draft;
+                    const tmpl: ToolTemplate = { id: crypto.randomUUID(), name: templateName.trim(), createdAt: Date.now(), toolData };
+                    void saveTemplate(tmpl);
+                    setShowSaveTmpl(false);
+                  }
+                }}
+                className="px-2.5 py-1.5 text-xs bg-slate-700 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 w-40"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (!templateName.trim()) return;
+                  const { id: _id, toolNumber: _n, addedAt: _a, updatedAt: _u, ...toolData } = draft;
+                  const tmpl: ToolTemplate = { id: crypto.randomUUID(), name: templateName.trim(), createdAt: Date.now(), toolData };
+                  void saveTemplate(tmpl);
+                  setShowSaveTmpl(false);
+                }}
+                disabled={!templateName.trim()}
+                className="px-2.5 py-1.5 text-xs rounded-lg bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Save
+              </button>
+              <button type="button" onClick={() => setShowSaveTmpl(false)} className="px-2.5 py-1.5 text-xs rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300">
+                Cancel
+              </button>
+            </div>
           )}
           {showConfirm && (
             <div className="flex items-center gap-2">

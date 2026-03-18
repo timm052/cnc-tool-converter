@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
-import { ChevronUp, ChevronDown, Star, Pencil, AlertTriangle, Columns2, Plus, Minus } from 'lucide-react';
+import { ChevronUp, ChevronDown, Star, Pencil, AlertTriangle, Columns2, Plus, Minus, Layers, X } from 'lucide-react';
 import type { LibraryTool } from '../../types/libraryTool';
+import type { WorkMaterial } from '../../types/material';
 import type { TableColumnVisibility } from '../../contexts/SettingsContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import { validateTool } from '../../lib/toolValidation';
-import { getTypeColour, getTypeLabel, BUILTIN_TYPES } from '../../lib/customToolTypes';
+import { getTypeColour, getTypeLabel, getTypeBorderClass, BUILTIN_TYPES } from '../../lib/customToolTypes';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -25,6 +26,10 @@ export interface LibraryTableProps {
   /** ID of the keyboard-focused tool */
   focusedId?:     string;
   onFocusId?:     (id: string) => void;
+  /** Material library — used to resolve names in the per-material F&S popover */
+  allMaterials?:  WorkMaterial[];
+  /** Override display unit for geometry columns (undefined = use each tool's stored unit) */
+  displayUnit?:   'mm' | 'inch';
 }
 
 const KNOWN_TYPES = [...BUILTIN_TYPES] as string[];
@@ -52,8 +57,8 @@ interface ColDef {
   group:        'Identity' | 'Geometry' | 'Cutting' | 'Library';
   sortKey?:     SortKey;
   mono?:        boolean;
-  /** How to display in read mode */
-  render:       (t: LibraryTool, dec: number) => React.ReactNode;
+  /** How to display in read mode. dispUnit overrides the tool's stored unit for length/diameter fields. */
+  render:       (t: LibraryTool, dec: number, dispUnit?: 'mm' | 'inch') => React.ReactNode;
   /** 'none' = cell is not inline-editable */
   editType:     'text' | 'number' | 'select' | 'none';
   editOptions?: string[];
@@ -79,7 +84,10 @@ const ALL_COL_DEFS: ColDef[] = [
   {
     id: 'description', label: 'Description', group: 'Identity', sortKey: 'description',
     render: (t) => (
-      <span className="block truncate max-w-[220px]" title={t.description}>{t.description}</span>
+      <span
+        className="block truncate max-w-[220px]"
+        title={t.comment ? `${t.description}\n─\n${t.comment}` : t.description}
+      >{t.description}</span>
     ),
     editType: 'text',
     getEditRaw: (t) => t.description,
@@ -96,28 +104,52 @@ const ALL_COL_DEFS: ColDef[] = [
   // ── Geometry ──────────────────────────────────────────────────────────────
   {
     id: 'diameter', label: 'Ø Dia', group: 'Geometry', sortKey: 'diameter', mono: true,
-    render: (t, dec) => `${t.geometry.diameter.toFixed(dec)} ${t.unit}`,
+    render: (t, dec, dispUnit) => {
+      const unit = dispUnit ?? t.unit;
+      const val  = dispUnit && dispUnit !== t.unit
+        ? (t.unit === 'mm' ? t.geometry.diameter / 25.4 : t.geometry.diameter * 25.4)
+        : t.geometry.diameter;
+      return `${val.toFixed(dec)} ${unit}`;
+    },
     editType: 'number',
     getEditRaw: (t) => String(t.geometry.diameter),
     getPatch: (raw, t) => ({ geometry: { ...t.geometry, diameter: parseFloat(raw) || t.geometry.diameter } }),
   },
   {
     id: 'length', label: 'OAL', group: 'Geometry', mono: true,
-    render: (t, dec) => t.geometry.overallLength != null ? `${t.geometry.overallLength.toFixed(dec)}` : '—',
+    render: (t, dec, dispUnit) => {
+      if (t.geometry.overallLength == null) return '—';
+      const val = dispUnit && dispUnit !== t.unit
+        ? (t.unit === 'mm' ? t.geometry.overallLength / 25.4 : t.geometry.overallLength * 25.4)
+        : t.geometry.overallLength;
+      return val.toFixed(dec);
+    },
     editType: 'number',
     getEditRaw: (t) => t.geometry.overallLength != null ? String(t.geometry.overallLength) : '',
     getPatch: (raw, t) => ({ geometry: { ...t.geometry, overallLength: raw ? parseFloat(raw) : undefined } }),
   },
   {
     id: 'fluteLength', label: 'Flute L', group: 'Geometry', mono: true,
-    render: (t, dec) => t.geometry.fluteLength != null ? `${t.geometry.fluteLength.toFixed(dec)}` : '—',
+    render: (t, dec, dispUnit) => {
+      if (t.geometry.fluteLength == null) return '—';
+      const val = dispUnit && dispUnit !== t.unit
+        ? (t.unit === 'mm' ? t.geometry.fluteLength / 25.4 : t.geometry.fluteLength * 25.4)
+        : t.geometry.fluteLength;
+      return val.toFixed(dec);
+    },
     editType: 'number',
     getEditRaw: (t) => t.geometry.fluteLength != null ? String(t.geometry.fluteLength) : '',
     getPatch: (raw, t) => ({ geometry: { ...t.geometry, fluteLength: raw ? parseFloat(raw) : undefined } }),
   },
   {
     id: 'shaftDia', label: 'Shaft Ø', group: 'Geometry', mono: true,
-    render: (t, dec) => t.geometry.shaftDiameter != null ? `${t.geometry.shaftDiameter.toFixed(dec)}` : '—',
+    render: (t, dec, dispUnit) => {
+      if (t.geometry.shaftDiameter == null) return '—';
+      const val = dispUnit && dispUnit !== t.unit
+        ? (t.unit === 'mm' ? t.geometry.shaftDiameter / 25.4 : t.geometry.shaftDiameter * 25.4)
+        : t.geometry.shaftDiameter;
+      return val.toFixed(dec);
+    },
     editType: 'number',
     getEditRaw: (t) => t.geometry.shaftDiameter != null ? String(t.geometry.shaftDiameter) : '',
     getPatch: (raw, t) => ({ geometry: { ...t.geometry, shaftDiameter: raw ? parseFloat(raw) : undefined } }),
@@ -283,13 +315,14 @@ function PlainHeader({ label }: { label: string }) {
 // ── Inline edit cell ──────────────────────────────────────────────────────────
 
 function InlineEditCell({
-  col, tool, decimals, isEditing, editRaw,
+  col, tool, decimals, displayUnit, isEditing, editRaw,
   onStartEdit, onChangeRaw, onCommit, onCancel,
   onPatchTool,
 }: {
   col:          ColDef;
   tool:         LibraryTool;
   decimals:     number;
+  displayUnit?: 'mm' | 'inch';
   isEditing:    boolean;
   editRaw:      string;
   onStartEdit:  () => void;
@@ -319,7 +352,7 @@ function InlineEditCell({
             className="min-w-[1.5rem] text-center cursor-text"
             onClick={(e) => { e.stopPropagation(); onStartEdit(); }}
           >
-            {col.render(tool, decimals)}
+            {col.render(tool, decimals, displayUnit)}
           </span>
           <button
             type="button"
@@ -382,7 +415,78 @@ function InlineEditCell({
       className={canEdit ? 'cursor-text' : undefined}
       onClick={(e) => { e.stopPropagation(); if (canEdit) onStartEdit(); }}
     >
-      {col.render(tool, decimals)}
+      {col.render(tool, decimals, displayUnit)}
+    </span>
+  );
+}
+
+// ── Per-material F&S popover ──────────────────────────────────────────────────
+
+function MaterialsPopover({ tool, allMaterials }: { tool: LibraryTool; allMaterials: WorkMaterial[] }) {
+  const entries = tool.toolMaterials ?? [];
+  const [open, setOpen] = useState(false);
+
+  if (entries.length === 0) return null;
+
+  return (
+    <span className="relative inline-block">
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}
+        title="Per-material feeds & speeds"
+        className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium transition-colors ${
+          open ? 'bg-emerald-600/40 text-emerald-200' : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
+        }`}
+      >
+        <Layers size={10} />
+        {entries.length}
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setOpen(false); }} />
+          <div
+            className="absolute left-0 top-full mt-1 z-50 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-3 min-w-[220px] max-w-[300px]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">F&amp;S by Material</p>
+            <div className="space-y-2">
+              {entries.map((entry) => {
+                const mat = allMaterials.find((m) => m.id === entry.materialId);
+                const matName = mat?.name ?? entry.materialId;
+                return (
+                  <div key={entry.materialId} className="border-t border-slate-700 pt-2 first:border-0 first:pt-0">
+                    <p className="text-xs font-medium text-slate-300 mb-1 truncate">{matName}</p>
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
+                      {entry.rpm != null && (
+                        <><span className="text-slate-500">RPM</span><span className="text-slate-300 font-mono text-right">{entry.rpm.toLocaleString()}</span></>
+                      )}
+                      {entry.surfaceSpeed != null && (
+                        <><span className="text-slate-500">Vc</span><span className="text-slate-300 font-mono text-right">{entry.surfaceSpeed}</span></>
+                      )}
+                      {entry.feedRate != null && (
+                        <><span className="text-slate-500">Feed</span><span className="text-slate-300 font-mono text-right">{entry.feedRate}</span></>
+                      )}
+                      {entry.feedPlunge != null && (
+                        <><span className="text-slate-500">Plunge</span><span className="text-slate-300 font-mono text-right">{entry.feedPlunge}</span></>
+                      )}
+                      {entry.feedPerTooth != null && (
+                        <><span className="text-slate-500">fz</span><span className="text-slate-300 font-mono text-right">{entry.feedPerTooth}</span></>
+                      )}
+                      {entry.depthOfCut != null && (
+                        <><span className="text-slate-500">DoC</span><span className="text-slate-300 font-mono text-right">{entry.depthOfCut}</span></>
+                      )}
+                      {entry.widthOfCut != null && (
+                        <><span className="text-slate-500">WoC</span><span className="text-slate-300 font-mono text-right">{entry.widthOfCut}</span></>
+                      )}
+                    </div>
+                    {entry.notes && <p className="text-xs text-slate-500 mt-1 italic">{entry.notes}</p>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
     </span>
   );
 }
@@ -400,6 +504,8 @@ export default function LibraryTable({
   showMachineCol = false,
   focusedId,
   onFocusId,
+  allMaterials = [],
+  displayUnit,
 }: LibraryTableProps) {
   const { settings, updateSettings } = useSettings();
   const decimals = settings.tableDecimalPrecision;
@@ -655,8 +761,11 @@ export default function LibraryTable({
                   focused  ? 'outline outline-2 outline-blue-500/60 outline-offset-[-1px]' : '',
                 ].join(' ')}
               >
-                {/* Favourite */}
-                <td className={`px-2 ${py} text-center`} onClick={(e) => e.stopPropagation()}>
+                {/* Favourite — first cell carries the type accent border-left */}
+                <td
+                  className={`px-2 ${py} text-center ${getTypeBorderClass(tool.type, settings.customToolTypes)}`}
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <button
                     type="button"
                     onClick={() => onToggleStar(tool.id, !tool.starred)}
@@ -739,6 +848,7 @@ export default function LibraryTable({
                         col={col}
                         tool={tool}
                         decimals={decimals}
+                        displayUnit={displayUnit}
                         isEditing={isEditing}
                         editRaw={editRaw}
                         onStartEdit={() => startEdit(tool, col)}
@@ -798,17 +908,30 @@ export default function LibraryTable({
                 })}
 
                 {/* Tags — always visible */}
-                <td className={`px-3 ${py} max-w-[180px]`}>
-                  <div className="flex flex-wrap gap-1">
+                <td className={`px-3 ${py} max-w-[220px]`} onClick={(e) => e.stopPropagation()}>
+                  <div className="flex flex-wrap gap-1 items-center">
                     {tool.tags.slice(0, maxTags).map((tag) => (
-                      <span key={tag} className={`px-1.5 py-0.5 rounded text-xs font-medium ${tagColour(tag)}`}>
+                      <span key={tag} className={`group/tag inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium ${tagColour(tag)}`}>
                         {tag}
+                        {onPatchTool && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); onPatchTool(tool.id, { tags: tool.tags.filter((t) => t !== tag) }); }}
+                            title={`Remove tag "${tag}"`}
+                            className="opacity-0 group-hover/tag:opacity-100 p-px rounded hover:bg-black/20 transition-opacity leading-none"
+                          >
+                            <X size={9} />
+                          </button>
+                        )}
                       </span>
                     ))}
                     {tool.tags.length > maxTags && (
                       <span className="px-1.5 py-0.5 rounded text-xs text-slate-500">
                         +{tool.tags.length - maxTags}
                       </span>
+                    )}
+                    {(tool.toolMaterials?.length ?? 0) > 0 && (
+                      <MaterialsPopover tool={tool} allMaterials={allMaterials} />
                     )}
                   </div>
                 </td>

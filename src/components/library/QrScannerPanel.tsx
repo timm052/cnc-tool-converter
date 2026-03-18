@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { X, Camera, AlertCircle, CheckCircle, RotateCcw, Search, Archive, Plus, Minus } from 'lucide-react';
+import { X, Camera, AlertCircle, CheckCircle, RotateCcw, Search, Archive, Plus, Minus, Printer, Pencil, ScanLine } from 'lucide-react';
 import jsQR from 'jsqr';
 import type { LibraryTool } from '../../types/libraryTool';
+import { printLabels, DEFAULT_LABEL_OPTIONS } from '../../lib/printUtils';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -194,8 +195,7 @@ export default function QrScannerPanel({
                 if (modeRef.current === 'find') {
                   setFoundTool(tool);
                   setStatus('found');
-                  setTimeout(() => { if (mounted) onFoundRef.current(tool); }, 600);
-                  return; // stop scanning for find mode
+                  return; // stop scanning — user picks action from card
                 } else {
                   // Stock mode: adjust qty and log it
                   const delta  = stockDirRef.current === 'in' ? stockAmountRef.current : -stockAmountRef.current;
@@ -465,7 +465,7 @@ export default function QrScannerPanel({
           )}
           {status === 'found' && foundTool && (
             <span className="ml-auto flex items-center gap-1 text-xs text-green-400">
-              <CheckCircle size={11} /> Opening editor…
+              <CheckCircle size={11} /> T{foundTool.toolNumber} found
             </span>
           )}
         </div>
@@ -502,6 +502,46 @@ export default function QrScannerPanel({
             </div>
             {manualError && <p className="mt-1 text-xs text-red-400">{manualError}</p>}
           </div>
+
+          {/* Find mode: action card when tool found */}
+          {!isStock && status === 'found' && foundTool && (
+            <div className="px-4 py-3 border-b border-slate-700/50">
+              <div className="rounded-xl border border-green-500/30 bg-green-500/5 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle size={16} className="text-green-400 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-green-200">
+                      T{foundTool.toolNumber} — {foundTool.description}
+                    </p>
+                    <p className="text-xs text-slate-400">{foundTool.type} · {foundTool.geometry.diameter} {foundTool.unit}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => { onFound(foundTool); }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+                  >
+                    <Pencil size={13} /> Open Editor
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void printLabels([foundTool], DEFAULT_LABEL_OPTIONS)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
+                  >
+                    <Printer size={13} /> Print Label
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setStatus('scanning'); setFoundTool(null); lastActedId.current = ''; }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-700 transition-colors ml-auto"
+                  >
+                    <ScanLine size={13} /> Scan Again
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Stock log */}
           {isStock && (

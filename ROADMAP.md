@@ -8,32 +8,35 @@ This document tracks planned improvements, from near-term polish to the long-ter
 
 _Goal: Fill the most obvious gaps. Each item is self-contained and shippable independently._
 
-### 1.1 Format Support
-- **HAAS .cnc converter** — The most common CNC brand in job shops. Framework slot already exists in `converters/index.ts`. Simple columnar text format (T# / diameter / length / description). Import + export.
-- **CSV import / export** — Universal spreadsheet compatibility. Configurable column mapping on import (handles supplier catalogues with varied column order). Currently CSV has a hardcoded path outside the registry; unify it as a proper `Converter`.
-- **Mastercam .tooldb import** — Read-only import of Mastercam tool libraries (SQLite-based). Very widely used in production shops.
-- **Mach3 / Mach4 .xml tool table** — Common on hobby/retrofit CNC machines. Simple XML format.
-- **Fanuc offset table** — Plain text `T## R## H##` offset sheets used on Fanuc 0i/31i controls.
+### 1.1 Format Support ✅ Complete
+- ✅ **HAAS offset table** — Format A parenthesised comment table (`.ofs`). Import + export. Length geometry → `offsets.z`, DIA geometry → `geometry.diameter`, wear values preserved in `sourceData`. (`src/converters/haas/`)
+- ✅ **CSV import / export** — Unified as a proper `Converter` in the registry (`src/converters/csv/`). Wraps `csvLibrary.ts`; carries all library fields (tags, starred, machineGroups, toolMaterials). ExportPanel no longer has a hardcoded CSV path.
+- ✅ **Fanuc G10 punch format** — Memory C G-code offset export (`.nc`). L10=H geometry, L11=H wear, L12=D geometry, L13=D wear. Import + export. (`src/converters/fanuc/`)
+- ✅ **Mach3 / Mach4 CSV tool table** — 6-column CSV (Tool#, Description, Diameter, DiaWear, Height, HeightWear). Auto-detects optional header row. Import + export. (`src/converters/mach3/`)
+- ⏳ **Mastercam .tooldb import** — SQLite-based, schema undocumented and version-dependent. Deferred — requires actual sample files to reverse-engineer schema safely.
+- ⏳ **Integration test example files** — HAAS, Fanuc G10, and Mach3 are unit-tested with synthetic fixtures but lack real exported files. Add real files to `Example Files/Tool Libs/HAAS/`, `…/Fanuc/`, and `…/Mach3/`, then uncomment the stubs in `src/__tests__/converters/integration.test.ts`.
 
-### 1.2 Speeds & Feeds Calculator
-- **Inline F&S calculator panel** — Accessible from the tool editor and library table. Inputs: diameter, material (from material library), surface speed (SFM or m/min), chip load per tooth. Outputs: RPM, feed rate, plunge rate. Writes calculated values back to the tool with one click.
-- **Surface speed ↔ RPM converter** — Bidirectional: enter RPM to get Vc, or enter Vc to get RPM. Aware of tool diameter. Displayed as a small widget alongside spindle RPM in the tool editor.
-- **Per-material F&S visible in library table** — Hover a tool row to see a popover of material-specific speeds from `ToolMaterialEntry[]`. Currently this data is stored but invisible from the table.
+### 1.2 Speeds & Feeds Calculator ✅ Complete
+- ✅ **Inline F&S calculator panel** — `SpeedsFeedsPanel` slide-over: diameter, material reference, surface speed (Vc m/min or SFM), chip load per tooth → RPM + feed rates. "Apply to tool" writes back to the tool editor.
+- ✅ **Surface speed ↔ RPM converter** — Bidirectional Vc↔RPM widget in the calculator panel.
+- ✅ **Per-material F&S visible in library table** — Click the green `⊞ N` badge in the Tags column to pop over a card showing RPM, Vc, feed, plunge, fz, DoC, WoC and notes per material. Badge only appears when the tool has `toolMaterials` entries.
 
-### 1.3 Library Workflow
-- **Tool templates** — Save any tool as a named template. "New from template" stamps out a copy with a fresh ID and incremented tool number. Stored in IndexedDB alongside tools.
-- **Copy to machine group** — Toolbar action / context menu: duplicate selected tools into a different machine group, preserving all data except tool number (auto-assigned).
-- **Ctrl+D keyboard shortcut** — Duplicate the focused tool directly from the table, without needing the toolbar button.
-- **Search across all fields** — Extend the current keyword search (description / type / tags) to also match manufacturer, productId, supplier, and location fields.
+### 1.3 Library Workflow ✅ Complete
+- ✅ **Tool templates** — Save any tool as a named template (IndexedDB). Stamp out new tools from templates via the "Templates" toolbar button. Template picker slide-over shows type, diameter, flute count per template. (`src/components/library/TemplatePickerPanel.tsx`, `src/types/template.ts`)
+- ✅ **Copy to machine group** — CopyToGroupModal toolbar action; duplicates selected tools into a target machine group.
+- ✅ **Ctrl+D keyboard shortcut** — Duplicates the selected tool from the table.
+- ✅ **Search across all fields** — Keyword search covers description, type, tags, manufacturer, productId, supplier, and location.
+- ✅ **Multi-machine support** — Tools can now belong to multiple machine groups (`machineGroups: string[]`). DB migrated via Dexie v3. Export panel has "split by machine group" option.
 
-### 1.4 Data Integrity
-- **Periodic backup nudge** — Show "last backed up X days ago" in the sidebar footer. One-click triggers existing backup download. Prompt appears after 7 days without a backup.
-- **Cross-tab sync** — Handle IndexedDB `versionchange` events to refresh the in-memory library context when the same app is open in multiple browser tabs simultaneously.
-- **Undo for bulk operations** — Bulk edit, bulk delete, and renumber currently have no undo. Add a confirmation step with a count ("Patch 12 tools?") before committing.
+### 1.4 Data Integrity ✅ Complete
+- ✅ **Periodic backup nudge** — Amber warning in sidebar footer after 7 days without a backup. Implemented via `src/lib/backupNudge.ts`.
+- ✅ **Cross-tab sync** — BroadcastChannel (`cnc-tool-library`) in `LibraryContext`; reloads library from IndexedDB when another tab mutates it. `suppressRef` prevents echo.
+- ✅ **Bulk operation confirmation** — "Apply to N tools?" step added to `BulkEditPanel` and `RenumberModal` before committing changes. Inline confirm/cancel row replaces the apply button.
+- ✅ **Undo for bulk operations** — After BulkEditPanel or RenumberModal applies, an 8-second "Undo" toast appears (bottom-centre). Clicking it snapshots the original values for every patched field and reverts via `patchEach`.
 
-### 1.5 Output
-- **G-code tool offset sheet** — Lightweight printable reference card: T# / description / Z-offset / diameter / notes. Formatted as a single-column list a machinist tapes to the machine. Separate from the existing multi-page PDF data sheet.
-- **Validation issues panel** — "Show all issues" view listing every tool with warnings/errors across the whole library. Clicking a row jumps to that tool in the table. Useful after a bulk import.
+### 1.5 Output ✅ Complete
+- ✅ **G-code tool offset sheet** — Downloads a `.txt` reference card with T#, diameter, Z-offset, flutes, description. Implemented in `src/lib/gcodeOffsetSheet.ts`.
+- ✅ **Validation issues panel** — `ValidationPanel` scans the full library for duplicate T#, missing description, zero diameter, negative geometry, missing OAL, no cutting data, and low stock. Click-to-navigate to the flagged tool.
 
 ---
 
@@ -165,21 +168,38 @@ Electron provides all of these while reusing the entire React UI without changes
 
 These can be picked up opportunistically when they fit alongside other work.
 
-| Feature | Notes |
-|---|---|
-| **Dark mode follows OS** | Detect `prefers-color-scheme`; switch automatically |
-| **Keyboard-driven new-tool wizard** | Tab through fields; create a tool without touching the mouse |
-| **Tool image / photo** | Attach a photo to a library tool. Store as base64 in IndexedDB. Show in tool editor and print sheet. |
-| **Barcode support** | Scan a manufacturer barcode to auto-fill `productId` and look up specs from a tool database |
-| **Supplier pricing integration** | Optional API key for distributor catalogues (e.g. McMaster-Carr, MSC) to fetch current pricing |
-| **Smart renumber suggestions** | Suggest T# assignment based on tool type (e.g. drills start at T100, taps at T200) |
-| **Tool comparison history** — | Save a compare session and reload it later |
-| **Custom report builder** | Drag-and-drop column picker to create custom PDF/CSV reports |
-| **Machine OEE tie-in** | Link tool usage to machine utilisation data (via CSV upload from OEE software) |
-| **Metric ↔ Imperial toggle** | Per-session toggle to view all dimensions in preferred units, regardless of stored unit |
-| **Augmented reality label** | QR code on label links to the tool's live record in the app (when hosted as PWA) |
-| **Voice search** | `window.SpeechRecognition` — say "show all 10mm drills" to filter the table |
-| **Changelog / release notes overlay** | Show a "What's new" panel after an update, keyed to the version in `package.json` |
+| Feature | Status | Notes |
+|---|---|---|
+| **Dark mode follows OS** | ✅ Done | `'auto'` theme option added; reads `prefers-color-scheme` and listens for changes |
+| **Smart renumber suggestions** | ✅ Done | Quick-preset buttons in Renumber modal: Seq×1, Seq×10, Mills@100, Drills@200, Taps@300 |
+| **Batch unit conversion** | ✅ Done | `→ mm` / `→ in` split-button in toolbar when tools selected; geometry + feeds scaled; undo toast |
+| **Colour-coded tool types in table** | ✅ Done | Subtle left border accent on each row, colour matched to tool type badge |
+| **Tooltip on truncated description** | ✅ Done | Description title shows comment text too when present (`Description — Comment`) |
+| **Inline tag editing** | ✅ Done | Hover a tag chip → × button removes the tag via `onPatchTool` without opening the editor |
+| **Notes / comments field on tool** | ✅ Done | `comment` field already on model; now surfaced as tooltip on description cell |
+| **Recent files list** | ✅ Done | Last 5 successfully-imported file names shown in ImportPanel (localStorage) |
+| **Metric ↔ Imperial display toggle** | ✅ Done | `as-is / mm / inch` toggle in filter bar; geometry columns convert on-the-fly without mutating stored values |
+| **Export to Excel (.xlsx)** | ✅ Done | `xlsx` package; `xlsxExport.ts` writes all tool fields with auto-width columns; first option in ExportPanel |
+| **Import from Excel (.xlsx)** | ✅ Done | `xlsxImport.ts` parses `.xlsx` to `Tool[]`; permissive column matching; full duplicate-detection flow in ImportPanel |
+| **Print labels from QR scan** | ✅ Done | Find-mode no longer auto-opens editor; shows action card with Open Editor / Print Label / Scan Again buttons |
+| **Changelog / release notes overlay** | ✅ Done | `ChangelogModal` shown once per version (keyed to `package.json` version in localStorage); dismissed with "Got it" |
+| **Keyboard-driven new-tool wizard** | — | Tab through fields; create a tool without touching the mouse |
+| **Tool image / photo** | ✅ Done | Click/drag-drop upload in ToolEditor Library tab; resized client-side (≤800px JPEG, ~100 KB) via canvas; stored as `imageBase64` in IndexedDB; shown as preview with remove button; appears as a 16mm photo strip above card in PDF tool sheet |
+| **Barcode support** | — | Scan a manufacturer barcode to auto-fill `productId` and look up specs from a tool database |
+| **Supplier pricing integration** | — | Optional API key for distributor catalogues (e.g. McMaster-Carr, MSC) to fetch current pricing |
+| **Tool comparison history** | — | Save a compare session and reload it later |
+| **Custom report builder** | — | Drag-and-drop column picker to create custom PDF/CSV reports |
+| **Machine OEE tie-in** | — | Link tool usage to machine utilisation data (via CSV upload from OEE software) |
+| **Augmented reality label** | — | QR code on label links to the tool's live record in the app (when hosted as PWA) |
+| **Voice search** | — | `window.SpeechRecognition` — say "show all 10mm drills" to filter the table |
+| **Tool wear tracking** | — | Record edge wear / chipping observations per use with a photo attachment. Feeds into tool life modelling. |
+| **Favourite cutting conditions** | — | Save named F&S presets (e.g. "Aluminium roughing") and apply them to any tool in one click. |
+| **Tool set / kit grouping** | — | Group tools into named sets (e.g. "Fixture drilling kit"). Export a kit as a single file. |
+| **Configurable low-stock colour** | — | Let users choose the threshold colour for low-stock qty cells (default red). |
+| **Drag to reorder tools** | — | Drag rows in the library table to manually reorder, then lock order with a "manual sort" setting. |
+| **Column width memory** | — | Persist resized column widths to settings, restored on reload. |
+| **Mastercam .tooldb import** | Blocked | Requires real sample files to reverse-engineer. |
+| **SFM / Vc lookup table in F&S panel** | — | Drop-down of common material + tool-material combos with recommended Vc ranges pre-filled. |
 
 ---
 

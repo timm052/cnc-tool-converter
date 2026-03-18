@@ -2,11 +2,13 @@ import Dexie, { type Table } from 'dexie';
 import type { LibraryTool } from '../types/libraryTool';
 import type { WorkMaterial } from '../types/material';
 import type { ToolHolder } from '../types/holder';
+import type { ToolTemplate } from '../types/template';
 
 class LibraryDatabase extends Dexie {
   tools!:     Table<LibraryTool>;
   materials!: Table<WorkMaterial>;
   holders!:   Table<ToolHolder>;
+  templates!: Table<ToolTemplate>;
 
   constructor() {
     super('cnc-tool-library');
@@ -32,6 +34,13 @@ class LibraryDatabase extends Dexie {
         delete tool.machineGroup;
       }),
     );
+    // v4 — add templates table
+    this.version(4).stores({
+      tools:     'id, toolNumber, type, *machineGroups, starred, addedAt',
+      materials: 'id, name, category, createdAt',
+      holders:   'id, name, type, createdAt',
+      templates: 'id, name, createdAt',
+    });
   }
 }
 
