@@ -289,6 +289,13 @@
   background-color: #808080 !important;
 }
 
+/* ── Rounded corners — retro90s keeps everything square ──────────────────── */
+/* The blanket * rule above covers these, but explicit rules make intent clear */
+[data-theme="retro90s"] .rounded-xl   { border-radius: 0 !important; }
+[data-theme="retro90s"] .rounded-lg   { border-radius: 0 !important; }
+[data-theme="retro90s"] .rounded-md   { border-radius: 0 !important; }
+[data-theme="retro90s"] .rounded-full { border-radius: 0 !important; }
+
 /* ── Drop zones ───────────────────────────────────────────────────────────── */
 [data-theme="retro90s"] .border-dashed {
   border-style: dashed !important;
@@ -312,6 +319,25 @@
 [data-theme="retro90s"] td {
   border-color: #c0c0c0 !important;
 }
+/* ── Type accent border-left — restored after the blanket td border override ── */
+[data-theme="retro90s"] td.border-l-blue-400    { border-left-color: #60a5fa !important; }
+[data-theme="retro90s"] td.border-l-purple-400  { border-left-color: #c084fc !important; }
+[data-theme="retro90s"] td.border-l-violet-400  { border-left-color: #a78bfa !important; }
+[data-theme="retro90s"] td.border-l-orange-400  { border-left-color: #fb923c !important; }
+[data-theme="retro90s"] td.border-l-cyan-400    { border-left-color: #22d3ee !important; }
+[data-theme="retro90s"] td.border-l-pink-400    { border-left-color: #f472b6 !important; }
+[data-theme="retro90s"] td.border-l-fuchsia-400 { border-left-color: #e879f9 !important; }
+[data-theme="retro90s"] td.border-l-sky-400     { border-left-color: #38bdf8 !important; }
+[data-theme="retro90s"] td.border-l-lime-400    { border-left-color: #a3e635 !important; }
+[data-theme="retro90s"] td.border-l-indigo-400  { border-left-color: #818cf8 !important; }
+[data-theme="retro90s"] td.border-l-rose-400    { border-left-color: #fb7185 !important; }
+[data-theme="retro90s"] td.border-l-green-400   { border-left-color: #4ade80 !important; }
+[data-theme="retro90s"] td.border-l-emerald-400 { border-left-color: #34d399 !important; }
+[data-theme="retro90s"] td.border-l-yellow-400  { border-left-color: #facc15 !important; }
+[data-theme="retro90s"] td.border-l-teal-400    { border-left-color: #2dd4bf !important; }
+[data-theme="retro90s"] td.border-l-amber-400   { border-left-color: #fbbf24 !important; }
+[data-theme="retro90s"] td.border-l-red-400     { border-left-color: #f87171 !important; }
+[data-theme="retro90s"] td.border-l-slate-400   { border-left-color: #94a3b8 !important; }
 
 /* ── Slide-over panels (fixed right-side) ─────────────────────────────────── */
 [data-theme="retro90s"] .fixed.right-0 {
@@ -354,6 +380,42 @@
 
 /* ── `main` background — prevent desktop colour from bleeding through ─────── */
 [data-theme="retro90s"] main { background-color: #c0c0c0 !important; }
+
+/* ── input focus state ────────────────────────────────────────────────────── */
+[data-theme="retro90s"] input:focus,
+[data-theme="retro90s"] select:focus,
+[data-theme="retro90s"] textarea:focus {
+  border-color: #000080 #ffffff #ffffff #000080 !important;
+  outline: none !important;
+}
+
+/* ── bg-blue-500 variants (type badges, count pills, tag filters, rings) ──── */
+[data-theme="retro90s"] .bg-blue-500 {
+  background-color: #0000a0 !important;
+}
+[data-theme="retro90s"] .bg-blue-500\/20,
+[data-theme="retro90s"] .bg-blue-500\/10,
+[data-theme="retro90s"] .bg-blue-500\/5 {
+  background-color: rgba(0, 0, 128, 0.08) !important;
+}
+[data-theme="retro90s"] .hover\:bg-blue-500:hover {
+  background-color: #0000a0 !important;
+}
+[data-theme="retro90s"] .border-blue-500\/40,
+[data-theme="retro90s"] .border-blue-500\/30 {
+  border-color: rgba(0, 0, 128, 0.45) !important;
+}
+[data-theme="retro90s"] .ring-blue-500\/30,
+[data-theme="retro90s"] .focus\:ring-blue-500,
+[data-theme="retro90s"] .focus\:ring-blue-500:focus {
+  --tw-ring-color: rgba(0, 0, 128, 0.5) !important;
+}
+
+/* ── Windows 95/98 typography scale (MS Sans Serif 8pt ≈ 11px at 96 dpi) ─── */
+[data-theme="retro90s"] .text-lg   { font-size: 13px !important; font-weight: bold !important; }
+[data-theme="retro90s"] .text-base { font-size: 12px !important; }
+[data-theme="retro90s"] .text-sm   { font-size: 11px !important; }
+[data-theme="retro90s"] .text-xs   { font-size: 10px !important; }
 
 /* ── text-blue-300 ────────────────────────────────────────────────────────── */
 [data-theme="retro90s"] .text-blue-300 { color: #1d4ed8 !important; }

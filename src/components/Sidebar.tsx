@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeftRight, Library, Settings, ChevronRight, ChevronLeft, Bug, Download, PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react';
+import { ArrowLeftRight, Library, Settings, ChevronRight, Bug, Download, PanelLeftClose, PanelLeftOpen, Palette, type LucideIcon } from 'lucide-react';
 import type { Page } from '../App';
 import { useSettings } from '../contexts/SettingsContext';
 import { daysSinceBackup } from '../lib/backupNudge';
@@ -36,6 +36,12 @@ const NAV_ITEMS: NavItem[] = [
     id:    'debug',
     label: 'Preview Debug',
     icon:  Bug,
+    badge: 'DEV',
+  },
+  {
+    id:    'themes',
+    label: 'Theme Showcase',
+    icon:  Palette,
     badge: 'DEV',
   },
 ];

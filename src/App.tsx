@@ -7,12 +7,13 @@ import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import ChangelogModal, { shouldShowChangelog } from './components/ChangelogModal';
 
-const ConverterPage   = lazy(() => import('./components/pages/ConverterPage'));
-const ToolManagerPage = lazy(() => import('./components/pages/ToolManagerPage'));
-const SettingsPage    = lazy(() => import('./components/pages/SettingsPage'));
-const ToolDebugPage   = lazy(() => import('./components/pages/ToolDebugPage'));
+const ConverterPage      = lazy(() => import('./components/pages/ConverterPage'));
+const ToolManagerPage    = lazy(() => import('./components/pages/ToolManagerPage'));
+const SettingsPage       = lazy(() => import('./components/pages/SettingsPage'));
+const ToolDebugPage      = lazy(() => import('./components/pages/ToolDebugPage'));
+const ThemeShowcasePage  = lazy(() => import('./components/pages/ThemeShowcasePage'));
 
-export type Page = 'converter' | 'tools' | 'settings' | 'debug';
+export type Page = 'converter' | 'tools' | 'settings' | 'debug' | 'themes';
 
 function PageFallback() {
   return (
@@ -55,6 +56,7 @@ export default function App() {
   const [activePage, setActivePage] = useState<Page>('converter');
   const [showChangelog, setShowChangelog] = useState(() => shouldShowChangelog());
   const closeChangelog = useCallback(() => setShowChangelog(false), []);
+  const closeThemes = useCallback(() => setActivePage('converter'), []);
 
   return (
     <SettingsProvider>
@@ -71,6 +73,9 @@ export default function App() {
                     {activePage === 'tools'     && <ToolManagerPage />}
                     {activePage === 'settings'  && <SettingsPage />}
                     {activePage === 'debug'     && <ToolDebugPage />}
+                  </Suspense>
+                  <Suspense fallback={null}>
+                    {activePage === 'themes' && <ThemeShowcasePage onClose={closeThemes} />}
                   </Suspense>
                 </main>
               </div>

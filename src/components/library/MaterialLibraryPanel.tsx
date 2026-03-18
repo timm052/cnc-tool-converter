@@ -320,7 +320,7 @@ export default function MaterialLibraryPanel({ onClose }: { onClose: () => void 
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-3 border-t border-slate-700 shrink-0 space-y-2">
+        <div className="px-5 py-4 border-t border-slate-700 shrink-0 space-y-2">
           {presetMsg && (
             <p className="text-xs text-center text-emerald-400">{presetMsg}</p>
           )}

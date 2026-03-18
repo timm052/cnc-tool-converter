@@ -1711,7 +1711,7 @@ export default function ToolEditor({
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-3 border-t border-slate-700 shrink-0 flex items-center gap-2">
+        <div className="px-5 py-4 border-t border-slate-700 shrink-0 flex items-center gap-2">
           {!isNew && !showConfirm && (
             <button
               type="button"

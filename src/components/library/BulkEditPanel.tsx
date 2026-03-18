@@ -1,4 +1,4 @@
-import { useState, useMemo, type ChangeEvent } from 'react';
+import { useState, useMemo, memo, type ChangeEvent } from 'react';
 import { X, CheckCircle, Trash2, ChevronDown, Plus } from 'lucide-react';
 import type { LibraryTool, ToolMaterialEntry, ToolCondition } from '../../types/libraryTool';
 import { TOOL_CONDITION_LABELS } from '../../types/libraryTool';
@@ -163,7 +163,7 @@ function MatFieldRow({ label, active, onToggle, children }: {
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export default function BulkEditPanel({
+function BulkEditPanel({
   tools, allGroups, allTags, allMaterials, onApply, onClose,
 }: BulkEditPanelProps) {
   const [activeTab,  setActiveTab]  = useState<Tab>('library');
@@ -928,7 +928,7 @@ export default function BulkEditPanel({
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-3 border-t border-slate-700 shrink-0 flex items-center justify-end gap-3">
+        <div className="px-5 py-4 border-t border-slate-700 shrink-0 flex items-center justify-end gap-3">
           {confirming ? (
             <>
               <span className="text-xs text-slate-400 mr-auto">Apply changes to {tools.length} tool{tools.length !== 1 ? 's' : ''}?</span>
@@ -965,3 +965,5 @@ export default function BulkEditPanel({
     </>
   );
 }
+
+export default memo(BulkEditPanel);

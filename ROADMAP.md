@@ -83,15 +83,11 @@ _Goal: Connect the tool library to the broader CNC workflow._
 - **BOM / tool list for a job** — Create a named "job" that links to a subset of library tools. Export the job's tool list as a formatted PDF or CSV for the machine operator.
 - **CAM post-processor snippet** — Generate the tool definition block (tool call + F&S) in the syntax of a selected post-processor (Fanuc, HAAS, Mach3, LinuxCNC). Paste directly into a CAM tool library or G-code program.
 
-### 3.2 Batch & Automation
-- **Watch-folder mode (PWA / Electron only)** — Monitor a directory for new tool library files and auto-import them. Useful for automated tool pre-setting workflows.
-- **Command-line interface (Electron only)** — `cnc-tools convert --from hsmlib --to linuxcnc input.hsmlib > output.tbl`. Scriptable conversion for CI/post-processor pipelines.
-- **Scheduled backup** — Auto-backup the library to a chosen folder at a set interval (daily / weekly). Electron only (requires filesystem access).
-
-### 3.3 Collaboration (Nice to Have)
+### 3.2 Sync
 - **JSON sync file** — Export / import a "sync package" (library + materials + holders) that can be shared via a network drive or USB stick. No cloud required.
 - **Change log** — Track who changed what field and when (name is free-text; no auth required). Stored as a per-tool audit trail in IndexedDB.
 - **Library snapshot versioning** — Keep N most recent snapshots of the full library locally. Roll back to any snapshot with one click.
+- **Support an externally** hosted database while still offering a standalone mode.
 
 ### 3.4 UI & UX Polish
 - **Table virtualisation** — Windowed rendering for the library table (e.g. TanStack Virtual). Fixes performance at 300+ tools. High priority before Electron launch.

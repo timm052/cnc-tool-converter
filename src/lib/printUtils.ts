@@ -1,6 +1,7 @@
 import QRCode from 'qrcode';
 import jsPDF from 'jspdf';
 import type { LibraryTool } from '../types/libraryTool';
+import { esc } from './stringUtils';
 
 // ── Label options ─────────────────────────────────────────────────────────────
 
@@ -406,9 +407,4 @@ export function generateToolSheetPdf(tools: LibraryTool[], opts: SheetOptions): 
   doc.save(`tool-sheet-${new Date().toISOString().slice(0, 10)}.pdf`);
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
-function esc(s: string | undefined): string {
-  if (!s) return '';
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}

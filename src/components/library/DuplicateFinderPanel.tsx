@@ -5,7 +5,7 @@ import { useSettings } from '../../contexts/SettingsContext';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type MatchCriteria = 'type+diameter' | 'type+diameter+flutes' | 'diameter';
+type MatchCriteria = 'type+diameter' | 'type+diameter+flutes' | 'diameter' | 'tool-number';
 
 interface DuplicateGroup {
   key:   string;
@@ -37,6 +37,9 @@ function buildGroups(tools: LibraryTool[], criteria: MatchCriteria): DuplicateGr
       case 'diameter':
         key = dia;
         break;
+      case 'tool-number':
+        key = String(tool.toolNumber);
+        break;
     }
     if (!map.has(key)) map.set(key, []);
     map.get(key)!.push(tool);
@@ -45,8 +48,10 @@ function buildGroups(tools: LibraryTool[], criteria: MatchCriteria): DuplicateGr
   const groups: DuplicateGroup[] = [];
   for (const [key, members] of map) {
     if (members.length < 2) continue;
-    // Sort by tool number so the lowest T# appears first (treated as "keep")
-    const sorted = [...members].sort((a, b) => a.toolNumber - b.toolNumber);
+    // Sort by tool number (lowest first = "keep"); break ties by description
+    const sorted = [...members].sort(
+      (a, b) => a.toolNumber - b.toolNumber || a.description.localeCompare(b.description),
+    );
     const dia = sorted[0].geometry.diameter;
 
     let label: string;
@@ -59,6 +64,9 @@ function buildGroups(tools: LibraryTool[], criteria: MatchCriteria): DuplicateGr
         break;
       case 'diameter':
         label = `Ø${dia}`;
+        break;
+      case 'tool-number':
+        label = `T${sorted[0].toolNumber}`;
         break;
     }
 
@@ -168,6 +176,7 @@ export default function DuplicateFinderPanel({ tools, onDelete, onClose }: Dupli
               ['type+diameter',        'Type + Diameter'],
               ['type+diameter+flutes', 'Type + Diameter + Flutes'],
               ['diameter',             'Diameter only'],
+              ['tool-number',          'Tool Number'],
             ] as const).map(([val, label]) => (
               <button
                 key={val}
@@ -221,7 +230,12 @@ export default function DuplicateFinderPanel({ tools, onDelete, onClose }: Dupli
             </div>
             <p className="text-sm font-medium text-slate-200">No duplicates found</p>
             <p className="text-xs text-slate-500">
-              All tools have unique {criteria === 'type+diameter' ? 'type + diameter' : criteria === 'diameter' ? 'diameters' : 'type + diameter + flute count'} combinations.
+              All tools have unique {
+                criteria === 'type+diameter' ? 'type + diameter' :
+                criteria === 'diameter' ? 'diameters' :
+                criteria === 'tool-number' ? 'tool numbers' :
+                'type + diameter + flute count'
+              } combinations.
             </p>
           </div>
         )}

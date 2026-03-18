@@ -8,18 +8,9 @@
 
 import type { Tool } from '../../types/tool';
 import type { WriteResult, WriteOptions } from '../../types/converter';
+import { esc } from '../../lib/stringUtils';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
-
-function esc(s: string | undefined | null): string {
-  if (!s) return '';
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
-}
 
 function n(val: number | undefined, fallback = 0): string {
   if (val === undefined || isNaN(val)) return String(fallback);

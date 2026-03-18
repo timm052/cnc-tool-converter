@@ -296,7 +296,7 @@ export default function HolderLibraryPanel({ onClose }: { onClose: () => void })
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-3 border-t border-slate-700 shrink-0">
+        <div className="px-5 py-4 border-t border-slate-700 shrink-0">
           <button
             onClick={startAdd}
             disabled={isAdding}
