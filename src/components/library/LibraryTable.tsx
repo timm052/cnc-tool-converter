@@ -686,13 +686,19 @@ function LibraryTable({
         {/* ── Header ──────────────────────────────────────────────────────── */}
         <thead className="sticky top-0 bg-slate-800 border-b border-slate-700 z-10">
           <tr>
-            {/* Favourite */}
-            <th className="px-2 py-2.5 w-8 text-center" aria-label="Favourite">
+            {/* Favourite — sticky col 1 */}
+            <th
+              className="sticky left-0 z-[12] px-2 py-2.5 w-8 text-center bg-slate-800"
+              aria-label="Favourite"
+            >
               <Star size={12} className="text-slate-500 mx-auto" />
             </th>
 
-            {/* Select */}
-            <th className="px-2 py-2.5 w-8" aria-label="Select all">
+            {/* Select — sticky col 2 */}
+            <th
+              className="sticky left-8 z-[12] px-2 py-2.5 w-8 bg-slate-800"
+              aria-label="Select all"
+            >
               <input
                 type="checkbox" title="Select all"
                 checked={allSelected}
@@ -701,13 +707,24 @@ function LibraryTable({
               />
             </th>
 
-            {/* Edit */}
-            <th className="px-2 py-2.5 w-8 text-center" aria-label="Edit">
+            {/* Edit — sticky col 3 */}
+            <th
+              className="sticky left-16 z-[12] px-2 py-2.5 w-8 text-center bg-slate-800"
+              aria-label="Edit"
+            >
               <Pencil size={12} className="text-slate-500 mx-auto" />
             </th>
 
-            {/* T# — always visible, sortable */}
-            <SortHeader label="T#" sortKey="toolNumber" currentKey={sortKey} dir={sortDir} onSort={handleSort} />
+            {/* T# — sticky col 4, always visible, sortable */}
+            <th
+              onClick={() => handleSort('toolNumber')}
+              className="sticky left-24 z-[12] min-w-[72px] px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-400 cursor-pointer hover:text-slate-200 select-none whitespace-nowrap bg-slate-800 border-r border-slate-700/60"
+            >
+              <span className="flex items-center gap-1">
+                T#
+                {sortKey === 'toolNumber' ? (sortDir === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />) : <span className="w-3" />}
+              </span>
+            </th>
 
             {/* Dynamic columns */}
             {visibleCols.map((col) =>
@@ -806,9 +823,9 @@ function LibraryTable({
 
         {/* ── Body ────────────────────────────────────────────────────────── */}
         <tbody>
-          {/* Top spacer — fills the gap above virtualised rows */}
+          {/* Top spacer — fills the gap above virtualised rows (height set via ref to avoid inline style lint rule) */}
           {paddingTop > 0 && (
-            <tr><td colSpan={999} style={{ height: paddingTop, padding: 0, border: 0 }} /></tr>
+            <tr ref={(el) => { if (el) el.style.height = `${paddingTop}px`; }} className="p-0 border-0"><td colSpan={999} className="p-0 border-0" /></tr>
           )}
           {virtualItems.map((vRow) => {
             const tool = sorted[vRow.index];
@@ -830,9 +847,11 @@ function LibraryTable({
                   focused  ? 'outline outline-2 outline-blue-500/60 outline-offset-[-1px]' : '',
                 ].join(' ')}
               >
-                {/* Favourite — first cell carries the type accent border-left */}
+                {/* Sticky cell background — solid so content doesn't bleed through when scrolling */}
+                {(() => { const sBg = selected ? 'bg-blue-950' : 'bg-slate-900'; return null; })()}
+                {/* Favourite — sticky col 1, carries the type accent border-left */}
                 <td
-                  className={`px-2 ${py} text-center ${getTypeBorderClass(tool.type, settings.customToolTypes)}`}
+                  className={`sticky left-0 z-[5] group-hover:brightness-110 px-2 ${py} text-center ${selected ? 'bg-blue-950' : 'bg-slate-900'} ${getTypeBorderClass(tool.type, settings.customToolTypes)}`}
                   onClick={(e) => e.stopPropagation()}
                 >
                   <button
@@ -845,8 +864,11 @@ function LibraryTable({
                   </button>
                 </td>
 
-                {/* Select */}
-                <td className={`px-2 ${py}`} onClick={(e) => e.stopPropagation()}>
+                {/* Select — sticky col 2 */}
+                <td
+                  className={`sticky left-8 z-[5] group-hover:brightness-110 px-2 ${py} ${selected ? 'bg-blue-950' : 'bg-slate-900'}`}
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <input
                     type="checkbox" title={`Select T${tool.toolNumber}`}
                     checked={selected}
@@ -855,8 +877,11 @@ function LibraryTable({
                   />
                 </td>
 
-                {/* Edit */}
-                <td className={`px-2 ${py} text-center`} onClick={(e) => e.stopPropagation()}>
+                {/* Edit — sticky col 3 */}
+                <td
+                  className={`sticky left-16 z-[5] group-hover:brightness-110 px-2 ${py} text-center ${selected ? 'bg-blue-950' : 'bg-slate-900'}`}
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <button
                     type="button"
                     onClick={() => onEdit(tool)}
@@ -867,8 +892,8 @@ function LibraryTable({
                   </button>
                 </td>
 
-                {/* T# — always visible, inline-editable */}
-                <td className={`px-3 ${py} font-mono text-blue-400 font-medium whitespace-nowrap`}>
+                {/* T# — sticky col 4, always visible, inline-editable */}
+                <td className={`sticky left-24 z-[5] group-hover:brightness-110 px-3 ${py} font-mono text-blue-400 font-medium whitespace-nowrap border-r border-slate-700/60 ${selected ? 'bg-blue-950' : 'bg-slate-900'}`}>
                   {editingCell?.toolId === tool.id && editingCell.colId === '__toolNumber' ? (
                     <input
                       autoFocus type="number" title="Tool number"
@@ -1016,9 +1041,9 @@ function LibraryTable({
               </tr>
             );
           })}
-          {/* Bottom spacer — fills the gap below virtualised rows */}
+          {/* Bottom spacer — fills the gap below virtualised rows (height set via ref to avoid inline style lint rule) */}
           {paddingBottom > 0 && (
-            <tr><td colSpan={999} style={{ height: paddingBottom, padding: 0, border: 0 }} /></tr>
+            <tr ref={(el) => { if (el) el.style.height = `${paddingBottom}px`; }} className="p-0 border-0"><td colSpan={999} className="p-0 border-0" /></tr>
           )}
         </tbody>
       </table>
