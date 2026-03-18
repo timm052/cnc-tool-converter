@@ -4,7 +4,7 @@ import {
   ChevronDown, ChevronLeft, ChevronRight, Layers, Tag, RotateCcw, Keyboard, SlidersHorizontal, Columns2, Hash,
   Printer, QrCode, FlaskConical, Wrench, ScanLine, Copy, Package,
   Calculator, AlertTriangle, FileText, ArrowRightLeft, BookTemplate, Wand2, Code2, Camera, MapPin,
-  Cloud, CloudUpload, CloudDownload, CloudOff, CheckCircle2, RefreshCw,
+  Cloud, CloudUpload, CloudDownload, CloudOff, CheckCircle2, RefreshCw, Briefcase,
 } from 'lucide-react';
 import { useLibrary } from '../../contexts/LibraryContext';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -28,6 +28,7 @@ import HolderLibraryPanel from '../library/HolderLibraryPanel';
 import QrScannerPanel from '../library/QrScannerPanel';
 import SpeedsFeedsPanel from '../library/SpeedsFeedsPanel';
 import CuttingWizardPanel from '../library/CuttingWizardPanel';
+import JobsPanel from '../library/JobsPanel';
 import ValidationPanel from '../library/ValidationPanel';
 import TemplatePickerPanel from '../library/TemplatePickerPanel';
 import LowStockPanel from '../library/LowStockPanel';
@@ -40,7 +41,7 @@ import { convertToolUnit } from '../../lib/unitConvert';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Panel = 'import' | 'export' | 'edit' | 'bulk-edit' | 'compare' | 'renumber' | 'label-print' | 'sheet-print' | 'materials' | 'holders' | 'duplicates' | 'qr-scan' | 'feeds' | 'validation' | 'copy-group' | 'templates' | 'low-stock' | 'wizard' | 'cam-snippet' | 'snapshots' | 'work-offsets' | null;
+type Panel = 'import' | 'export' | 'edit' | 'bulk-edit' | 'compare' | 'renumber' | 'label-print' | 'sheet-print' | 'materials' | 'holders' | 'duplicates' | 'qr-scan' | 'feeds' | 'validation' | 'copy-group' | 'templates' | 'low-stock' | 'wizard' | 'cam-snippet' | 'snapshots' | 'work-offsets' | 'jobs' | null;
 
 // ── Machine group sidebar ─────────────────────────────────────────────────────
 
@@ -64,6 +65,49 @@ function MachineGroupSidebar({
   const [collapsed, setCollapsed] = useState(() =>
     localStorage.getItem('machine-sidebar-collapsed') === 'true',
   );
+  const [width, setWidth] = useState(() => {
+    const stored = parseInt(localStorage.getItem('machine-sidebar-width') ?? '176', 10);
+    return Math.min(320, Math.max(140, isNaN(stored) ? 176 : stored));
+  });
+  const isDragging   = useRef(false);
+  const dragStartX   = useRef(0);
+  const dragStartW   = useRef(0);
+
+  const handleDragMove = useCallback((e: MouseEvent) => {
+    if (!isDragging.current) return;
+    const delta = e.clientX - dragStartX.current;
+    const next  = Math.min(320, Math.max(140, dragStartW.current + delta));
+    setWidth(next);
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    if (!isDragging.current) return;
+    isDragging.current = false;
+    document.body.style.userSelect = '';
+    document.removeEventListener('mousemove', handleDragMove);
+    document.removeEventListener('mouseup', handleDragEnd);
+    setWidth(w => {
+      localStorage.setItem('machine-sidebar-width', String(w));
+      return w;
+    });
+  }, [handleDragMove]);
+
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isDragging.current = true;
+    dragStartX.current = e.clientX;
+    dragStartW.current = width;
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', handleDragMove);
+    document.addEventListener('mouseup', handleDragEnd);
+  }, [width, handleDragMove, handleDragEnd]);
+
+  useEffect(() => {
+    return () => {
+      document.removeEventListener('mousemove', handleDragMove);
+      document.removeEventListener('mouseup', handleDragEnd);
+    };
+  }, [handleDragMove, handleDragEnd]);
 
   function toggle() {
     const next = !collapsed;
@@ -94,7 +138,8 @@ function MachineGroupSidebar({
 
   /* ── Expanded sidebar ── */
   return (
-    <aside className="w-44 shrink-0 border-r border-slate-700 flex flex-col overflow-y-auto">
+    <aside className="relative shrink-0 border-r border-slate-700 flex flex-col overflow-y-auto" style={{ width }}>
+      <div className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-blue-500/40 transition-colors z-10" onMouseDown={handleDragStart} />
       <div className="flex items-center justify-between px-3 pt-3 pb-1">
         <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
           Machines
@@ -816,6 +861,7 @@ export default function ToolManagerPage() {
     { key: 'e',         callback: openFocused  },
     { key: ' ',         callback: toggleFocusedSelect },
     { key: 'd',         ctrl: true, callback: duplicateFocused },
+    { key: 'i',         ctrl: true, callback: () => { if (activePanel !== 'edit') setActivePanel('import'); } },
     { key: '/',         callback: () => { searchInputRef.current?.focus(); searchInputRef.current?.select(); } },
     { key: '?',         callback: () => setShowShortcuts((s) => !s) },
     { key: 'q',         ctrl: true, callback: () => { if (tools.length > 0) setActivePanel('qr-scan'); } },
@@ -1003,6 +1049,10 @@ export default function ToolManagerPage() {
                 </button>
                 <button type="button" onClick={() => { setActivePanel('templates'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
                   <BookTemplate size={14} className="text-slate-400 shrink-0" /> Templates
+                </button>
+                <div className="my-1 border-t border-slate-700/60" />
+                <button type="button" onClick={() => { setActivePanel('jobs'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
+                  <Briefcase size={14} className="text-slate-400 shrink-0" /> Jobs
                 </button>
               </div>
             )}
@@ -1521,6 +1571,9 @@ export default function ToolManagerPage() {
           onClose={closePanel}
         />
       )}
+      {activePanel === 'jobs' && (
+        <JobsPanel allTools={tools} allMachineGroups={allMachineGroups} onClose={closePanel} />
+      )}
 
       {/* ── Keyboard shortcuts legend ─────────────────────────────────────── */}
 
@@ -1567,39 +1620,84 @@ export default function ToolManagerPage() {
       {showShortcuts && (
         <>
           <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setShowShortcuts(false)} />
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-80 bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-5">
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[520px] bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
                 <Keyboard size={14} className="text-slate-400" />
                 Keyboard Shortcuts
               </h3>
-              <button onClick={() => setShowShortcuts(false)} title="Close" className="p-1 rounded text-slate-500 hover:text-white hover:bg-slate-700">
+              <button type="button" onClick={() => setShowShortcuts(false)} title="Close" className="p-1 rounded text-slate-500 hover:text-white hover:bg-slate-700">
                 <X size={14} />
               </button>
             </div>
-            <div className="space-y-1.5 text-xs">
-              {[
-                ['j / ↓',         'Move focus down'],
-                ['k / ↑',         'Move focus up'],
-                ['Enter / e',     'Edit focused tool'],
-                ['Space',         'Toggle selection'],
-                ['/',             'Focus search'],
-                ['Esc',           'Clear search / close panel'],
-                ['Ctrl+D',        'Duplicate focused tool'],
-                ['Ctrl+Q',        'Open QR scanner'],
-                ['Ctrl+Enter',    'Convert (Converter page)'],
-                ['Ctrl+Z',        'Undo (Tool Editor)'],
-                ['Ctrl+Shift+Z',  'Redo (Tool Editor)'],
-                ['Ctrl+S',        'Save (Tool Editor)'],
-                ['?',             'Toggle this help'],
-              ].map(([key, desc]) => (
-                <div key={key} className="flex items-center justify-between gap-4">
-                  <kbd className="px-1.5 py-0.5 rounded bg-slate-700 border border-slate-600 font-mono text-slate-300 text-xs whitespace-nowrap">
-                    {key}
-                  </kbd>
-                  <span className="text-slate-400">{desc}</span>
+            <div className="grid grid-cols-2 gap-6 text-xs">
+              {/* Navigation */}
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-2">Navigation</p>
+                <div className="space-y-1.5">
+                  {([
+                    ['j / ↓',    'Move focus down'],
+                    ['k / ↑',    'Move focus up'],
+                    ['/',        'Focus search'],
+                    ['Esc',      'Clear / close panel'],
+                  ] as [string, string][]).map(([key, desc]) => (
+                    <div key={key} className="flex items-center justify-between gap-4">
+                      <kbd className="px-1.5 py-0.5 rounded bg-slate-700 border border-slate-600 font-mono text-slate-300 text-xs whitespace-nowrap">{key}</kbd>
+                      <span className="text-slate-400 text-right">{desc}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+              {/* Selection */}
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-2">Selection</p>
+                <div className="space-y-1.5">
+                  {([
+                    ['Space',   'Toggle selection'],
+                    ['Ctrl+A',  'Select all'],
+                    ['Ctrl+D',  'Duplicate focused'],
+                  ] as [string, string][]).map(([key, desc]) => (
+                    <div key={key} className="flex items-center justify-between gap-4">
+                      <kbd className="px-1.5 py-0.5 rounded bg-slate-700 border border-slate-600 font-mono text-slate-300 text-xs whitespace-nowrap">{key}</kbd>
+                      <span className="text-slate-400 text-right">{desc}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Panels */}
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-2">Panels</p>
+                <div className="space-y-1.5">
+                  {([
+                    ['Enter / e', 'Edit focused tool'],
+                    ['Ctrl+I',    'Open import panel'],
+                    ['Ctrl+Q',    'Open QR scanner'],
+                    ['?',         'Toggle this help'],
+                  ] as [string, string][]).map(([key, desc]) => (
+                    <div key={key} className="flex items-center justify-between gap-4">
+                      <kbd className="px-1.5 py-0.5 rounded bg-slate-700 border border-slate-600 font-mono text-slate-300 text-xs whitespace-nowrap">{key}</kbd>
+                      <span className="text-slate-400 text-right">{desc}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Editor */}
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-2">Editor</p>
+                <div className="space-y-1.5">
+                  {([
+                    ['Ctrl+Z',       'Undo'],
+                    ['Ctrl+Shift+Z', 'Redo'],
+                    ['Ctrl+S',       'Save'],
+                    ['Esc',          'Close editor'],
+                  ] as [string, string][]).map(([key, desc]) => (
+                    <div key={key} className="flex items-center justify-between gap-4">
+                      <kbd className="px-1.5 py-0.5 rounded bg-slate-700 border border-slate-600 font-mono text-slate-300 text-xs whitespace-nowrap">{key}</kbd>
+                      <span className="text-slate-400 text-right">{desc}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </>
