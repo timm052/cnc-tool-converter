@@ -73,24 +73,24 @@ _Goal: Make the tool library the single source of truth for a real toolroom._
 
 ---
 
-## Phase 3 — Integration & Intelligence
+## Phase 3 — Integration & Intelligence ✅ Complete
 
 _Goal: Connect the tool library to the broader CNC workflow._
 
 ### 3.1 Advanced Export
-- **Split-by-machine-group export** — Export each machine group as a separate file in one click (already exists per-format; expose as a batch action).
-- **G54–G59 offset sheet export** — Generate a work-offset reference sheet with tool numbers and offsets formatted for a specific machine's control dialect (Fanuc, HAAS, Siemens).
+- ✅ **Split-by-machine-group export** — `ExportPanel` already supports "Split by machine group" and "Split by material" modes; staggered multi-file downloads. One file per group, with tools pinned to a single group per file.
+- ✅ **G54–G59 offset sheet export** — `WorkOffsetSheetPanel` (Print → Work Offsets): dialect selector (Fanuc, HAAS, Mach3, LinuxCNC, Siemens), editable X/Y/Z/A/B per offset slot, autocomplete from library machine groups, persisted per dialect to localStorage. Downloads .txt reference card or .csv. Dialect-specific extended slots (Fanuc G54.1 P1–P48, HAAS G110–G129, LinuxCNC G59.1–G59.3, Siemens G505 D-frames).
 - **BOM / tool list for a job** — Create a named "job" that links to a subset of library tools. Export the job's tool list as a formatted PDF or CSV for the machine operator.
-- **CAM post-processor snippet** — Generate the tool definition block (tool call + F&S) in the syntax of a selected post-processor (Fanuc, HAAS, Mach3, LinuxCNC). Paste directly into a CAM tool library or G-code program.
+- ✅ **CAM post-processor snippet** — `src/lib/camSnippet.ts` generates tool-call blocks for Fanuc, HAAS, Mach3, LinuxCNC, Siemens Sinumerik. `CamSnippetPanel` slide-over: dialect picker, live preview, Copy + Download buttons. Accessible from the "N selected ▾" toolbar dropdown (falls back to all tools when none selected).
 
 ### 3.2 Sync
-- **JSON sync file** — Export / import a "sync package" (library + materials + holders) that can be shared via a network drive or USB stick. No cloud required.
-- **Change log** — Track who changed what field and when (name is free-text; no auth required). Stored as a per-tool audit trail in IndexedDB.
-- **Library snapshot versioning** — Keep N most recent snapshots of the full library locally. Roll back to any snapshot with one click.
-- **Support an externally** hosted database while still offering a standalone mode.
+- ✅ **JSON sync file** — Backup upgraded to v2 format: exports tools + materials + holders in one `.json`. Restore imports all three with skip-on-duplicate logic. Backward-compatible with v1 tool-only files. `addHolders` bulk method added to `HolderContext`.
+- ✅ **Change log** — DB v6 `auditLog` table. `updateTool` diffs old vs new for every non-internal field and writes a `ToolAuditEntry`. `AuditLogHistory` component in ToolEditor Crib tab shows newest-first with red/green old→new values. `operatorName` setting added to Settings → Operator section.
+- ✅ **Library snapshot versioning** — DB v7 `snapshots` table (Dexie). `saveSnapshot` stores full tools + materials + holders; keeps max 10, auto-deletes oldest. `restoreSnapshot` replaces all three tables atomically. `SnapshotPanel` slide-over (Maintain → Snapshots): optional label, newest-first list, restore with confirmation, delete with confirmation.
+- ✅ **External database support (REST + WebDAV)** — `src/lib/remoteSync.ts`: push/pull, `SyncPayload` v2, ETag optimistic locking, `mergePayloads()` merge-by-id. `useRemoteSync` hook: merge-on-push flow, `If-Match` header, 412 auto-retry (3×), merge stats. `syncVersion` counter + `lastModifiedBy` in every payload. Settings → Remote Database: URL, auth type (Bearer / Basic), username, password, auto-sync. Multi-user: before every push the current remote is fetched and merged (newer `updatedAt` wins per record); concurrent writes detected via ETag and retried automatically; operator name required warning in sync dropdown; merge stats toast after any sync that brought remote changes.
 
 ### 3.4 UI & UX Polish
-- **Table virtualisation** — Windowed rendering for the library table (e.g. TanStack Virtual). Fixes performance at 300+ tools. High priority before Electron launch.
+- ✅ **Table virtualisation** — `@tanstack/react-virtual` v3; `useVirtualizer` in `LibraryTable` with top/bottom spacer rows. Renders only visible rows; estimates 33 px (compact) / 45 px (normal). Fixes performance at 300+ tools.
 - **Resizable sidebar** — Drag the machine group sidebar to a preferred width. Persisted to settings.
 - **Pinned columns** — Pin T# and description columns so they stay visible when scrolling right through many geometry columns.
 - **Keyboard shortcut cheat sheet overlay** — Already triggered by `?` key; improve the layout and add the new shortcuts from Phase 1–2.
@@ -200,12 +200,12 @@ These can be picked up opportunistically when they fit alongside other work.
 
 ---
 
-## Version Milestones (Suggested)
+## Version Milestones
 
-| Version | Scope |
-|---|---|
-| **v0.2** | Phase 1 complete — HAAS/CSV converters, F&S calculator, templates, backup nudge |
-| **v0.3** | Phase 2 complete — inventory tracking, assembly view, improved import, material presets |
-| **v0.4** | Phase 3 complete — table virtualisation, job BOM, sync file, CLI (web build) |
-| **v1.0** | Phase 4 complete — Electron desktop app, SQLite, native dialogs, auto-updater |
-| **v1.x** | Nice-to-have features, community language packs, supplier integrations |
+| Version | Scope | Status |
+|---|---|---|
+| **v0.2** | Phase 1 complete — HAAS/Fanuc/Mach3/CSV/XLSX converters, F&S calculator, templates, backup nudge | ✅ Done |
+| **v0.3** | Phase 2 complete — inventory tracking, assembly view, improved import, material presets, audit log | ✅ Done |
+| **v0.4** | Phase 3 complete — table virtualisation, remote sync (REST + WebDAV), CAM snippets, work offset sheet, snapshots | ✅ Done |
+| **v1.0** | Phase 4 complete — Electron desktop app, SQLite, native dialogs, auto-updater | Planned |
+| **v1.x** | Nice-to-have features, community language packs, supplier integrations | Future |

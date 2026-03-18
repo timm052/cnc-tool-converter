@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback, memo } from 'react';
+import { useState, useMemo, useCallback, memo, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { ChevronUp, ChevronDown, Star, Pencil, AlertTriangle, Columns2, Plus, Minus, Layers, X } from 'lucide-react';
 import type { LibraryTool } from '../../types/libraryTool';
 import { TOOL_CONDITION_LABELS, TOOL_CONDITION_COLOURS } from '../../types/libraryTool';
@@ -650,6 +651,20 @@ function LibraryTable({
     [tools, selectedIds],
   );
 
+  // ── Virtualisation ───────────────────────────────────────────────────────
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count:           sorted.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize:    () => compact ? 33 : 45,
+    overscan:        10,
+  });
+  const virtualItems  = rowVirtualizer.getVirtualItems();
+  const paddingTop    = virtualItems.length > 0 ? virtualItems[0].start : 0;
+  const paddingBottom = virtualItems.length > 0
+    ? rowVirtualizer.getTotalSize() - virtualItems[virtualItems.length - 1].end
+    : 0;
+
   // ── Pre-computed validation (avoid calling validateTool N times per render) ─
   const validationMap = useMemo(() => {
     if (!settings.validationWarningsEnabled) return new Map<string, ReturnType<typeof validateTool>>();
@@ -665,7 +680,7 @@ function LibraryTable({
   }
 
   return (
-    <div className="flex-1 overflow-auto">
+    <div ref={scrollRef} className="flex-1 overflow-auto">
       <table className="w-full border-collapse text-sm">
 
         {/* ── Header ──────────────────────────────────────────────────────── */}
@@ -791,7 +806,13 @@ function LibraryTable({
 
         {/* ── Body ────────────────────────────────────────────────────────── */}
         <tbody>
-          {sorted.map((tool, i) => {
+          {/* Top spacer — fills the gap above virtualised rows */}
+          {paddingTop > 0 && (
+            <tr><td colSpan={999} style={{ height: paddingTop, padding: 0, border: 0 }} /></tr>
+          )}
+          {virtualItems.map((vRow) => {
+            const tool = sorted[vRow.index];
+            const i    = vRow.index;
             const selected  = selectedIds.has(tool.id);
             const focused   = focusedId === tool.id;
             const issues    = validationMap.get(tool.id) ?? [];
@@ -995,6 +1016,10 @@ function LibraryTable({
               </tr>
             );
           })}
+          {/* Bottom spacer — fills the gap below virtualised rows */}
+          {paddingBottom > 0 && (
+            <tr><td colSpan={999} style={{ height: paddingBottom, padding: 0, border: 0 }} /></tr>
+          )}
         </tbody>
       </table>
     </div>

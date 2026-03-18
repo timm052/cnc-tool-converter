@@ -809,6 +809,95 @@ export default function SettingsPage() {
           </Row>
         </Section>
 
+        {/* Operator identity */}
+        <Section title="Operator">
+          <Row label="Operator name" description="Recorded in the change log when you edit a tool (no login required)">
+            <input
+              type="text"
+              value={settings.operatorName}
+              onChange={(e) => set('operatorName', e.target.value)}
+              placeholder="e.g. John"
+              className="w-40 px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </Row>
+        </Section>
+
+        {/* Remote database */}
+        <Section title="Remote Database">
+          <Row label="Endpoint URL" description="Full URL to the JSON file. WebDAV: path to cnc-library.json on your server. REST: any endpoint that accepts PUT/GET.">
+            <input
+              type="url"
+              value={settings.remoteDbUrl}
+              onChange={(e) => set('remoteDbUrl', e.target.value)}
+              placeholder="https://myserver.example.com/library.json"
+              className="w-72 px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-slate-500"
+            />
+          </Row>
+          <Row label="Authentication" description="Basic auth is used by WebDAV servers (Nextcloud, ownCloud, etc.). Bearer is for REST APIs.">
+            <div className="flex gap-3">
+              {(['bearer', 'basic'] as const).map((type) => (
+                <label key={type} className="flex items-center gap-1.5 cursor-pointer select-none">
+                  <input
+                    type="radio"
+                    name="remoteDbAuthType"
+                    value={type}
+                    checked={(settings.remoteDbAuthType ?? 'bearer') === type}
+                    onChange={() => set('remoteDbAuthType', type)}
+                    className="w-3.5 h-3.5 border-slate-500 bg-slate-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+                  />
+                  <span className="text-sm text-slate-300">
+                    {type === 'bearer' ? 'Bearer token' : 'Basic auth (WebDAV)'}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </Row>
+          {(settings.remoteDbAuthType ?? 'bearer') === 'basic' && (
+            <Row label="Username" description="WebDAV / Nextcloud username">
+              <input
+                type="text"
+                value={settings.remoteDbUsername ?? ''}
+                onChange={(e) => set('remoteDbUsername', e.target.value)}
+                placeholder="your-username"
+                autoComplete="username"
+                className="w-72 px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-slate-500"
+              />
+            </Row>
+          )}
+          <Row
+            label={(settings.remoteDbAuthType ?? 'bearer') === 'basic' ? 'Password' : 'API token'}
+            description={(settings.remoteDbAuthType ?? 'bearer') === 'basic'
+              ? 'WebDAV password or app password (recommended over your main password)'
+              : 'Sent as Authorization: Bearer … (leave blank if no auth required)'}
+          >
+            <input
+              type="password"
+              value={settings.remoteDbToken}
+              onChange={(e) => set('remoteDbToken', e.target.value)}
+              placeholder="Optional"
+              autoComplete="current-password"
+              className="w-72 px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-slate-500"
+            />
+          </Row>
+          <Row label="Auto-sync on save" description="Push the library to the remote endpoint automatically after each change">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={settings.remoteDbAutoSync}
+                onChange={(e) => set('remoteDbAutoSync', e.target.checked)}
+                className="w-4 h-4 rounded border-slate-500 bg-slate-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+              />
+              <span className="text-sm text-slate-300">Enable auto-sync</span>
+            </label>
+          </Row>
+          <p className="text-xs text-slate-500 pt-1">
+            The app always works offline. Manual push / pull is available in the Library toolbar (cloud icon).{' '}
+            {(settings.remoteDbAuthType ?? 'bearer') === 'basic'
+              ? 'Nextcloud example: https://cloud.example.com/remote.php/dav/files/username/cnc-library.json'
+              : 'The endpoint must accept PUT (upload) and GET (download) of the v2 JSON sync payload.'}
+          </p>
+        </Section>
+
         {/* Developer */}
         <Section title="Developer">
           <Row label="Dev mode" description="Show the Preview Debug tab in the sidebar">

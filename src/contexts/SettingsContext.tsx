@@ -85,6 +85,16 @@ export interface Settings {
   // Appearance
   theme: 'dark' | 'retro90s' | 'winxp' | 'macos9' | 'light' | 'auto';
 
+  // Operator identity (free-text, no auth)
+  operatorName: string;
+
+  // Remote database sync
+  remoteDbUrl:      string;                 // full URL to the JSON file or REST endpoint
+  remoteDbAuthType: 'bearer' | 'basic';    // Bearer token (REST) or Basic auth (WebDAV)
+  remoteDbUsername: string;                 // Basic auth username
+  remoteDbToken:    string;                 // Bearer token OR Basic auth password
+  remoteDbAutoSync: boolean;               // Push after every write
+
   // Developer
   devMode: boolean;
 }
@@ -155,6 +165,14 @@ export const DEFAULT_SETTINGS: Settings = {
   tableDisplayUnit: 'stored',
 
   theme: 'dark',
+
+  operatorName: '',
+
+  remoteDbUrl:      '',
+  remoteDbAuthType: 'bearer',
+  remoteDbUsername: '',
+  remoteDbToken:    '',
+  remoteDbAutoSync: false,
 
   devMode: false,
 };

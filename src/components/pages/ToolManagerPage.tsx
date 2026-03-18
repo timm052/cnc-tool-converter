@@ -3,7 +3,8 @@ import {
   Library, Plus, Upload, Download, Search, Star, X,
   ChevronDown, ChevronLeft, ChevronRight, Layers, Tag, RotateCcw, Keyboard, SlidersHorizontal, Columns2, Hash,
   Printer, QrCode, FlaskConical, Wrench, ScanLine, Copy, Package,
-  Calculator, AlertTriangle, FileText, ArrowRightLeft, BookTemplate, Wand2,
+  Calculator, AlertTriangle, FileText, ArrowRightLeft, BookTemplate, Wand2, Code2, Camera, MapPin,
+  Cloud, CloudUpload, CloudDownload, CloudOff, CheckCircle2, RefreshCw,
 } from 'lucide-react';
 import { useLibrary } from '../../contexts/LibraryContext';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -19,6 +20,7 @@ import BulkEditPanel from '../library/BulkEditPanel';
 import ToolComparePanel from '../library/ToolComparePanel';
 import DuplicateFinderPanel from '../library/DuplicateFinderPanel';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
+import { useRemoteSync } from '../../hooks/useRemoteSync';
 import LabelPrintPanel from '../library/LabelPrintPanel';
 import ToolSheetPanel from '../library/ToolSheetPanel';
 import MaterialLibraryPanel from '../library/MaterialLibraryPanel';
@@ -29,13 +31,16 @@ import CuttingWizardPanel from '../library/CuttingWizardPanel';
 import ValidationPanel from '../library/ValidationPanel';
 import TemplatePickerPanel from '../library/TemplatePickerPanel';
 import LowStockPanel from '../library/LowStockPanel';
+import CamSnippetPanel from '../library/CamSnippetPanel';
+import SnapshotPanel from '../library/SnapshotPanel';
+import WorkOffsetSheetPanel from '../library/WorkOffsetSheetPanel';
 import { downloadGcodeOffsetSheet } from '../../lib/gcodeOffsetSheet';
 import { recordBackup } from '../../lib/backupNudge';
 import { convertToolUnit } from '../../lib/unitConvert';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Panel = 'import' | 'export' | 'edit' | 'bulk-edit' | 'compare' | 'renumber' | 'label-print' | 'sheet-print' | 'materials' | 'holders' | 'duplicates' | 'qr-scan' | 'feeds' | 'validation' | 'copy-group' | 'templates' | 'low-stock' | 'wizard' | null;
+type Panel = 'import' | 'export' | 'edit' | 'bulk-edit' | 'compare' | 'renumber' | 'label-print' | 'sheet-print' | 'materials' | 'holders' | 'duplicates' | 'qr-scan' | 'feeds' | 'validation' | 'copy-group' | 'templates' | 'low-stock' | 'wizard' | 'cam-snippet' | 'snapshots' | 'work-offsets' | null;
 
 // ── Machine group sidebar ─────────────────────────────────────────────────────
 
@@ -486,13 +491,58 @@ export default function ToolManagerPage() {
     tools, isLoading,
     allMachineGroups, allTags,
     addTool, addTools, updateTool, patchEach, deleteTool, deleteTools,
+    replaceLibrary,
   } = useLibrary();
   const nextToolNumber = useMemo(() => Math.max(0, ...tools.map((t) => t.toolNumber)) + 1, [tools]);
   const { settings, updateSettings } = useSettings();
-  const { holders }   = useHolders();
-  const { materials } = useMaterials();
+  const { holders, addHolders }     = useHolders();
+  const { materials, addMaterials } = useMaterials();
 
   const restoreInputRef  = useRef<HTMLInputElement>(null);
+
+  // ── Remote sync ───────────────────────────────────────────────────────────
+  const [syncDropdown,   setSyncDropdown]   = useState(false);
+  const [syncMergeToast, setSyncMergeToast] = useState<import('../../lib/remoteSync').MergeStats | null>(null);
+  const syncDropdownRef = useRef<HTMLDivElement>(null);
+
+  /** onApply: atomically write merged data into IndexedDB */
+  const syncApply = useCallback(
+    (t: import('../../types/libraryTool').LibraryTool[], m: import('../../types/material').WorkMaterial[], h: import('../../types/holder').ToolHolder[]) =>
+      replaceLibrary(t, m, h),
+    [replaceLibrary],
+  );
+
+  const sync = useRemoteSync(tools, materials, holders);
+
+  // Show merge toast whenever stats arrive
+  useEffect(() => {
+    if (sync.mergeStats && (sync.mergeStats.addedFromRemote > 0 || sync.mergeStats.updatedFromRemote > 0 || sync.mergeStats.conflicts > 0)) {
+      setSyncMergeToast(sync.mergeStats);
+      const t = setTimeout(() => setSyncMergeToast(null), 7000);
+      return () => clearTimeout(t);
+    }
+  }, [sync.mergeStats]);
+
+  // Auto-sync: push whenever tools length changes (if configured)
+  const prevToolsLenRef = useRef(tools.length);
+  useEffect(() => {
+    const changed = tools.length !== prevToolsLenRef.current;
+    prevToolsLenRef.current = tools.length;
+    if (changed && settings.remoteDbUrl && settings.remoteDbAutoSync) {
+      sync.push(syncApply).catch(() => { /* status surfaced in UI */ });
+    }
+  }, [tools.length, settings.remoteDbUrl, settings.remoteDbAutoSync, sync, syncApply]);
+
+  // Close sync dropdown on outside click
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (syncDropdownRef.current && !syncDropdownRef.current.contains(e.target as Node)) {
+        setSyncDropdown(false);
+      }
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   // ── Bulk undo ─────────────────────────────────────────────────────────────
   const [lastBulkUndo, setLastBulkUndo] = useState<{ id: string; patch: Partial<LibraryTool> }[] | null>(null);
@@ -673,30 +723,48 @@ export default function ToolManagerPage() {
   }, []);
 
   const handleBackup = useCallback(() => {
-    const payload = JSON.stringify({ version: 1, exportedAt: Date.now(), tools }, null, 2);
+    // v2 sync package — includes tools, materials, and holders
+    const payload = JSON.stringify({
+      version:    2,
+      exportedAt: Date.now(),
+      tools,
+      materials,
+      holders,
+    }, null, 2);
     const blob = new Blob([payload], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
     a.download = `tool-library-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
     recordBackup();
-  }, [tools]);
+  }, [tools, materials, holders]);
 
   const handleRestore = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
       const text = await file.text();
-      const data = JSON.parse(text) as { tools?: LibraryTool[] } | LibraryTool[];
-      const incoming: LibraryTool[] = Array.isArray(data) ? data : (data.tools ?? []);
-      await addTools(incoming, false);
+      const data = JSON.parse(text) as {
+        version?: number;
+        tools?: LibraryTool[];
+        materials?: import('../../types/material').WorkMaterial[];
+        holders?: import('../../types/holder').ToolHolder[];
+      } | LibraryTool[];
+
+      const incomingTools:     LibraryTool[] = Array.isArray(data) ? data : (data.tools ?? []);
+      const incomingMaterials                = Array.isArray(data) ? [] : (data.materials ?? []);
+      const incomingHolders                  = Array.isArray(data) ? [] : (data.holders ?? []);
+
+      await addTools(incomingTools, false);
+      if (incomingMaterials.length) await addMaterials(incomingMaterials);
+      if (incomingHolders.length)   await addHolders(incomingHolders);
     } catch (err) {
       console.error('Restore failed:', err);
     }
     e.target.value = '';
-  }, [addTools]);
+  }, [addTools, addMaterials, addHolders]);
 
   const clearFilters = useCallback(() => {
     setSearchQuery('');
@@ -819,6 +887,10 @@ export default function ToolManagerPage() {
                   </button>
                   <button type="button" onClick={() => { void handleConvertUnits('inch'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
                     <ArrowRightLeft size={14} className="text-slate-400 shrink-0" /> Convert → in
+                  </button>
+                  <div className="border-t border-slate-700 my-1" />
+                  <button type="button" onClick={() => { setActivePanel('cam-snippet'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
+                    <Code2 size={14} className="text-slate-400 shrink-0" /> CAM Snippet
                   </button>
                   {selectedIds.size >= 2 && (
                     <>
@@ -967,6 +1039,9 @@ export default function ToolManagerPage() {
                       <Wand2 size={14} className="text-slate-400 shrink-0" /> F&amp;S Wizard
                     </button>
                   )}
+                  <button type="button" onClick={() => { setActivePanel('snapshots'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
+                    <Camera size={14} className="text-slate-400 shrink-0" /> Snapshots
+                  </button>
                 </div>
               )}
             </div>
@@ -990,7 +1065,10 @@ export default function ToolManagerPage() {
                     <Printer size={14} className="text-slate-400 shrink-0" /> Tool Sheet
                   </button>
                   <button type="button" onClick={() => { downloadGcodeOffsetSheet(selectedTools.length > 0 ? selectedTools : filteredTools); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
-                    <FileText size={14} className="text-slate-400 shrink-0" /> Offset Sheet
+                    <FileText size={14} className="text-slate-400 shrink-0" /> Tool Offsets
+                  </button>
+                  <button type="button" onClick={() => { setActivePanel('work-offsets'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
+                    <MapPin size={14} className="text-slate-400 shrink-0" /> Work Offsets
                   </button>
                   <button type="button" onClick={() => { setActivePanel('label-print'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
                     <QrCode size={14} className="text-slate-400 shrink-0" /> Labels
@@ -1008,6 +1086,105 @@ export default function ToolManagerPage() {
           >
             <Keyboard size={14} />
           </button>
+
+          {/* ── Remote sync ── (only shown when a URL is configured) */}
+          {settings.remoteDbUrl && (
+            <div className="relative" ref={syncDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setSyncDropdown((v) => !v)}
+                title="Remote database sync"
+                className={[
+                  'p-2 rounded-lg border transition-colors',
+                  sync.status === 'error'   ? 'bg-red-500/15 border-red-500/40 text-red-400 hover:bg-red-500/25' :
+                  sync.status === 'ok'      ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/25' :
+                  sync.status === 'pushing' || sync.status === 'pulling'
+                                            ? 'bg-blue-500/15 border-blue-500/40 text-blue-400' :
+                                              'bg-slate-700 border-slate-600 text-slate-400 hover:text-slate-200 hover:bg-slate-600',
+                ].join(' ')}
+              >
+                {sync.status === 'pushing' || sync.status === 'pulling'
+                  ? <RefreshCw size={14} className="animate-spin" />
+                  : sync.status === 'error'
+                    ? <CloudOff size={14} />
+                    : sync.status === 'ok'
+                      ? <CheckCircle2 size={14} />
+                      : <Cloud size={14} />
+                }
+              </button>
+
+              {syncDropdown && (
+                <div className="absolute right-0 top-full mt-1 w-64 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-30 py-1 overflow-hidden">
+
+                  {/* Username warning */}
+                  {!settings.operatorName && (
+                    <div className="flex items-start gap-2 px-4 py-2 bg-amber-500/10 border-b border-slate-700">
+                      <AlertTriangle size={12} className="text-amber-400 shrink-0 mt-0.5" />
+                      <p className="text-xs text-amber-300">
+                        Set your <strong>Operator name</strong> in Settings so changes are attributed to you.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Error */}
+                  {sync.errorMsg && (
+                    <div className="px-4 py-2 text-xs text-red-300 bg-red-500/10 border-b border-slate-700">
+                      {sync.errorMsg}
+                    </div>
+                  )}
+
+                  {/* Last sync info */}
+                  {(sync.lastSync.pushedAt || sync.lastSync.pulledAt || sync.lastSync.pushedBy) && (
+                    <div className="px-4 py-2 space-y-0.5 border-b border-slate-700/60">
+                      {sync.lastSync.pushedAt && (
+                        <p className="text-xs text-slate-500">
+                          Pushed {new Date(sync.lastSync.pushedAt).toLocaleTimeString()}
+                          {sync.lastSync.pushedBy ? ` by ${sync.lastSync.pushedBy}` : ''}
+                        </p>
+                      )}
+                      {sync.lastSync.pulledAt && (
+                        <p className="text-xs text-slate-500">
+                          Pulled {new Date(sync.lastSync.pulledAt).toLocaleTimeString()}
+                        </p>
+                      )}
+                      {sync.lastSync.syncVersion != null && (
+                        <p className="text-xs text-slate-600">Version {sync.lastSync.syncVersion}</p>
+                      )}
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => { sync.push(syncApply); setSyncDropdown(false); }}
+                    disabled={sync.status === 'pushing' || sync.status === 'pulling'}
+                    className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left disabled:opacity-50"
+                  >
+                    <CloudUpload size={14} className="text-slate-400 shrink-0" />
+                    Push to remote
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { sync.pull(syncApply); setSyncDropdown(false); }}
+                    disabled={sync.status === 'pushing' || sync.status === 'pulling'}
+                    className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left disabled:opacity-50"
+                  >
+                    <CloudDownload size={14} className="text-slate-400 shrink-0" />
+                    Pull from remote
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { sync.testConn(); setSyncDropdown(false); }}
+                    disabled={sync.status === 'pushing' || sync.status === 'pulling'}
+                    className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left disabled:opacity-50"
+                  >
+                    <Cloud size={14} className="text-slate-400 shrink-0" />
+                    Test connection
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           <button
             type="button"
             onClick={openNew}
@@ -1276,6 +1453,18 @@ export default function ToolManagerPage() {
           onClose={closePanel}
         />
       )}
+      {activePanel === 'cam-snippet' && (
+        <CamSnippetPanel
+          tools={selectedTools.length > 0 ? selectedTools : tools}
+          onClose={closePanel}
+        />
+      )}
+      {activePanel === 'snapshots' && (
+        <SnapshotPanel onClose={closePanel} />
+      )}
+      {activePanel === 'work-offsets' && (
+        <WorkOffsetSheetPanel machineGroups={allMachineGroups} onClose={closePanel} />
+      )}
       {activePanel === 'feeds' && (
         <SpeedsFeedsPanel
           tool={selectedTools.length === 1 ? selectedTools[0] : null}
@@ -1334,6 +1523,24 @@ export default function ToolManagerPage() {
       )}
 
       {/* ── Keyboard shortcuts legend ─────────────────────────────────────── */}
+
+      {/* ── Remote sync merge toast ───────────────────────────────────────── */}
+      {syncMergeToast && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl shadow-2xl text-sm text-slate-200">
+          <CheckCircle2 size={15} className="text-emerald-400 shrink-0" />
+          <span>
+            Merged from remote:{' '}
+            {syncMergeToast.addedFromRemote > 0 && <>{syncMergeToast.addedFromRemote} added</>}
+            {syncMergeToast.addedFromRemote > 0 && syncMergeToast.updatedFromRemote > 0 && ', '}
+            {syncMergeToast.updatedFromRemote > 0 && <>{syncMergeToast.updatedFromRemote} updated</>}
+            {syncMergeToast.conflicts > 0 && <span className="text-amber-300 ml-1">({syncMergeToast.conflicts} conflict{syncMergeToast.conflicts !== 1 ? 's' : ''} — remote won)</span>}
+          </span>
+          <button type="button" onClick={() => setSyncMergeToast(null)} title="Dismiss" className="p-1 rounded text-slate-500 hover:text-slate-200">
+            <X size={13} />
+          </button>
+        </div>
+      )}
+
       {/* ── Bulk undo toast ───────────────────────────────────────────────── */}
       {lastBulkUndo && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl shadow-2xl text-sm text-slate-200 animate-in fade-in slide-in-from-bottom-2">

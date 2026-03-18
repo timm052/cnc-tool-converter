@@ -6,6 +6,7 @@ interface HolderContextValue {
   holders:      ToolHolder[];
   isLoading:    boolean;
   addHolder:    (h: ToolHolder) => Promise<void>;
+  addHolders:   (hs: ToolHolder[]) => Promise<{ added: number; skipped: number }>;
   updateHolder: (id: string, patch: Partial<ToolHolder>) => Promise<void>;
   deleteHolder: (id: string) => Promise<void>;
 }
@@ -32,6 +33,18 @@ export function HolderProvider({ children }: { children: ReactNode }) {
     setHolders(await loadAll());
   }, []);
 
+  const addHolders = useCallback(async (hs: ToolHolder[]): Promise<{ added: number; skipped: number }> => {
+    const existing = new Set((await db.holders.toArray()).map((h) => h.id));
+    let added = 0; let skipped = 0;
+    for (const h of hs) {
+      if (existing.has(h.id)) { skipped++; continue; }
+      await db.holders.add(h);
+      added++;
+    }
+    setHolders(await loadAll());
+    return { added, skipped };
+  }, []);
+
   const updateHolder = useCallback(async (id: string, patch: Partial<ToolHolder>) => {
     await db.holders.update(id, { ...patch, updatedAt: Date.now() });
     setHolders(await loadAll());
@@ -43,7 +56,7 @@ export function HolderProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <HolderContext.Provider value={{ holders, isLoading, addHolder, updateHolder, deleteHolder }}>
+    <HolderContext.Provider value={{ holders, isLoading, addHolder, addHolders, updateHolder, deleteHolder }}>
       {children}
     </HolderContext.Provider>
   );

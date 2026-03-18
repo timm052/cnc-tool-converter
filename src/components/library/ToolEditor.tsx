@@ -11,6 +11,7 @@ import { MATERIAL_CATEGORY_COLOURS, MATERIAL_CATEGORY_LABELS } from '../../types
 import { useSettings, type Settings } from '../../contexts/SettingsContext';
 import { ToolProfileSVG } from './ToolProfileSVG';
 import StockTransactionHistory from './StockTransactionHistory';
+import AuditLogHistory from './AuditLogHistory';
 import { useUndoRedo } from '../../hooks/useUndoRedo';
 import { validateTool, getErrors } from '../../lib/toolValidation';
 import { getAllToolTypeOptions, getFieldVisibility } from '../../lib/customToolTypes';
@@ -1643,6 +1644,14 @@ export default function ToolEditor({
                     toolId={draft.id}
                     onLog={() => {/* history refreshes internally */}}
                   />
+                </div>
+              )}
+
+              {/* Change log / audit trail */}
+              {draft.id && (
+                <div className="pt-2 border-t border-slate-700/60">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Change log</p>
+                  <AuditLogHistory toolId={draft.id} />
                 </div>
               )}
 
