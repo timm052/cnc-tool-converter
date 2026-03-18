@@ -54,6 +54,8 @@ The sidebar is collapsible — click the **◀ / ▶** arrow at the bottom to to
 6. Click **Convert** — the output appears below.
 7. Click **Copy** or **Download** to use the result.
 
+![Converter page](screenshots/converter-page.png)
+
 > **Tip:** Enable *Auto-convert on file load* in Settings → Conversion Defaults so step 6 happens automatically.
 
 ---
@@ -90,9 +92,7 @@ All data is stored in your browser's IndexedDB under the database name `cnc-tool
 
 ## Orientation: toolbar buttons (Tool Library)
 
-```
-[Import] [Export N] [Low Stock] [Libraries ▾] [Maintain ▾] [Print ▾] [?] [☁] [New Tool]
-```
+![Tool Library page](screenshots/tool-library-page.png)
 
 | Button | What it does |
 |--------|-------------|

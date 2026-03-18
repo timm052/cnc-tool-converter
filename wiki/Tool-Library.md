@@ -1,12 +1,26 @@
 # Tool Library
 
-The **Tool Library** page is the main workspace. It holds all your tools in a persistent local database and gives you a full set of management, editing, and export tools.
+The **Tool Library** page is the main workspace.
+
+![Tool Library page](screenshots/tool-library-page.png) It holds all your tools in a persistent local database and gives you a full set of management, editing, and export tools.
 
 ---
 
 ## The library table
 
 Each row is one tool. Columns are configurable — click **Columns** (column icon in toolbar) to show or hide any column. Drag the header to reorder (coming soon).
+
+The **Maintain ▾** dropdown gives access to maintenance tools:
+
+![Maintain dropdown](screenshots/maintain-dropdown.png)
+
+The **Print ▾** dropdown gives access to output options:
+
+![Print dropdown](screenshots/print-dropdown.png)
+
+The **Libraries ▾** dropdown gives access to Materials, Holders, and Templates:
+
+![Libraries dropdown](screenshots/libraries-dropdown.png)
 
 ### Default columns
 

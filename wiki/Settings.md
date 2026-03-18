@@ -2,6 +2,10 @@
 
 Open Settings from the left sidebar (gear icon). Settings are grouped into sections.
 
+![Settings page](screenshots/settings-page.png)
+
+![Remote Database settings](screenshots/settings-remote-db.png)
+
 ---
 
 ## Conversion Defaults

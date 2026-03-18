@@ -2,6 +2,8 @@
 
 The **Converter** page converts tool library files from one format to another without touching your persistent library. It is a stateless tool — nothing is saved unless you explicitly import the output into the library.
 
+![Converter page](screenshots/converter-format-selected.png)
+
 ---
 
 ## Basic workflow

@@ -4,6 +4,8 @@ Tools can be imported into the library from any supported format file.
 
 ---
 
+![Import panel](screenshots/import-panel.png)
+
 ## Opening the Import panel
 
 Click **Import** in the toolbar on the Tool Library page.

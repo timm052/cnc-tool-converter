@@ -2,6 +2,8 @@
 
 ## Opening the editor
 
+![Tool editor — Library tab](screenshots/tool-editor-library-tab.png)
+
 - **Click any row** in the library table.
 - **Focus a row** with `j`/`k` and press `Enter` or `e`.
 - Click **New Tool** to create a tool from scratch.
@@ -21,6 +23,8 @@ The editor is a slide-over panel on the right side of the screen. It has five ta
 | **Crib** | Lifecycle (use count, regrind threshold), stock history, change log, custom fields |
 
 ---
+
+![Tool editor — Geometry tab](screenshots/tool-editor-geometry.png)
 
 ## Live SVG preview
 
@@ -63,7 +67,11 @@ In the **Library** tab:
 
 ---
 
+![Tool editor — Cutting tab](screenshots/tool-editor-cutting.png)
+
 ## Crib tab
+
+![Tool editor — Crib tab](screenshots/tool-editor-crib.png)
 
 ### Lifecycle
 
