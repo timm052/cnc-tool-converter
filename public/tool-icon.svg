@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#1e3560"/>
+  <!-- End mill body -->
+  <rect x="224" y="80" width="64" height="220" rx="8" fill="#93c5fd"/>
+  <!-- Flutes -->
+  <rect x="224" y="100" width="12" height="180" rx="4" fill="#1e3560" opacity="0.5"/>
+  <rect x="244" y="100" width="12" height="180" rx="4" fill="#1e3560" opacity="0.5"/>
+  <rect x="264" y="100" width="12" height="180" rx="4" fill="#1e3560" opacity="0.5"/>
+  <!-- Cutting tip -->
+  <path d="M224 300 L256 360 L288 300 Z" fill="#60a5fa"/>
+  <!-- Holder / collet -->
+  <rect x="210" y="60" width="92" height="32" rx="6" fill="#475569"/>
+  <rect x="218" y="52" width="76" height="18" rx="4" fill="#334155"/>
+  <!-- T# badge -->
+  <rect x="148" y="370" width="216" height="72" rx="12" fill="#0f172a" opacity="0.8"/>
+  <text x="256" y="420" font-family="monospace" font-size="52" font-weight="bold"
+        fill="#93c5fd" text-anchor="middle">T#</text>
+</svg>

@@ -99,11 +99,11 @@ _Goal: Connect the tool library to the broader CNC workflow._
 
 ---
 
-## Phase 4 — Electron Desktop Application
+## Phase 4 — Tauri Desktop Application
 
-_Goal: Ship CNC Tool Converter as a standalone `.exe` / `.dmg` / `.AppImage` with filesystem access and OS integration._
+_Goal: Ship CNC Tool Converter as a standalone `.exe` / `.dmg` / `.AppImage` using Tauri — a Rust-backed desktop framework that uses the OS webview (WebView2 on Windows, WebKit on macOS/Linux) instead of bundling Chromium. Result: ~5–10 MB binary, lower RAM/CPU, and a fine-grained capability security model._
 
-### 4.1 Why Electron
+### 4.1 Why Tauri
 
 A browser-based app can't:
 - Open and save files directly from the local filesystem without user interaction every time
@@ -112,52 +112,58 @@ A browser-based app can't:
 - Integrate with the OS (file associations, system tray, native file dialogs)
 - Store data outside the browser sandbox (IndexedDB is browser-profile-scoped and can be cleared)
 
-Electron provides all of these while reusing the entire React UI without changes.
+Tauri provides all of these while reusing the entire React UI without changes. Key advantages over Electron:
+- **~5–10 MB binary** vs ~150–200 MB (no bundled Chromium)
+- **Lower RAM/CPU** — uses the OS webview (WebView2 is pre-installed on Windows 10+/11)
+- **Rust backend** — commands, filesystem, and SQLite all in Rust; TypeScript frontend is unchanged
+- **Capability model** — fine-grained permissions declared in `capabilities/`; no blanket Node.js access
 
 ### 4.2 Migration Plan
 
-**Step 1 — Add Electron boilerplate**
-- Install `electron`, `electron-builder`, `@electron/remote` (or use IPC pattern)
-- Create `electron/main.ts` — the Electron main process
-- Create `electron/preload.ts` — exposes a safe IPC bridge to the renderer (no `nodeIntegration`)
-- Add `electron:dev` and `electron:build` npm scripts (Vite builds the renderer; Electron wraps it)
+**Step 1 — Add Tauri to the Vite project**
+- Install `@tauri-apps/cli` and `@tauri-apps/api`
+- Run `tauri init` — creates `src-tauri/` with `Cargo.toml`, `tauri.conf.json`, `src/main.rs`, `src/lib.rs`
+- Add `tauri:dev` (`tauri dev`) and `tauri:build` (`tauri build`) npm scripts
+- Vite stays as the renderer build; Tauri wraps it
 - Keep the Vite web build working — both targets share 100% of the React codebase
 
 **Step 2 — Replace IndexedDB with SQLite**
-- Use `better-sqlite3` in the main process (native, synchronous, fast)
-- Expose DB operations via IPC: `db:getTools`, `db:putTool`, `db:deleteTool`, etc.
-- Create an `ElectronLibraryAdapter` that implements the same interface as the current Dexie adapter
-- Migrate the `LibraryContext` to use the adapter pattern (thin abstraction over either backend)
-- On first Electron run, migrate existing IndexedDB data to SQLite automatically
+- Add `tauri-plugin-sql` (with the `sqlite` feature) to `Cargo.toml`
+- Define migrations in `src-tauri/migrations/` — schema matching current Dexie tables (tools, materials, holders, transactions, auditLog, snapshots)
+- Expose DB operations as Tauri commands (`#[tauri::command]` in Rust): `get_tools`, `put_tool`, `delete_tool`, etc.
+- Create a `TauriLibraryAdapter` in TypeScript that calls `invoke('get_tools')` etc., implementing the same interface as the current Dexie adapter
+- Switch `LibraryContext` to use the adapter at runtime (detect `window.__TAURI__`); browser build continues using Dexie unchanged
+- On first Tauri run, migrate existing IndexedDB data to SQLite automatically via a one-time migration command
 
 **Step 3 — Native file dialogs**
-- Replace the `<input type="file">` drop zone with `dialog.showOpenDialog` via IPC
-- Replace the `URL.createObjectURL` download with `fs.writeFile` + optional `shell.showItemInFolder`
-- Keep the web file drop zone working as a fallback for the browser build
+- Add `tauri-plugin-dialog` and `tauri-plugin-fs` to `Cargo.toml`; declare capabilities in `src-tauri/capabilities/`
+- Replace `<input type="file">` drop zone with `open()` from `@tauri-apps/plugin-dialog`
+- Replace `URL.createObjectURL` downloads with `writeFile` from `@tauri-apps/plugin-fs` + optional `revealItemInDir` from `@tauri-apps/plugin-shell`
+- Keep the web file drop zone working as a fallback when `window.__TAURI__` is absent
 
 **Step 4 — Filesystem features**
-- Watch-folder mode (Phase 3.2) — use `chokidar` or `fs.watch` in the main process
-- Scheduled backup to a user-chosen directory (Phase 3.2)
-- File associations — register `.hsmlib`, `.tbl` so double-clicking opens them directly in the app
-- Auto-updater via `electron-updater` (GitHub Releases or a self-hosted endpoint)
+- Watch-folder mode — `tauri-plugin-fs` `watch()` API; Rust forwards events to the renderer via Tauri event system
+- Scheduled backup to a user-chosen directory — Tauri command triggered by a JS `setInterval` in the renderer
+- File associations — register `.hsmlib`, `.tbl` in `tauri.conf.json` `fileAssociations` so double-clicking opens them directly
+- Auto-updater via `tauri-plugin-updater` (GitHub Releases or a self-hosted endpoint); update check on startup
 
 **Step 5 — CLI interface**
-- `electron/cli.ts` — parse `process.argv` in the main process; if arguments are present, run headless conversion and exit
-- Reuses the converter registry directly; no renderer involved
-- Package as both a GUI app and a CLI tool in the same binary
+- Detect CLI arguments in `src-tauri/src/main.rs` via `std::env::args()`; if conversion args are present, run headless and exit without opening a window
+- Converter logic can be driven from Rust by invoking a JS/TS build artifact, or kept as a separate `npm run cli` Node.js script that imports the converter registry directly (simpler, no Rust FFI needed)
+- Package as both a GUI app and a CLI tool
 
 **Step 6 — Packaging & distribution**
-- `electron-builder` targets: Windows (NSIS installer + portable `.exe`), macOS (`.dmg`), Linux (`.AppImage` + `.deb`)
-- Code-sign on Windows (Authenticode) and macOS (Developer ID)
-- Publish to GitHub Releases; auto-updater checks on startup
+- `tauri build` targets: Windows (NSIS installer + `.msi`), macOS (`.dmg` + `.app`), Linux (`.AppImage` + `.deb`)
+- Code-sign on Windows (Authenticode) and macOS (Developer ID) via `tauri.conf.json` signing config
+- Publish to GitHub Releases; `tauri-plugin-updater` checks on startup
 - Optional: Snap / Flatpak for Linux distribution
 
-### 4.3 Electron-only Nice-to-Have Features
-- **System tray icon** — Quick access to backup, recent conversions, and library stats without opening the full window
-- **Native notifications** — Low-stock alerts, backup reminders, and tool-life warnings as OS notifications
-- **Drag files out** — Drag a converted file from the output panel directly onto the desktop or into another app
-- **Multi-window support** — Open the library and converter in separate windows simultaneously
-- **Offline map** — Not applicable (already fully offline), but ensure no CDN dependencies in packaged build
+### 4.3 Tauri-only Nice-to-Have Features
+- **System tray icon** — `tauri-plugin-tray`; quick access to backup, recent conversions, and library stats without opening the full window
+- **Native notifications** — `tauri-plugin-notification`; low-stock alerts, backup reminders, and tool-life warnings as OS notifications
+- **Drag files out** — Drag a converted file from the output panel onto the desktop via `tauri-plugin-drag`
+- **Multi-window support** — Open the library and converter in separate `WebviewWindow` instances simultaneously
+- **Offline guaranteed** — No CDN dependencies; all assets bundled; WebView2 on Windows 10+/11 is pre-installed
 
 ---
 
@@ -180,16 +186,21 @@ These can be picked up opportunistically when they fit alongside other work.
 | **Import from Excel (.xlsx)** | ✅ Done | `xlsxImport.ts` parses `.xlsx` to `Tool[]`; permissive column matching; full duplicate-detection flow in ImportPanel |
 | **Print labels from QR scan** | ✅ Done | Find-mode no longer auto-opens editor; shows action card with Open Editor / Print Label / Scan Again buttons |
 | **Changelog / release notes overlay** | ✅ Done | `ChangelogModal` shown once per version (keyed to `package.json` version in localStorage); dismissed with "Got it" |
+| **Favourite F&S presets** | ✅ Done | Save named speed/feed presets (Vc, RPM, chip load, plunge %) in Settings. "My presets" dropdown in the Speeds & Feeds panel — one click to load. Delete from Settings page. |
+| **Tool checkout / check-in** | ✅ Done | Mark a tool as checked out to an operator/machine with optional due-back date. Checked-out badge (orange) in library table. Check-out/in section in ToolEditor Crib tab. "Checked out" filter in sidebar. Overdue highlighted red. |
+| **Tool life prediction** | ✅ Done | Calculates average uses/day from `useCount` and `addedAt`. Shows projected regrind date in Crib tab when both `useCount > 0` and `regrindThreshold` are set. |
+| **PWA install support** | ✅ Done | Web app manifest + service worker registered via Vite. App is installable from Chrome/Edge. Icons, `display: standalone`, offline-first caching. |
 | **Keyboard-driven new-tool wizard** | — | Tab through fields; create a tool without touching the mouse |
 | **Tool image / photo** | ✅ Done | Click/drag-drop upload in ToolEditor Library tab; resized client-side (≤800px JPEG, ~100 KB) via canvas; stored as `imageBase64` in IndexedDB; shown as preview with remove button; appears as a 16mm photo strip above card in PDF tool sheet |
-| **Barcode support** | — | Scan a manufacturer barcode to auto-fill `productId` and look up specs from a tool database |
+| **Barcode labels + HID scanner** | ✅ Done | Code 128 barcode generation on printed labels (content: UUID / T# / description). USB + Bluetooth HID scanners work in both camera QR-scan panel and keyboard-intercept listener (timing-based, 80 ms threshold). Scanner panel accepts UUID and T-number (`T42`) formats. |
+| **Manufacturer barcode lookup** | — | Scan a manufacturer barcode to auto-fill `productId` and look up specs from an external tool database |
+| **Machines management page** | ✅ Done | Dedicated Machines tab — CRUD for shop machines (name, type, control, axes, RPM, ATC, taper, coolant). Synced to Tool Manager: merged machine group sidebar, RPM warning in F&S panel, auto-dialect in CAM snippet panel. |
 | **Supplier pricing integration** | — | Optional API key for distributor catalogues (e.g. McMaster-Carr, MSC) to fetch current pricing |
 | **Tool comparison history** | — | Save a compare session and reload it later |
 | **Custom report builder** | — | Drag-and-drop column picker to create custom PDF/CSV reports |
 | **Machine OEE tie-in** | — | Link tool usage to machine utilisation data (via CSV upload from OEE software) |
 | **Augmented reality label** | — | QR code on label links to the tool's live record in the app (when hosted as PWA) |
 | **Voice search** | — | `window.SpeechRecognition` — say "show all 10mm drills" to filter the table |
-| **Tool wear tracking** | — | Record edge wear / chipping observations per use with a photo attachment. Feeds into tool life modelling. |
 | **Favourite cutting conditions** | — | Save named F&S presets (e.g. "Aluminium roughing") and apply them to any tool in one click. |
 | **Tool set / kit grouping** | — | Group tools into named sets (e.g. "Fixture drilling kit"). Export a kit as a single file. |
 | **Configurable low-stock colour** | — | Let users choose the threshold colour for low-stock qty cells (default red). |
@@ -198,17 +209,14 @@ These can be picked up opportunistically when they fit alongside other work.
 | **Mastercam .tooldb import** | Blocked | Requires real sample files to reverse-engineer. |
 | **SFM / Vc lookup table in F&S panel** | — | Drop-down of common material + tool-material combos with recommended Vc ranges pre-filled. |
 | **Setup sheet generator** | — | One-click PDF that combines: work offsets, tool list (T# / description / offset), and part program header. Machine-group scoped. |
-| **Tool checkout / check-in** | — | Mark a tool as checked out to an operator/machine with a due-back date. Checked-out tools show a badge in the library table. Overdue returns highlighted in red. |
-| **Tool life prediction** | — | Based on use count history and regrind threshold, predict the expected regrind date using average uses per day. Show a projected timeline in the Crib tab. |
-| **Inventory aging report** | — | Flag tools that haven't been used in N days (configurable). Useful for identifying dead stock and freeing up crib space. |
-| **Cost-per-use tracking** | — | Divide unit cost by uses to show cost-per-use in Crib tab and in reports. Reset on regrind. |
+| **Tool instances (per-copy tracking)** | ✅ Done | Each tool gets one lettered instance (A, B, C…) per unit in stock. Per-instance: condition, measured actual diameter, comment, axis offsets. One active at a time. Active instance's offsets + actual diameter applied on export/print. "Use actual diameter" toggle in Export, Label Print, and Tool Sheet. |
+| **Tool checkout / check-in** | ✅ Done | See above |
+| **Tool life prediction** | ✅ Done | See above |
 | **ISO 13399 import / export** | — | Industry standard for CNC tool data exchange. Would enable direct interop with tool management software like Zoller, TDM Systems, Cribmaster. |
 | **CAM system export (extended)** | — | Exports for HyperMill, GibbsCAM, WorkNC, Edgecam, SolidCAM, Mastercam toolpaths in addition to existing Fanuc/HAAS/LinuxCNC. |
 | **Supplier invoice CSV import** | — | Parse packing slips or delivery notes from common distributors (MSC, Grainger, RS Components) to auto-update stock quantities. |
-| **Tool reservation** | — | Reserve a tool for a specific job / machine / time window so others know it is spoken for. Visible in library table and low-stock panel. |
 | **Tool family / parent-child grouping** | — | Link tools that are the same geometry in different wear states (New → Used → Reground). Navigate between family members in the editor. |
-| **PWA install support** | — | Add a web app manifest and service worker so the app can be installed from the browser on desktop and mobile. Already fully offline; just needs the install prompt. |
-| **Preventive maintenance scheduler** | — | Set a calendar-based maintenance interval (independent of use count) per tool. Notify when an interval is overdue. |
+| **PWA install support** | ✅ Done | See above |
 
 ---
 
@@ -240,6 +248,7 @@ _Goal: Support shops with multiple sites or teams that need a shared, always-in-
 | **v0.2** | Phase 1 complete — HAAS/Fanuc/Mach3/CSV/XLSX converters, F&S calculator, templates, backup nudge | ✅ Done |
 | **v0.3** | Phase 2 complete — inventory tracking, assembly view, improved import, material presets, audit log | ✅ Done |
 | **v0.4** | Phase 3 complete — table virtualisation, remote sync (REST + WebDAV), CAM snippets, work offset sheet (per-machine PDF card), snapshots, Jobs/BOM, sticky columns | ✅ Done |
-| **v1.0** | Phase 4 complete — Electron desktop app, SQLite, native dialogs, auto-updater | Planned |
-| **v1.x** | Nice-to-have features: setup sheet generator, tool checkout, tool life prediction, ISO 13399, PWA install | Future |
+| **v0.5** | Nice-to-haves — tool instances, machines page, barcode labels, HID scanner, F&S presets, tool checkout, tool life prediction, PWA install | ✅ Done |
+| **v1.0** | Phase 4 complete — Tauri desktop app, SQLite, native dialogs, auto-updater | Planned |
+| **v1.x** | Further nice-to-haves: setup sheet generator, ISO 13399, manufacturer barcode lookup, tool family grouping | Future |
 | **v2.0** | Phase 5 — Hosted backend, real-time sync, mobile PWA, MES integration | Future |

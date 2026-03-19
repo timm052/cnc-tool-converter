@@ -1,5 +1,9 @@
 import { useState, createContext, useContext, type ReactNode } from 'react';
-import { RotateCcw, Plus, Trash2 } from 'lucide-react';
+import {
+  RotateCcw, Plus, Trash2,
+  SlidersHorizontal, BookMarked, Library, ArrowLeftRight,
+  LayoutList, Cloud, Code2, type LucideIcon,
+} from 'lucide-react';
 import {
   useSettings,
   type Settings,
@@ -59,11 +63,14 @@ function Row({
 }
 
 function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+  const rowLabel = useContext(RowLabelCtx);
   return (
     <button
+      type="button"
       onClick={() => onChange(!value)}
       role="switch"
-      aria-checked={value ? 'true' : 'false'}
+      aria-checked={value}
+      aria-label={rowLabel || undefined}
       className={[
         'relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
         value ? 'bg-blue-600' : 'bg-slate-600',
@@ -185,12 +192,27 @@ const COL_LABELS: Record<keyof TableColumnVisibility, string> = {
   useCount:     'Use Count',
 };
 
+// ── Nav tabs ──────────────────────────────────────────────────────────────────
+
+type SettingsTab = 'general' | 'profiles' | 'library' | 'conversion' | 'display' | 'sync' | 'developer';
+
+const TABS: { id: SettingsTab; label: string; Icon: LucideIcon }[] = [
+  { id: 'general',    label: 'General',    Icon: SlidersHorizontal },
+  { id: 'profiles',   label: 'Profiles',   Icon: BookMarked },
+  { id: 'library',    label: 'Library',    Icon: Library },
+  { id: 'conversion', label: 'Conversion', Icon: ArrowLeftRight },
+  { id: 'display',    label: 'Display',    Icon: LayoutList },
+  { id: 'sync',       label: 'Sync',       Icon: Cloud },
+  { id: 'developer',  label: 'Developer',  Icon: Code2 },
+];
+
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
   const { settings, updateSettings, resetSettings } = useSettings();
   const [profiles,     setProfiles]     = useState<SettingsProfile[]>(loadProfiles);
   const [profileName,  setProfileName]  = useState('');
+  const [activeTab,    setActiveTab]    = useState<SettingsTab>('general');
 
   function set<K extends keyof Settings>(key: K, value: Settings[K]) {
     updateSettings({ [key]: value } as Partial<Settings>);
@@ -247,672 +269,786 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="h-full overflow-auto p-6">
-      <div className="max-w-2xl mx-auto space-y-6">
+    <div className="h-full flex flex-col overflow-hidden">
 
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-lg font-semibold text-slate-100">Settings</h1>
-            <p className="text-sm text-slate-500 mt-0.5">Preferences are saved automatically to your browser.</p>
-          </div>
-          <button
-            onClick={resetSettings}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 border border-slate-700 hover:border-slate-600 bg-slate-800 hover:bg-slate-700 transition-colors mt-1"
-          >
-            <RotateCcw size={12} />
-            Reset to defaults
-          </button>
+      {/* Page header */}
+      <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-slate-700">
+        <div>
+          <h1 className="text-lg font-semibold text-slate-100">Settings</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Preferences are saved automatically to your browser.</p>
         </div>
+        <button
+          type="button"
+          onClick={resetSettings}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 border border-slate-700 hover:border-slate-600 bg-slate-800 hover:bg-slate-700 transition-colors"
+        >
+          <RotateCcw size={12} />
+          Reset to defaults
+        </button>
+      </div>
 
-        {/* Appearance / Theme */}
-        <Section title="Appearance">
-          <div className="px-4 py-4 bg-slate-800/50">
-            <p className="text-sm text-slate-200 mb-3">Theme</p>
-            <div className="flex gap-3 mb-2">
-              {/* Auto (OS) */}
-              <button
-                type="button"
-                onClick={() => set('theme', 'auto')}
-                className={[
-                  'flex-1 flex flex-col gap-2 p-3 border-2 text-left transition-all',
-                  settings.theme === 'auto'
-                    ? 'border-blue-500 bg-slate-700'
-                    : 'border-slate-600 bg-slate-800 hover:border-slate-500',
-                ].join(' ')}
-              >
-                <div className="w-full h-16 rounded overflow-hidden flex items-center justify-center bg-gradient-to-br from-slate-950 to-slate-100 pointer-events-none select-none">
-                  <span className="text-2xl">⚙️</span>
-                </div>
-                <span className="text-xs font-medium text-slate-300">Auto (OS)</span>
-              </button>
-            </div>
-            <div className="flex gap-3">
+      {/* Body */}
+      <div className="flex-1 flex overflow-hidden">
 
-              {/* Dark theme card */}
-              <button
-                type="button"
-                onClick={() => set('theme', 'dark')}
-                className={[
-                  'flex-1 flex flex-col gap-2 p-3 border-2 text-left transition-all',
-                  settings.theme === 'dark'
-                    ? 'border-blue-500 bg-slate-700'
-                    : 'border-slate-600 bg-slate-800 hover:border-slate-500',
-                ].join(' ')}
-              >
-                <div className="w-full h-16 bg-slate-950 rounded overflow-hidden flex flex-col pointer-events-none select-none">
-                  <div className="h-4 bg-slate-900 flex items-center px-1.5 gap-1">
-                    <div className="w-2 h-2 rounded-full bg-blue-600" />
-                    <div className="w-8 h-1 bg-slate-600 rounded" />
-                  </div>
-                  <div className="flex flex-1 overflow-hidden">
-                    <div className="w-8 bg-slate-800" />
-                    <div className="flex-1 p-1 space-y-1">
-                      <div className="h-1.5 bg-slate-700 rounded w-3/4" />
-                      <div className="h-1.5 bg-slate-700 rounded w-1/2" />
-                      <div className="h-1.5 bg-blue-600/40 rounded w-2/3" />
+        {/* Left nav */}
+        <nav className="w-44 shrink-0 border-r border-slate-700 overflow-y-auto p-2 space-y-0.5">
+          {TABS.map(({ id, label, Icon }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setActiveTab(id)}
+              className={[
+                'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors text-left',
+                activeTab === id
+                  ? 'bg-blue-600/20 text-blue-400 font-medium'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/60',
+              ].join(' ')}
+            >
+              <Icon size={15} className="shrink-0" />
+              {label}
+            </button>
+          ))}
+        </nav>
+
+        {/* Content panel */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="max-w-2xl space-y-6">
+
+            {/* ── General ── */}
+            {activeTab === 'general' && (
+              <>
+                {/* Appearance / Theme */}
+                <Section title="Appearance">
+                  <div className="px-4 py-4 bg-slate-800/50">
+                    <p className="text-sm text-slate-200 mb-3">Theme</p>
+                    <div className="flex gap-3 mb-2">
+                      {/* Auto (OS) */}
+                      <button
+                        type="button"
+                        onClick={() => set('theme', 'auto')}
+                        className={[
+                          'flex-1 flex flex-col gap-2 p-3 border-2 text-left transition-all',
+                          settings.theme === 'auto'
+                            ? 'border-blue-500 bg-slate-700'
+                            : 'border-slate-600 bg-slate-800 hover:border-slate-500',
+                        ].join(' ')}
+                      >
+                        <div className="w-full h-16 rounded overflow-hidden flex items-center justify-center bg-gradient-to-br from-slate-950 to-slate-100 pointer-events-none select-none">
+                          <span className="text-2xl">⚙️</span>
+                        </div>
+                        <span className="text-xs font-medium text-slate-300">Auto (OS)</span>
+                        {settings.theme === 'auto' && (
+                          <span className="text-xs text-blue-400 font-medium">✓ Active</span>
+                        )}
+                      </button>
+                    </div>
+                    <div className="flex gap-3">
+
+                      {/* Dark theme card */}
+                      <button
+                        type="button"
+                        onClick={() => set('theme', 'dark')}
+                        className={[
+                          'flex-1 flex flex-col gap-2 p-3 border-2 text-left transition-all',
+                          settings.theme === 'dark'
+                            ? 'border-blue-500 bg-slate-700'
+                            : 'border-slate-600 bg-slate-800 hover:border-slate-500',
+                        ].join(' ')}
+                      >
+                        <div className="w-full h-16 bg-slate-950 rounded overflow-hidden flex flex-col pointer-events-none select-none">
+                          <div className="h-4 bg-slate-900 flex items-center px-1.5 gap-1">
+                            <div className="w-2 h-2 rounded-full bg-blue-600" />
+                            <div className="w-8 h-1 bg-slate-600 rounded" />
+                          </div>
+                          <div className="flex flex-1 overflow-hidden">
+                            <div className="w-8 bg-slate-800" />
+                            <div className="flex-1 p-1 space-y-1">
+                              <div className="h-1.5 bg-slate-700 rounded w-3/4" />
+                              <div className="h-1.5 bg-slate-700 rounded w-1/2" />
+                              <div className="h-1.5 bg-blue-600/40 rounded w-2/3" />
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-slate-200">Dark</p>
+                          <p className="text-xs text-slate-500">Modern dark UI</p>
+                        </div>
+                        {settings.theme === 'dark' && (
+                          <span className="text-xs text-blue-400 font-medium">✓ Active</span>
+                        )}
+                      </button>
+
+                      {/* Light theme card */}
+                      <button
+                        type="button"
+                        onClick={() => set('theme', 'light')}
+                        className={[
+                          'flex-1 flex flex-col gap-2 p-3 border-2 text-left transition-all',
+                          settings.theme === 'light'
+                            ? 'border-blue-500 bg-slate-700'
+                            : 'border-slate-600 bg-slate-800 hover:border-slate-500',
+                        ].join(' ')}
+                      >
+                        <div className="theme-preview-light w-full h-16 overflow-hidden flex flex-col pointer-events-none select-none">
+                          <div className="theme-preview-light__titlebar h-4 flex items-center px-1.5 gap-1">
+                            <div className="w-2 h-2 rounded-full bg-blue-500" />
+                            <div className="theme-preview-light__row w-8 h-1" />
+                          </div>
+                          <div className="flex flex-1 overflow-hidden">
+                            <div className="theme-preview-light__body w-8" />
+                            <div className="theme-preview-light__content flex-1 p-1 space-y-1">
+                              <div className="theme-preview-light__row h-1.5 w-3/4" />
+                              <div className="theme-preview-light__row h-1.5 w-1/2" />
+                              <div className="theme-preview-light__row--accent h-1.5 w-2/3" />
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-slate-200">Light</p>
+                          <p className="text-xs text-slate-500">Modern light UI</p>
+                        </div>
+                        {settings.theme === 'light' && (
+                          <span className="text-xs text-blue-400 font-medium">✓ Active</span>
+                        )}
+                      </button>
+
+                      {/* Retro 90s theme card */}
+                      <button
+                        type="button"
+                        onClick={() => set('theme', 'retro90s')}
+                        className={[
+                          'flex-1 flex flex-col gap-2 p-3 border-2 text-left transition-all',
+                          settings.theme === 'retro90s'
+                            ? 'border-blue-500 bg-slate-700'
+                            : 'border-slate-600 bg-slate-800 hover:border-slate-500',
+                        ].join(' ')}
+                      >
+                        <div className="theme-preview-retro w-full h-16 overflow-hidden flex flex-col pointer-events-none select-none">
+                          <div className="theme-preview-retro__titlebar h-4 flex items-center px-1.5 gap-1">
+                            <div className="theme-preview-retro__titlebar-icon w-2 h-2" />
+                            <div className="theme-preview-retro__titlebar-label w-8 h-1" />
+                          </div>
+                          <div className="theme-preview-retro__body flex flex-1 overflow-hidden">
+                            <div className="theme-preview-retro__body w-8" />
+                            <div className="theme-preview-retro__content flex-1 p-1 space-y-1">
+                              <div className="theme-preview-retro__row h-1.5 w-3/4" />
+                              <div className="theme-preview-retro__row h-1.5 w-1/2" />
+                              <div className="theme-preview-retro__row--accent h-1.5 w-2/3" />
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-slate-200">Retro 90s</p>
+                          <p className="text-xs text-slate-500">Windows 95/98 style</p>
+                        </div>
+                        {settings.theme === 'retro90s' && (
+                          <span className="text-xs text-blue-400 font-medium">✓ Active</span>
+                        )}
+                      </button>
+
+                      {/* Mac OS 9 theme card */}
+                      <button
+                        type="button"
+                        onClick={() => set('theme', 'macos9')}
+                        className={[
+                          'flex-1 flex flex-col gap-2 p-3 border-2 text-left transition-all',
+                          settings.theme === 'macos9'
+                            ? 'border-blue-500 bg-slate-700'
+                            : 'border-slate-600 bg-slate-800 hover:border-slate-500',
+                        ].join(' ')}
+                      >
+                        <div className="theme-preview-mac9 w-full h-16 overflow-hidden flex flex-col pointer-events-none select-none">
+                          <div className="theme-preview-mac9__titlebar h-4 flex items-center px-1.5 gap-1">
+                            <div className="theme-preview-mac9__close w-2 h-2" />
+                            <div className="theme-preview-mac9__label w-8 h-1" />
+                          </div>
+                          <div className="theme-preview-mac9__window flex flex-1 overflow-hidden">
+                            <div className="theme-preview-mac9__body w-8" />
+                            <div className="theme-preview-mac9__content flex-1 p-1 space-y-1">
+                              <div className="theme-preview-mac9__row h-1.5 w-3/4" />
+                              <div className="theme-preview-mac9__row h-1.5 w-1/2" />
+                              <div className="theme-preview-mac9__row--accent h-1.5 w-2/3" />
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-slate-200">Mac OS 9</p>
+                          <p className="text-xs text-slate-500">Platinum pinstripes</p>
+                        </div>
+                        {settings.theme === 'macos9' && (
+                          <span className="text-xs text-blue-400 font-medium">✓ Active</span>
+                        )}
+                      </button>
+
+                      {/* Windows XP theme card */}
+                      <button
+                        type="button"
+                        onClick={() => set('theme', 'winxp')}
+                        className={[
+                          'flex-1 flex flex-col gap-2 p-3 border-2 text-left transition-all',
+                          settings.theme === 'winxp'
+                            ? 'border-blue-500 bg-slate-700'
+                            : 'border-slate-600 bg-slate-800 hover:border-slate-500',
+                        ].join(' ')}
+                      >
+                        <div className="theme-preview-xp w-full h-16 overflow-hidden flex flex-col pointer-events-none select-none">
+                          <div className="theme-preview-xp__titlebar h-4 flex items-center px-1.5 gap-1">
+                            <div className="theme-preview-xp__titlebar-icon w-2 h-2" />
+                            <div className="theme-preview-xp__titlebar-label w-8 h-1" />
+                          </div>
+                          <div className="theme-preview-xp__window flex flex-1 overflow-hidden">
+                            <div className="theme-preview-xp__body w-8" />
+                            <div className="theme-preview-xp__content flex-1 p-1 space-y-1">
+                              <div className="theme-preview-xp__row h-1.5 w-3/4" />
+                              <div className="theme-preview-xp__row h-1.5 w-1/2" />
+                              <div className="theme-preview-xp__row--accent h-1.5 w-2/3" />
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-slate-200">Windows XP</p>
+                          <p className="text-xs text-slate-500">Luna blue, gradients</p>
+                        </div>
+                        {settings.theme === 'winxp' && (
+                          <span className="text-xs text-blue-400 font-medium">✓ Active</span>
+                        )}
+                      </button>
+
                     </div>
                   </div>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-200">Dark</p>
-                  <p className="text-xs text-slate-500">Modern dark UI</p>
-                </div>
-                {settings.theme === 'dark' && (
-                  <span className="text-xs text-blue-400 font-medium">✓ Active</span>
-                )}
-              </button>
+                </Section>
 
-              {/* Light theme card */}
-              <button
-                type="button"
-                onClick={() => set('theme', 'light')}
-                className={[
-                  'flex-1 flex flex-col gap-2 p-3 border-2 text-left transition-all',
-                  settings.theme === 'light'
-                    ? 'border-blue-500 bg-slate-700'
-                    : 'border-slate-600 bg-slate-800 hover:border-slate-500',
-                ].join(' ')}
-              >
-                <div className="theme-preview-light w-full h-16 overflow-hidden flex flex-col pointer-events-none select-none">
-                  <div className="theme-preview-light__titlebar h-4 flex items-center px-1.5 gap-1">
-                    <div className="w-2 h-2 rounded-full bg-blue-500" />
-                    <div className="theme-preview-light__row w-8 h-1" />
-                  </div>
-                  <div className="flex flex-1 overflow-hidden">
-                    <div className="theme-preview-light__body w-8" />
-                    <div className="theme-preview-light__content flex-1 p-1 space-y-1">
-                      <div className="theme-preview-light__row h-1.5 w-3/4" />
-                      <div className="theme-preview-light__row h-1.5 w-1/2" />
-                      <div className="theme-preview-light__row--accent h-1.5 w-2/3" />
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-200">Light</p>
-                  <p className="text-xs text-slate-500">Modern light UI</p>
-                </div>
-                {settings.theme === 'light' && (
-                  <span className="text-xs text-blue-400 font-medium">✓ Active</span>
-                )}
-              </button>
-
-              {/* Retro 90s theme card */}
-              <button
-                type="button"
-                onClick={() => set('theme', 'retro90s')}
-                className={[
-                  'flex-1 flex flex-col gap-2 p-3 border-2 text-left transition-all',
-                  settings.theme === 'retro90s'
-                    ? 'border-blue-500 bg-slate-700'
-                    : 'border-slate-600 bg-slate-800 hover:border-slate-500',
-                ].join(' ')}
-              >
-                <div className="theme-preview-retro w-full h-16 overflow-hidden flex flex-col pointer-events-none select-none">
-                  <div className="theme-preview-retro__titlebar h-4 flex items-center px-1.5 gap-1">
-                    <div className="theme-preview-retro__titlebar-icon w-2 h-2" />
-                    <div className="theme-preview-retro__titlebar-label w-8 h-1" />
-                  </div>
-                  <div className="theme-preview-retro__body flex flex-1 overflow-hidden">
-                    <div className="theme-preview-retro__body w-8" />
-                    <div className="theme-preview-retro__content flex-1 p-1 space-y-1">
-                      <div className="theme-preview-retro__row h-1.5 w-3/4" />
-                      <div className="theme-preview-retro__row h-1.5 w-1/2" />
-                      <div className="theme-preview-retro__row--accent h-1.5 w-2/3" />
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-200">Retro 90s</p>
-                  <p className="text-xs text-slate-500">Windows 95/98 style</p>
-                </div>
-                {settings.theme === 'retro90s' && (
-                  <span className="text-xs text-blue-400 font-medium">✓ Active</span>
-                )}
-              </button>
-
-              {/* Mac OS 9 theme card */}
-              <button
-                type="button"
-                onClick={() => set('theme', 'macos9')}
-                className={[
-                  'flex-1 flex flex-col gap-2 p-3 border-2 text-left transition-all',
-                  settings.theme === 'macos9'
-                    ? 'border-blue-500 bg-slate-700'
-                    : 'border-slate-600 bg-slate-800 hover:border-slate-500',
-                ].join(' ')}
-              >
-                <div className="theme-preview-mac9 w-full h-16 overflow-hidden flex flex-col pointer-events-none select-none">
-                  <div className="theme-preview-mac9__titlebar h-4 flex items-center px-1.5 gap-1">
-                    <div className="theme-preview-mac9__close w-2 h-2" />
-                    <div className="theme-preview-mac9__label w-8 h-1" />
-                  </div>
-                  <div className="theme-preview-mac9__window flex flex-1 overflow-hidden">
-                    <div className="theme-preview-mac9__body w-8" />
-                    <div className="theme-preview-mac9__content flex-1 p-1 space-y-1">
-                      <div className="theme-preview-mac9__row h-1.5 w-3/4" />
-                      <div className="theme-preview-mac9__row h-1.5 w-1/2" />
-                      <div className="theme-preview-mac9__row--accent h-1.5 w-2/3" />
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-200">Mac OS 9</p>
-                  <p className="text-xs text-slate-500">Platinum pinstripes</p>
-                </div>
-                {settings.theme === 'macos9' && (
-                  <span className="text-xs text-blue-400 font-medium">✓ Active</span>
-                )}
-              </button>
-
-              {/* Windows XP theme card */}
-              <button
-                type="button"
-                onClick={() => set('theme', 'winxp')}
-                className={[
-                  'flex-1 flex flex-col gap-2 p-3 border-2 text-left transition-all',
-                  settings.theme === 'winxp'
-                    ? 'border-blue-500 bg-slate-700'
-                    : 'border-slate-600 bg-slate-800 hover:border-slate-500',
-                ].join(' ')}
-              >
-                <div className="theme-preview-xp w-full h-16 overflow-hidden flex flex-col pointer-events-none select-none">
-                  <div className="theme-preview-xp__titlebar h-4 flex items-center px-1.5 gap-1">
-                    <div className="theme-preview-xp__titlebar-icon w-2 h-2" />
-                    <div className="theme-preview-xp__titlebar-label w-8 h-1" />
-                  </div>
-                  <div className="theme-preview-xp__window flex flex-1 overflow-hidden">
-                    <div className="theme-preview-xp__body w-8" />
-                    <div className="theme-preview-xp__content flex-1 p-1 space-y-1">
-                      <div className="theme-preview-xp__row h-1.5 w-3/4" />
-                      <div className="theme-preview-xp__row h-1.5 w-1/2" />
-                      <div className="theme-preview-xp__row--accent h-1.5 w-2/3" />
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-200">Windows XP</p>
-                  <p className="text-xs text-slate-500">Luna blue, gradients</p>
-                </div>
-                {settings.theme === 'winxp' && (
-                  <span className="text-xs text-blue-400 font-medium">✓ Active</span>
-                )}
-              </button>
-
-            </div>
-          </div>
-        </Section>
-
-        {/* Settings Profiles */}
-        <Section title="Settings Profiles">
-          <Row label="Saved profiles" description="Save the current settings as a named profile to switch between configurations." align="start">
-            <div className="space-y-3 min-w-[220px]">
-              {profiles.length === 0 && (
-                <p className="text-xs text-slate-500">No profiles saved yet.</p>
-              )}
-              {profiles.map((p) => (
-                <div key={p.id} className="flex items-center gap-2">
-                  <button
-                    onClick={() => applyProfile(p)}
-                    className="flex-1 text-left px-2.5 py-1.5 rounded-lg text-xs bg-slate-700 hover:bg-blue-600 text-slate-200 hover:text-white border border-slate-600 transition-colors truncate"
-                    title={`Apply "${p.name}"`}
-                  >
-                    {p.name}
-                  </button>
-                  <button onClick={() => removeProfile(p.id)} title={`Delete profile "${p.name}"`} className="p-1 text-slate-500 hover:text-red-400 transition-colors">
-                    <Trash2 size={12} />
-                  </button>
-                </div>
-              ))}
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={profileName}
-                  onChange={(e) => setProfileName(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && saveProfile()}
-                  placeholder="Profile name…"
-                  className="flex-1 px-2.5 py-1.5 text-xs bg-slate-700 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-                <button
-                  onClick={saveProfile}
-                  disabled={!profileName.trim()}
-                  className="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white transition-colors"
-                >
-                  Save
-                </button>
-              </div>
-            </div>
-          </Row>
-        </Section>
-
-        {/* Conversion Defaults */}
-        <Section title="Conversion Defaults">
-          <Row label="Default units" description="Applied when a format doesn't specify units.">
-            <Sel
-              value={settings.defaultUnits}
-              options={[
-                { value: 'metric',   label: 'Metric (mm)' },
-                { value: 'imperial', label: 'Imperial (in)' },
-              ]}
-              onChange={(v) => set('defaultUnits', v)}
-            />
-          </Row>
-          <Row label="Remember last format pair" description="Restore the source and target formats when the app is reopened.">
-            <Toggle value={settings.rememberLastFormatPair} onChange={(v) => set('rememberLastFormatPair', v)} />
-          </Row>
-          <Row label="Auto-convert on file load" description="Run conversion immediately after files are dropped or loaded.">
-            <Toggle value={settings.autoConvertOnLoad} onChange={(v) => set('autoConvertOnLoad', v)} />
-          </Row>
-        </Section>
-
-        {/* File Handling */}
-        <Section title="File Handling">
-          <Row label="Multi-file behaviour" description="How multiple dropped files are handled.">
-            <Sel
-              value={settings.mergeBehavior}
-              options={[
-                { value: 'merge',    label: 'Merge into one library' },
-                { value: 'separate', label: 'Convert separately' },
-              ]}
-              onChange={(v) => set('mergeBehavior', v)}
-            />
-          </Row>
-          <Row label="Warn on data loss" description="Show a banner when fields can't be represented in the target format.">
-            <Toggle value={settings.warnOnDataLoss} onChange={(v) => set('warnOnDataLoss', v)} />
-          </Row>
-        </Section>
-
-        {/* Tool Library */}
-        <Section title="Tool Library">
-          {/* New Tool Defaults */}
-          <div className="px-4 pt-3 pb-1 bg-slate-800/50">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">New Tool Defaults</p>
-          </div>
-          <Row label="Default machine group" description="Pre-filled when opening the New Tool editor.">
-            <TextInput
-              value={settings.libraryDefaultMachineGroup}
-              placeholder="e.g. VF-2"
-              onChange={(v) => set('libraryDefaultMachineGroup', v)}
-            />
-          </Row>
-          <Row label="Default tool number" description="Starting T# for newly created tools.">
-            <NumInput
-              value={settings.libraryDefaultToolNumber}
-              min={1}
-              max={9999}
-              onChange={(v) => set('libraryDefaultToolNumber', Math.max(1, v))}
-            />
-          </Row>
-          <Row label="Default tool type" description="Tool type selected when opening the New Tool editor.">
-            <Sel
-              value={settings.libraryDefaultType}
-              options={getAllToolTypeOptions(settings.customToolTypes)}
-              onChange={(v) => set('libraryDefaultType', v)}
-            />
-          </Row>
-
-          {/* Import Defaults */}
-          <div className="px-4 pt-3 pb-1 bg-slate-800/50">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Import Defaults</p>
-          </div>
-          <Row label="Auto-assign machine group" description="Applied to all tools when importing. Leave blank to keep the source value.">
-            <TextInput
-              value={settings.libraryImportDefaultMachineGroup}
-              placeholder="e.g. Lathe"
-              onChange={(v) => set('libraryImportDefaultMachineGroup', v)}
-            />
-          </Row>
-          <Row label="Overwrite duplicates by default" description="Pre-checks the overwrite option in the Import panel.">
-            <Toggle value={settings.libraryImportOverwrite} onChange={(v) => set('libraryImportOverwrite', v)} />
-          </Row>
-
-          {/* Display */}
-          <div className="px-4 pt-3 pb-1 bg-slate-800/50">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Display</p>
-          </div>
-          <Row label="Default sort column" description="Column the library table is sorted by when first loaded.">
-            <Sel
-              value={settings.librarySortKey}
-              options={[
-                { value: 'addedAt',     label: 'Date added' },
-                { value: 'toolNumber',  label: 'Tool number' },
-                { value: 'description', label: 'Description' },
-                { value: 'type',        label: 'Type' },
-                { value: 'diameter',    label: 'Diameter' },
-              ]}
-              onChange={(v) => set('librarySortKey', v)}
-            />
-          </Row>
-          <Row label="Default sort direction">
-            <Sel
-              value={settings.librarySortDir}
-              options={[
-                { value: 'desc', label: 'Descending' },
-                { value: 'asc',  label: 'Ascending' },
-              ]}
-              onChange={(v) => set('librarySortDir', v)}
-            />
-          </Row>
-          <Row label="Max tags per row" description="Number of tag chips shown before a +N overflow indicator.">
-            <NumInput
-              value={settings.libraryMaxTagsShown}
-              min={1}
-              max={10}
-              onChange={(v) => set('libraryMaxTagsShown', Math.max(1, Math.min(10, v)))}
-            />
-          </Row>
-          <Row label="Validation warnings" description="Show a warning icon on tools with missing or inconsistent geometry values.">
-            <Toggle value={settings.validationWarningsEnabled} onChange={(v) => set('validationWarningsEnabled', v)} />
-          </Row>
-        </Section>
-
-        {/* LinuxCNC Writer */}
-        <Section title="LinuxCNC Writer">
-          <Row label="Starting tool number offset" description="Added to every T number on export. 0 = no offset.">
-            <NumInput
-              value={settings.linuxcncStartingToolNumber}
-              min={0}
-              max={9999}
-              onChange={(v) => set('linuxcncStartingToolNumber', Math.max(0, v))}
-            />
-          </Row>
-          <Row label="Pocket (P) assignment" description="How pocket numbers are assigned to exported tools.">
-            <Sel
-              value={settings.linuxcncPocketAssignment}
-              options={[
-                { value: 'match-t',    label: 'Match T number' },
-                { value: 'sequential', label: 'Sequential from 1' },
-              ]}
-              onChange={(v) => set('linuxcncPocketAssignment', v)}
-            />
-          </Row>
-          <Row label="Coordinate decimal places" description="Precision of X / Y / Z / D values in the .tbl file.">
-            <NumInput
-              value={settings.linuxcncDecimalPlaces}
-              min={1}
-              max={10}
-              onChange={(v) => set('linuxcncDecimalPlaces', Math.max(1, Math.min(10, v)))}
-            />
-          </Row>
-          <Row label="Include header comment" description="Add a comment line at the top of exported .tbl files.">
-            <Toggle value={settings.linuxcncIncludeHeaderComment} onChange={(v) => set('linuxcncIncludeHeaderComment', v)} />
-          </Row>
-        </Section>
-
-        {/* HSMLib Writer */}
-        <Section title="HSMLib / Fusion 360 Writer">
-          <Row label="Default machine vendor" description="Written as a comment in exported .hsmlib files when set.">
-            <TextInput
-              value={settings.hsmlibDefaultMachineVendor}
-              placeholder="e.g. Haas"
-              onChange={(v) => set('hsmlibDefaultMachineVendor', v)}
-            />
-          </Row>
-          <Row label="Default machine model" description="Written as a comment in exported .hsmlib files when set.">
-            <TextInput
-              value={settings.hsmlibDefaultMachineModel}
-              placeholder="e.g. VF-2"
-              onChange={(v) => set('hsmlibDefaultMachineModel', v)}
-            />
-          </Row>
-        </Section>
-
-        {/* Display */}
-        <Section title="Display">
-          <Row label="Table decimal precision" description="Decimal places shown for dimensions in the parsed tools table.">
-            <NumInput
-              value={settings.tableDecimalPrecision}
-              min={1}
-              max={8}
-              onChange={(v) => set('tableDecimalPrecision', Math.max(1, Math.min(8, v)))}
-            />
-          </Row>
-          <Row label="Row density" description="Vertical padding in the parsed tools table.">
-            <Sel
-              value={settings.tableRowDensity}
-              options={[
-                { value: 'comfortable', label: 'Comfortable' },
-                { value: 'compact',     label: 'Compact' },
-              ]}
-              onChange={(v) => set('tableRowDensity', v)}
-            />
-          </Row>
-          <Row label="Visible columns" description="Choose which columns appear in the parsed tools table." align="start">
-            <div className="grid grid-cols-2 gap-x-8 gap-y-2 pt-0.5">
-              {(Object.entries(COL_LABELS) as [keyof TableColumnVisibility, string][]).map(([col, label]) => (
-                <label key={col} className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={settings.tableColumnVisibility[col]}
-                    onChange={(e) => setCol(col, e.target.checked)}
-                    className="w-3.5 h-3.5 rounded border-slate-500 bg-slate-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
-                  />
-                  <span className="text-xs text-slate-300">{label}</span>
-                </label>
-              ))}
-            </div>
-          </Row>
-        </Section>
-
-        {/* Custom Tool Types */}
-        <Section title="Custom Tool Types">
-          <Row label="Defined types" description="Add custom tool types that appear in the Type dropdown alongside built-in types." align="start">
-            <div className="space-y-3 min-w-[260px]">
-              {settings.customToolTypes.length === 0 && (
-                <p className="text-xs text-slate-500">No custom types defined.</p>
-              )}
-              {settings.customToolTypes.map((ct) => (
-                <div key={ct.id} className="rounded-lg border border-slate-700 bg-slate-800/60 p-3 space-y-2">
-                  <div className="flex items-center gap-2">
+                {/* Operator identity */}
+                <Section title="Operator">
+                  <Row label="Operator name" description="Recorded in the change log when you edit a tool (no login required)">
                     <input
                       type="text"
-                      value={ct.label}
-                      aria-label="Custom type label"
-                      onChange={(e) => updateCustomType(ct.id, { label: e.target.value })}
-                      className="flex-1 px-2 py-1 text-xs bg-slate-700 border border-slate-600 rounded text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      placeholder="Type label"
+                      value={settings.operatorName}
+                      onChange={(e) => set('operatorName', e.target.value)}
+                      placeholder="e.g. John"
+                      className="w-40 px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                    <button onClick={() => removeCustomType(ct.id)} title="Remove custom type" className="p-1 text-slate-500 hover:text-red-400 shrink-0">
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <p className="text-xs text-slate-500 mb-1">Profile shape</p>
-                      <select
-                        value={ct.profileShape}
-                        aria-label="Profile shape"
-                        onChange={(e) => updateCustomType(ct.id, { profileShape: e.target.value as CustomToolTypeDefinition['profileShape'] })}
-                        className="w-full px-2 py-1 text-xs bg-slate-700 border border-slate-600 rounded text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                  </Row>
+                </Section>
+              </>
+            )}
+
+            {/* ── Profiles ── */}
+            {activeTab === 'profiles' && (
+              <Section title="Settings Profiles">
+                <Row label="Saved profiles" description="Save the current settings as a named profile to switch between configurations." align="start">
+                  <div className="space-y-3 min-w-[220px]">
+                    {profiles.length === 0 && (
+                      <p className="text-xs text-slate-500">No profiles saved yet.</p>
+                    )}
+                    {profiles.map((p) => (
+                      <div key={p.id} className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => applyProfile(p)}
+                          className="flex-1 text-left px-2.5 py-1.5 rounded-lg text-xs bg-slate-700 hover:bg-blue-600 text-slate-200 hover:text-white border border-slate-600 transition-colors truncate"
+                          title={`Apply "${p.name}"`}
+                        >
+                          {p.name}
+                        </button>
+                        <button type="button" onClick={() => removeProfile(p.id)} title={`Delete profile "${p.name}"`} className="p-1 text-slate-500 hover:text-red-400 transition-colors">
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    ))}
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={profileName}
+                        onChange={(e) => setProfileName(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && saveProfile()}
+                        placeholder="Profile name…"
+                        className="flex-1 px-2.5 py-1.5 text-xs bg-slate-700 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={saveProfile}
+                        disabled={!profileName.trim()}
+                        className="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white transition-colors"
                       >
-                        {([
-                          ['flat',             'Flat (end mill)'],
-                          ['ball',             'Ball'],
-                          ['bull nose',        'Bull Nose'],
-                          ['tapered',          'Tapered / V-tip'],
-                          ['tapered ball',     'Tapered Ball'],
-                          ['tapered bull nose','Tapered Bull Nose'],
-                          ['drill',            'Drill (pointed)'],
-                          ['center drill',     'Center Drill'],
-                          ['counter bore',     'Counter Bore'],
-                          ['reamer',           'Reamer'],
-                          ['tap',              'Tap'],
-                          ['thread mill',      'Thread Mill'],
-                        ] as [string, string][]).map(([val, label]) => (
-                          <option key={val} value={val}>{label}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500 mb-1">Badge colour</p>
-                      <select
-                        value={ct.colour}
-                        aria-label="Badge colour"
-                        onChange={(e) => updateCustomType(ct.id, { colour: e.target.value })}
-                        className="w-full px-2 py-1 text-xs bg-slate-700 border border-slate-600 rounded text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                      >
-                        {CUSTOM_TYPE_COLOUR_OPTIONS.map((o) => (
-                          <option key={o.value} value={o.value}>{o.label}</option>
-                        ))}
-                      </select>
+                        Save
+                      </button>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                    {([
-                      ['showsCornerRadius', 'Corner radius'],
-                      ['showsTaperAngle',   'Taper angle'],
-                      ['showsTipDiameter',  'Tip diameter'],
-                      ['showsThreadFields', 'Thread fields'],
-                      ['showsNumTeeth',     'Num. teeth'],
-                    ] as [keyof CustomToolTypeDefinition, string][]).map(([field, label]) => (
-                      <label key={String(field)} className="flex items-center gap-1.5 cursor-pointer select-none">
+                </Row>
+              </Section>
+            )}
+
+            {/* ── Library ── */}
+            {activeTab === 'library' && (
+              <>
+                {/* Tool Library */}
+                <Section title="Tool Library">
+                  {/* New Tool Defaults */}
+                  <div className="px-4 pt-3 pb-1 bg-slate-800/50">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">New Tool Defaults</p>
+                  </div>
+                  <Row label="Default machine group" description="Pre-filled when opening the New Tool editor.">
+                    <TextInput
+                      value={settings.libraryDefaultMachineGroup}
+                      placeholder="e.g. VF-2"
+                      onChange={(v) => set('libraryDefaultMachineGroup', v)}
+                    />
+                  </Row>
+                  <Row label="Default tool number" description="Starting T# for newly created tools.">
+                    <NumInput
+                      value={settings.libraryDefaultToolNumber}
+                      min={1}
+                      max={9999}
+                      onChange={(v) => set('libraryDefaultToolNumber', Math.max(1, v))}
+                    />
+                  </Row>
+                  <Row label="Max instances per tool" description="How many lettered copies (A, B, C…) can be created per tool. Sync-with-qty will not exceed this cap.">
+                    <NumInput
+                      value={settings.maxToolInstances}
+                      min={1}
+                      max={702}
+                      onChange={(v) => set('maxToolInstances', Math.max(1, Math.min(702, v)))}
+                    />
+                  </Row>
+                  <Row label="Default tool type" description="Tool type selected when opening the New Tool editor.">
+                    <Sel
+                      value={settings.libraryDefaultType}
+                      options={getAllToolTypeOptions(settings.customToolTypes)}
+                      onChange={(v) => set('libraryDefaultType', v)}
+                    />
+                  </Row>
+
+                  {/* Import Defaults */}
+                  <div className="px-4 pt-3 pb-1 bg-slate-800/50">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Import Defaults</p>
+                  </div>
+                  <Row label="Auto-assign machine group" description="Applied to all tools when importing. Leave blank to keep the source value.">
+                    <TextInput
+                      value={settings.libraryImportDefaultMachineGroup}
+                      placeholder="e.g. Lathe"
+                      onChange={(v) => set('libraryImportDefaultMachineGroup', v)}
+                    />
+                  </Row>
+                  <Row label="Overwrite duplicates by default" description="Pre-checks the overwrite option in the Import panel.">
+                    <Toggle value={settings.libraryImportOverwrite} onChange={(v) => set('libraryImportOverwrite', v)} />
+                  </Row>
+
+                  {/* Display */}
+                  <div className="px-4 pt-3 pb-1 bg-slate-800/50">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Display</p>
+                  </div>
+                  <Row label="Default sort column" description="Column the library table is sorted by when first loaded.">
+                    <Sel
+                      value={settings.librarySortKey}
+                      options={[
+                        { value: 'addedAt',     label: 'Date added' },
+                        { value: 'toolNumber',  label: 'Tool number' },
+                        { value: 'description', label: 'Description' },
+                        { value: 'type',        label: 'Type' },
+                        { value: 'diameter',    label: 'Diameter' },
+                      ]}
+                      onChange={(v) => set('librarySortKey', v)}
+                    />
+                  </Row>
+                  <Row label="Default sort direction">
+                    <Sel
+                      value={settings.librarySortDir}
+                      options={[
+                        { value: 'desc', label: 'Descending' },
+                        { value: 'asc',  label: 'Ascending' },
+                      ]}
+                      onChange={(v) => set('librarySortDir', v)}
+                    />
+                  </Row>
+                  <Row label="Max tags per row" description="Number of tag chips shown before a +N overflow indicator.">
+                    <NumInput
+                      value={settings.libraryMaxTagsShown}
+                      min={1}
+                      max={10}
+                      onChange={(v) => set('libraryMaxTagsShown', Math.max(1, Math.min(10, v)))}
+                    />
+                  </Row>
+                  <Row label="Validation warnings" description="Show a warning icon on tools with missing or inconsistent geometry values.">
+                    <Toggle value={settings.validationWarningsEnabled} onChange={(v) => set('validationWarningsEnabled', v)} />
+                  </Row>
+                </Section>
+
+                {/* Custom Tool Types */}
+                <Section title="Custom Tool Types">
+                  <Row label="Defined types" description="Add custom tool types that appear in the Type dropdown alongside built-in types." align="start">
+                    <div className="space-y-3 min-w-[260px]">
+                      {settings.customToolTypes.length === 0 && (
+                        <p className="text-xs text-slate-500">No custom types defined.</p>
+                      )}
+                      {settings.customToolTypes.map((ct) => (
+                        <div key={ct.id} className="rounded-lg border border-slate-700 bg-slate-800/60 p-3 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={ct.label}
+                              aria-label="Custom type label"
+                              onChange={(e) => updateCustomType(ct.id, { label: e.target.value })}
+                              className="flex-1 px-2 py-1 text-xs bg-slate-700 border border-slate-600 rounded text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              placeholder="Type label"
+                            />
+                            <button type="button" onClick={() => removeCustomType(ct.id)} title="Remove custom type" className="p-1 text-slate-500 hover:text-red-400 shrink-0">
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <p className="text-xs text-slate-500 mb-1">Profile shape</p>
+                              <select
+                                value={ct.profileShape}
+                                aria-label="Profile shape"
+                                onChange={(e) => updateCustomType(ct.id, { profileShape: e.target.value as CustomToolTypeDefinition['profileShape'] })}
+                                className="w-full px-2 py-1 text-xs bg-slate-700 border border-slate-600 rounded text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                              >
+                                {([
+                                  ['flat',             'Flat (end mill)'],
+                                  ['ball',             'Ball'],
+                                  ['bull nose',        'Bull Nose'],
+                                  ['tapered',          'Tapered / V-tip'],
+                                  ['tapered ball',     'Tapered Ball'],
+                                  ['tapered bull nose','Tapered Bull Nose'],
+                                  ['drill',            'Drill (pointed)'],
+                                  ['center drill',     'Center Drill'],
+                                  ['counter bore',     'Counter Bore'],
+                                  ['reamer',           'Reamer'],
+                                  ['tap',              'Tap'],
+                                  ['thread mill',      'Thread Mill'],
+                                ] as [string, string][]).map(([val, label]) => (
+                                  <option key={val} value={val}>{label}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <p className="text-xs text-slate-500 mb-1">Badge colour</p>
+                              <select
+                                value={ct.colour}
+                                aria-label="Badge colour"
+                                onChange={(e) => updateCustomType(ct.id, { colour: e.target.value })}
+                                className="w-full px-2 py-1 text-xs bg-slate-700 border border-slate-600 rounded text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                              >
+                                {CUSTOM_TYPE_COLOUR_OPTIONS.map((o) => (
+                                  <option key={o.value} value={o.value}>{o.label}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                            {([
+                              ['showsCornerRadius', 'Corner radius'],
+                              ['showsTaperAngle',   'Taper angle'],
+                              ['showsTipDiameter',  'Tip diameter'],
+                              ['showsThreadFields', 'Thread fields'],
+                              ['showsNumTeeth',     'Num. teeth'],
+                            ] as [keyof CustomToolTypeDefinition, string][]).map(([field, label]) => (
+                              <label key={String(field)} className="flex items-center gap-1.5 cursor-pointer select-none">
+                                <input
+                                  type="checkbox"
+                                  checked={ct[field] as boolean}
+                                  onChange={(e) => updateCustomType(ct.id, { [field]: e.target.checked })}
+                                  className="w-3 h-3 rounded border-slate-500 bg-slate-700 text-blue-500"
+                                />
+                                <span className="text-xs text-slate-400">{label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={addCustomType}
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-300 border border-slate-600 transition-colors"
+                      >
+                        <Plus size={12} />
+                        Add custom type
+                      </button>
+                    </div>
+                  </Row>
+                </Section>
+
+                {/* F&S Presets */}
+                <Section title="F&amp;S Presets">
+                  {settings.fsPresets.length === 0 ? (
+                    <div className="px-4 py-3">
+                      <p className="text-xs text-slate-500">
+                        No presets saved. Open the Speeds &amp; Feeds panel and use "Save" to create a preset.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-slate-700/50">
+                      {settings.fsPresets.map((p) => (
+                        <div key={p.id} className="flex items-center gap-3 px-4 py-2.5">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-slate-200">{p.name}</p>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              {p.driver === 'vc'
+                                ? `Vc ${p.vc} ${p.unit === 'metric' ? 'm/min' : 'SFM'}`
+                                : `${p.rpm.toLocaleString()} RPM`}
+                              {' · '}fz {p.chipLoad}
+                              {' · '}{p.plungePct}% plunge
+                              {' · '}{p.unit}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => updateSettings({ fsPresets: settings.fsPresets.filter((x) => x.id !== p.id) })}
+                            title="Delete preset"
+                            className="shrink-0 p-1.5 rounded text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {settings.fsPresets.length > 0 && (
+                    <div className="px-4 py-2.5 border-t border-slate-700/50">
+                      <button
+                        type="button"
+                        onClick={() => updateSettings({ fsPresets: [] })}
+                        className="text-xs text-slate-500 hover:text-red-400 transition-colors"
+                      >
+                        Delete all presets
+                      </button>
+                    </div>
+                  )}
+                </Section>
+              </>
+            )}
+
+            {/* ── Conversion ── */}
+            {activeTab === 'conversion' && (
+              <>
+                {/* Conversion Defaults */}
+                <Section title="Conversion Defaults">
+                  <Row label="Default units" description="Applied when a format doesn't specify units.">
+                    <Sel
+                      value={settings.defaultUnits}
+                      options={[
+                        { value: 'metric',   label: 'Metric (mm)' },
+                        { value: 'imperial', label: 'Imperial (in)' },
+                      ]}
+                      onChange={(v) => set('defaultUnits', v)}
+                    />
+                  </Row>
+                  <Row label="Remember last format pair" description="Restore the source and target formats when the app is reopened.">
+                    <Toggle value={settings.rememberLastFormatPair} onChange={(v) => set('rememberLastFormatPair', v)} />
+                  </Row>
+                  <Row label="Auto-convert on file load" description="Run conversion immediately after files are dropped or loaded.">
+                    <Toggle value={settings.autoConvertOnLoad} onChange={(v) => set('autoConvertOnLoad', v)} />
+                  </Row>
+                </Section>
+
+                {/* File Handling */}
+                <Section title="File Handling">
+                  <Row label="Multi-file behaviour" description="How multiple dropped files are handled.">
+                    <Sel
+                      value={settings.mergeBehavior}
+                      options={[
+                        { value: 'merge',    label: 'Merge into one library' },
+                        { value: 'separate', label: 'Convert separately' },
+                      ]}
+                      onChange={(v) => set('mergeBehavior', v)}
+                    />
+                  </Row>
+                  <Row label="Warn on data loss" description="Show a banner when fields can't be represented in the target format.">
+                    <Toggle value={settings.warnOnDataLoss} onChange={(v) => set('warnOnDataLoss', v)} />
+                  </Row>
+                </Section>
+
+                {/* LinuxCNC Writer */}
+                <Section title="LinuxCNC Writer">
+                  <Row label="Starting tool number offset" description="Added to every T number on export. 0 = no offset.">
+                    <NumInput
+                      value={settings.linuxcncStartingToolNumber}
+                      min={0}
+                      max={9999}
+                      onChange={(v) => set('linuxcncStartingToolNumber', Math.max(0, v))}
+                    />
+                  </Row>
+                  <Row label="Pocket (P) assignment" description="How pocket numbers are assigned to exported tools.">
+                    <Sel
+                      value={settings.linuxcncPocketAssignment}
+                      options={[
+                        { value: 'match-t',    label: 'Match T number' },
+                        { value: 'sequential', label: 'Sequential from 1' },
+                      ]}
+                      onChange={(v) => set('linuxcncPocketAssignment', v)}
+                    />
+                  </Row>
+                  <Row label="Coordinate decimal places" description="Precision of X / Y / Z / D values in the .tbl file.">
+                    <NumInput
+                      value={settings.linuxcncDecimalPlaces}
+                      min={1}
+                      max={10}
+                      onChange={(v) => set('linuxcncDecimalPlaces', Math.max(1, Math.min(10, v)))}
+                    />
+                  </Row>
+                  <Row label="Include header comment" description="Add a comment line at the top of exported .tbl files.">
+                    <Toggle value={settings.linuxcncIncludeHeaderComment} onChange={(v) => set('linuxcncIncludeHeaderComment', v)} />
+                  </Row>
+                </Section>
+
+                {/* HSMLib Writer */}
+                <Section title="HSMLib / Fusion 360 Writer">
+                  <Row label="Default machine vendor" description="Written as a comment in exported .hsmlib files when set.">
+                    <TextInput
+                      value={settings.hsmlibDefaultMachineVendor}
+                      placeholder="e.g. Haas"
+                      onChange={(v) => set('hsmlibDefaultMachineVendor', v)}
+                    />
+                  </Row>
+                  <Row label="Default machine model" description="Written as a comment in exported .hsmlib files when set.">
+                    <TextInput
+                      value={settings.hsmlibDefaultMachineModel}
+                      placeholder="e.g. VF-2"
+                      onChange={(v) => set('hsmlibDefaultMachineModel', v)}
+                    />
+                  </Row>
+                </Section>
+              </>
+            )}
+
+            {/* ── Display ── */}
+            {activeTab === 'display' && (
+              <Section title="Display">
+                <Row label="Table decimal precision" description="Decimal places shown for dimensions in the parsed tools table.">
+                  <NumInput
+                    value={settings.tableDecimalPrecision}
+                    min={1}
+                    max={8}
+                    onChange={(v) => set('tableDecimalPrecision', Math.max(1, Math.min(8, v)))}
+                  />
+                </Row>
+                <Row label="Row density" description="Vertical padding in the parsed tools table.">
+                  <Sel
+                    value={settings.tableRowDensity}
+                    options={[
+                      { value: 'comfortable', label: 'Comfortable' },
+                      { value: 'compact',     label: 'Compact' },
+                    ]}
+                    onChange={(v) => set('tableRowDensity', v)}
+                  />
+                </Row>
+                <Row label="Visible columns" description="Choose which columns appear in the parsed tools table." align="start">
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-2 pt-0.5">
+                    {(Object.entries(COL_LABELS) as [keyof TableColumnVisibility, string][]).map(([col, label]) => (
+                      <label key={col} className="flex items-center gap-2 cursor-pointer select-none">
                         <input
                           type="checkbox"
-                          checked={ct[field] as boolean}
-                          onChange={(e) => updateCustomType(ct.id, { [field]: e.target.checked })}
-                          className="w-3 h-3 rounded border-slate-500 bg-slate-700 text-blue-500"
+                          checked={settings.tableColumnVisibility[col]}
+                          onChange={(e) => setCol(col, e.target.checked)}
+                          className="w-3.5 h-3.5 rounded border-slate-500 bg-slate-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
                         />
-                        <span className="text-xs text-slate-400">{label}</span>
+                        <span className="text-xs text-slate-300">{label}</span>
                       </label>
                     ))}
                   </div>
-                </div>
-              ))}
-              <button
-                onClick={addCustomType}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-300 border border-slate-600 transition-colors"
-              >
-                <Plus size={12} />
-                Add custom type
-              </button>
-            </div>
-          </Row>
-        </Section>
+                </Row>
+              </Section>
+            )}
 
-        {/* Operator identity */}
-        <Section title="Operator">
-          <Row label="Operator name" description="Recorded in the change log when you edit a tool (no login required)">
-            <input
-              type="text"
-              value={settings.operatorName}
-              onChange={(e) => set('operatorName', e.target.value)}
-              placeholder="e.g. John"
-              className="w-40 px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </Row>
-        </Section>
-
-        {/* Remote database */}
-        <Section title="Remote Database">
-          <Row label="Endpoint URL" description="Full URL to the JSON file. WebDAV: path to cnc-library.json on your server. REST: any endpoint that accepts PUT/GET.">
-            <input
-              type="url"
-              value={settings.remoteDbUrl}
-              onChange={(e) => set('remoteDbUrl', e.target.value)}
-              placeholder="https://myserver.example.com/library.json"
-              className="w-72 px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-slate-500"
-            />
-          </Row>
-          <Row label="Authentication" description="Basic auth is used by WebDAV servers (Nextcloud, ownCloud, etc.). Bearer is for REST APIs.">
-            <div className="flex gap-3">
-              {(['bearer', 'basic'] as const).map((type) => (
-                <label key={type} className="flex items-center gap-1.5 cursor-pointer select-none">
+            {/* ── Sync ── */}
+            {activeTab === 'sync' && (
+              <Section title="Remote Database">
+                <Row label="Endpoint URL" description="Full URL to the JSON file. WebDAV: path to cnc-library.json on your server. REST: any endpoint that accepts PUT/GET.">
                   <input
-                    type="radio"
-                    name="remoteDbAuthType"
-                    value={type}
-                    checked={(settings.remoteDbAuthType ?? 'bearer') === type}
-                    onChange={() => set('remoteDbAuthType', type)}
-                    className="w-3.5 h-3.5 border-slate-500 bg-slate-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+                    type="url"
+                    value={settings.remoteDbUrl}
+                    onChange={(e) => set('remoteDbUrl', e.target.value)}
+                    placeholder="https://myserver.example.com/library.json"
+                    className="w-72 px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-slate-500"
                   />
-                  <span className="text-sm text-slate-300">
-                    {type === 'bearer' ? 'Bearer token' : 'Basic auth (WebDAV)'}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </Row>
-          {(settings.remoteDbAuthType ?? 'bearer') === 'basic' && (
-            <Row label="Username" description="WebDAV / Nextcloud username">
-              <input
-                type="text"
-                value={settings.remoteDbUsername ?? ''}
-                onChange={(e) => set('remoteDbUsername', e.target.value)}
-                placeholder="your-username"
-                autoComplete="username"
-                className="w-72 px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-slate-500"
-              />
-            </Row>
-          )}
-          <Row
-            label={(settings.remoteDbAuthType ?? 'bearer') === 'basic' ? 'Password' : 'API token'}
-            description={(settings.remoteDbAuthType ?? 'bearer') === 'basic'
-              ? 'WebDAV password or app password (recommended over your main password)'
-              : 'Sent as Authorization: Bearer … (leave blank if no auth required)'}
-          >
-            <input
-              type="password"
-              value={settings.remoteDbToken}
-              onChange={(e) => set('remoteDbToken', e.target.value)}
-              placeholder="Optional"
-              autoComplete="current-password"
-              className="w-72 px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-slate-500"
-            />
-          </Row>
-          <Row label="Auto-sync on save" description="Push the library to the remote endpoint automatically after each change">
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={settings.remoteDbAutoSync}
-                onChange={(e) => set('remoteDbAutoSync', e.target.checked)}
-                className="w-4 h-4 rounded border-slate-500 bg-slate-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
-              />
-              <span className="text-sm text-slate-300">Enable auto-sync</span>
-            </label>
-          </Row>
-          <p className="text-xs text-slate-500 pt-1">
-            The app always works offline. Manual push / pull is available in the Library toolbar (cloud icon).{' '}
-            {(settings.remoteDbAuthType ?? 'bearer') === 'basic'
-              ? 'Nextcloud example: https://cloud.example.com/remote.php/dav/files/username/cnc-library.json'
-              : 'The endpoint must accept PUT (upload) and GET (download) of the v2 JSON sync payload.'}
-          </p>
-        </Section>
+                </Row>
+                <Row label="Authentication" description="Basic auth is used by WebDAV servers (Nextcloud, ownCloud, etc.). Bearer is for REST APIs.">
+                  <div className="flex gap-3">
+                    {(['bearer', 'basic'] as const).map((type) => (
+                      <label key={type} className="flex items-center gap-1.5 cursor-pointer select-none">
+                        <input
+                          type="radio"
+                          name="remoteDbAuthType"
+                          value={type}
+                          checked={(settings.remoteDbAuthType ?? 'bearer') === type}
+                          onChange={() => set('remoteDbAuthType', type)}
+                          className="w-3.5 h-3.5 border-slate-500 bg-slate-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+                        />
+                        <span className="text-sm text-slate-300">
+                          {type === 'bearer' ? 'Bearer token' : 'Basic auth (WebDAV)'}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </Row>
+                {(settings.remoteDbAuthType ?? 'bearer') === 'basic' && (
+                  <Row label="Username" description="WebDAV / Nextcloud username">
+                    <input
+                      type="text"
+                      value={settings.remoteDbUsername ?? ''}
+                      onChange={(e) => set('remoteDbUsername', e.target.value)}
+                      placeholder="your-username"
+                      autoComplete="username"
+                      className="w-72 px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-slate-500"
+                    />
+                  </Row>
+                )}
+                <Row
+                  label={(settings.remoteDbAuthType ?? 'bearer') === 'basic' ? 'Password' : 'API token'}
+                  description={(settings.remoteDbAuthType ?? 'bearer') === 'basic'
+                    ? 'WebDAV password or app password (recommended over your main password)'
+                    : 'Sent as Authorization: Bearer … (leave blank if no auth required)'}
+                >
+                  <input
+                    type="password"
+                    value={settings.remoteDbToken}
+                    onChange={(e) => set('remoteDbToken', e.target.value)}
+                    placeholder="Optional"
+                    autoComplete="current-password"
+                    className="w-72 px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-slate-500"
+                  />
+                </Row>
+                <Row label="Auto-sync on save" description="Push the library to the remote endpoint automatically after each change">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={settings.remoteDbAutoSync}
+                      onChange={(e) => set('remoteDbAutoSync', e.target.checked)}
+                      className="w-4 h-4 rounded border-slate-500 bg-slate-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+                    />
+                    <span className="text-sm text-slate-300">Enable auto-sync</span>
+                  </label>
+                </Row>
+                <p className="text-xs text-slate-500 pt-1 px-4 pb-3">
+                  The app always works offline. Manual push / pull is available in the Library toolbar (cloud icon).{' '}
+                  {(settings.remoteDbAuthType ?? 'bearer') === 'basic'
+                    ? 'Nextcloud example: https://cloud.example.com/remote.php/dav/files/username/cnc-library.json'
+                    : 'The endpoint must accept PUT (upload) and GET (download) of the v2 JSON sync payload.'}
+                </p>
+              </Section>
+            )}
 
-        {/* Developer */}
-        <Section title="Developer">
-          <Row label="Dev mode" description="Show the Preview Debug tab in the sidebar">
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={settings.devMode}
-                onChange={(e) => set('devMode', e.target.checked)}
-                className="w-4 h-4 rounded border-slate-500 bg-slate-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
-              />
-              <span className="text-sm text-slate-300">Enable dev mode</span>
-            </label>
-          </Row>
-        </Section>
+            {/* ── Developer ── */}
+            {activeTab === 'developer' && (
+              <Section title="Developer">
+                <Row label="Dev mode" description="Show the Preview Debug tab in the sidebar">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={settings.devMode}
+                      onChange={(e) => set('devMode', e.target.checked)}
+                      className="w-4 h-4 rounded border-slate-500 bg-slate-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+                    />
+                    <span className="text-sm text-slate-300">Enable dev mode</span>
+                  </label>
+                </Row>
+              </Section>
+            )}
 
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import type { ToolTemplate } from '../types/template';
 import type { StockTransaction } from '../types/stockTransaction';
 import type { ToolAuditEntry } from '../types/auditEntry';
 import type { LibrarySnapshot } from '../types/snapshot';
+import type { Machine } from '../types/machine';
 
 class LibraryDatabase extends Dexie {
   tools!:        Table<LibraryTool>;
@@ -15,6 +16,7 @@ class LibraryDatabase extends Dexie {
   transactions!: Table<StockTransaction>;
   auditLog!:     Table<ToolAuditEntry>;
   snapshots!:    Table<LibrarySnapshot>;
+  machines!:     Table<Machine>;
 
   constructor() {
     super('cnc-tool-library');
@@ -72,6 +74,17 @@ class LibraryDatabase extends Dexie {
       transactions: 'id, toolId, timestamp',
       auditLog:     'id, toolId, timestamp',
       snapshots:    'id, createdAt',
+    });
+    // v8 — add machines table
+    this.version(8).stores({
+      tools:        'id, toolNumber, type, *machineGroups, starred, addedAt',
+      materials:    'id, name, category, createdAt',
+      holders:      'id, name, type, createdAt',
+      templates:    'id, name, createdAt',
+      transactions: 'id, toolId, timestamp',
+      auditLog:     'id, toolId, timestamp',
+      snapshots:    'id, createdAt',
+      machines:     'id, name, type, createdAt',
     });
   }
 }

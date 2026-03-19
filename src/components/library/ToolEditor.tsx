@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useMemo, createContext, useContext, type ChangeEvent } from 'react';
-import { X, Trash2, Save, AlertCircle, ZoomIn, ZoomOut, Wand2, Undo2, Redo2, AlertTriangle, Copy, Plus, ChevronDown, BookTemplate, ImagePlus, Search } from 'lucide-react';
+import { X, Trash2, Save, AlertCircle, ZoomIn, ZoomOut, Wand2, Undo2, Redo2, AlertTriangle, Copy, Plus, ChevronDown, BookTemplate, ImagePlus, Search, Clock, TrendingUp } from 'lucide-react';
 import { useLibrary } from '../../contexts/LibraryContext';
 import type { ToolTemplate } from '../../types/template';
-import type { LibraryTool, ToolMaterialEntry, ToolCondition } from '../../types/libraryTool';
+import type { LibraryTool, ToolMaterialEntry, ToolCondition, ToolInstance, OffsetAxis } from '../../types/libraryTool';
 import { TOOL_CONDITION_LABELS, TOOL_CONDITION_COLOURS } from '../../types/libraryTool';
+import { instanceLetter, syncInstancesToQuantity, setActiveInstance } from '../../lib/toolInstance';
 import type { ToolType, ToolUnit, CoolantMode, FeedMode, ToolMaterial } from '../../types/tool';
 import type { ToolHolder } from '../../types/holder';
 import type { WorkMaterial } from '../../types/material';
@@ -646,6 +647,132 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'crib',     label: 'Crib'     },
 ];
 
+// ── InstanceRow ───────────────────────────────────────────────────────────────
+
+const OFFSET_AXES: OffsetAxis[] = ['x', 'y', 'z', 'a', 'b', 'c', 'u', 'v', 'w'];
+
+function InstanceRow({
+  inst, unit, onActivate, onChange,
+}: {
+  inst:       ToolInstance;
+  unit:       string;
+  onActivate: () => void;
+  onChange:   (patch: Partial<ToolInstance>) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  function patchOffset(axis: OffsetAxis, value: number | undefined) {
+    const next = { ...(inst.offsets ?? {}) };
+    if (value == null) delete next[axis];
+    else               next[axis] = value;
+    onChange({ offsets: Object.keys(next).length ? next : undefined });
+  }
+
+  return (
+    <div className={`rounded-lg border ${inst.isActive ? 'border-blue-500/50 bg-blue-600/5' : 'border-slate-700 bg-slate-800/40'}`}>
+      {/* Main row */}
+      <div className="flex items-center gap-2 px-2.5 py-2">
+        {/* Active radio */}
+        <button
+          type="button"
+          title={inst.isActive ? 'Active instance' : 'Set as active'}
+          onClick={onActivate}
+          className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+            inst.isActive ? 'border-blue-400' : 'border-slate-600 hover:border-slate-400'
+          }`}
+        >
+          {inst.isActive && <div className="w-2 h-2 rounded-full bg-blue-400" />}
+        </button>
+
+        {/* Letter badge */}
+        <span className={`shrink-0 w-6 h-6 rounded text-xs font-bold flex items-center justify-center font-mono ${
+          inst.isActive ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300'
+        }`}>
+          {inst.letter}
+        </span>
+
+        {/* Condition */}
+        <select
+          value={inst.condition ?? ''}
+          aria-label={`Instance ${inst.letter} condition`}
+          onChange={(e) => onChange({ condition: (e.target.value as ToolCondition) || undefined })}
+          className="w-28 shrink-0 px-1.5 py-1 text-xs bg-slate-700 border border-slate-600 rounded text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+        >
+          <option value="">— cond. —</option>
+          {(Object.entries(TOOL_CONDITION_LABELS) as [ToolCondition, string][]).map(([v, label]) => (
+            <option key={v} value={v}>{label}</option>
+          ))}
+        </select>
+
+        {/* Actual diameter */}
+        <div className="flex items-center gap-1 shrink-0">
+          <span className="text-xs text-slate-500">Ø</span>
+          <input
+            type="number"
+            value={inst.actualDiameter ?? ''}
+            placeholder="actual"
+            min={0}
+            step={0.001}
+            aria-label={`Instance ${inst.letter} actual diameter`}
+            onChange={(e) => onChange({ actualDiameter: e.target.value !== '' ? parseFloat(e.target.value) : undefined })}
+            className="w-20 px-1.5 py-1 text-xs bg-slate-700 border border-slate-600 rounded text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500 tabular-nums"
+          />
+          <span className="text-xs text-slate-500">{unit}</span>
+        </div>
+
+        {/* Expand toggle */}
+        <button
+          type="button"
+          title={expanded ? 'Collapse' : 'Offsets / comment'}
+          onClick={() => setExpanded((v) => !v)}
+          className="ml-auto p-1 rounded text-slate-500 hover:text-slate-300 transition-colors"
+        >
+          <ChevronDown size={13} className={`transition-transform ${expanded ? 'rotate-180' : ''}`} />
+        </button>
+      </div>
+
+      {/* Expanded: comment + all offsets */}
+      {expanded && (
+        <div className="border-t border-slate-700/60 px-2.5 py-2 space-y-2">
+          {/* Comment */}
+          <div className="flex items-center gap-2">
+            <span className="w-16 shrink-0 text-xs text-slate-500">Note</span>
+            <input
+              type="text"
+              value={inst.comment ?? ''}
+              placeholder="e.g. sharpened 2026-03"
+              aria-label={`Instance ${inst.letter} comment`}
+              onChange={(e) => onChange({ comment: e.target.value || undefined })}
+              className="flex-1 px-2 py-1 text-xs bg-slate-700 border border-slate-600 rounded text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+          {/* Offsets grid */}
+          <div className="grid grid-cols-3 gap-1.5">
+            {OFFSET_AXES.map((axis) => {
+              const isAngular = ['a', 'b', 'c'].includes(axis);
+              return (
+                <div key={axis} className="flex items-center gap-1">
+                  <span className="w-5 shrink-0 text-xs text-slate-500 uppercase">{axis}</span>
+                  <input
+                    type="number"
+                    value={inst.offsets?.[axis] ?? ''}
+                    placeholder="—"
+                    step={0.001}
+                    aria-label={`Instance ${inst.letter} ${axis} offset`}
+                    onChange={(e) => patchOffset(axis, e.target.value !== '' ? parseFloat(e.target.value) : undefined)}
+                    className="flex-1 min-w-0 px-1.5 py-1 text-xs bg-slate-700 border border-slate-600 rounded text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500 tabular-nums"
+                  />
+                  <span className="text-xs text-slate-600">{isAngular ? '°' : unit}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function ToolEditor({
@@ -686,6 +813,8 @@ export default function ToolEditor({
   const [addMatId,          setAddMatId]          = useState('');
   // Aspect ratio (w/h) of the current photo — used to size the preview row
   const [photoAspectRatio,  setPhotoAspectRatio]  = useState<number | null>(null);
+  const [checkedOutName,    setCheckedOutName]    = useState('');
+  const [checkedOutDueStr,  setCheckedOutDueStr]  = useState('');
 
   useEffect(() => {
     if (!draft.imageBase64) { setPhotoAspectRatio(null); return; }
@@ -1621,7 +1750,129 @@ export default function ToolEditor({
                     );
                   })()
                 )}
+                {/* Predicted regrind */}
+                {draft.useCount != null && draft.useCount > 0 &&
+                  draft.regrindThreshold != null && draft.regrindThreshold > 0 &&
+                  draft.useCount < draft.regrindThreshold &&
+                  draft.addedAt != null && (() => {
+                    const daysSinceAdded = (Date.now() - draft.addedAt) / (1000 * 60 * 60 * 24);
+                    if (daysSinceAdded <= 0) return null;
+                    const avgPerDay = draft.useCount / daysSinceAdded;
+                    if (avgPerDay <= 0) return null;
+                    const usesLeft = draft.regrindThreshold - draft.useCount;
+                    const daysLeft = usesLeft / avgPerDay;
+                    const predictedDate = new Date(Date.now() + daysLeft * 24 * 60 * 60 * 1000);
+                    return (
+                      <div className="mt-2 flex items-start gap-1.5 px-2 py-1.5 rounded-lg bg-slate-700/50 border border-slate-600/50">
+                        <TrendingUp size={12} className="shrink-0 mt-0.5 text-slate-400" />
+                        <p className="text-xs text-slate-400">
+                          At ~{avgPerDay.toFixed(1)} uses/day → regrind in ~{Math.round(daysLeft)} days ({predictedDate.toLocaleDateString()})
+                        </p>
+                      </div>
+                    );
+                  })()}
               </div>
+              {/* Checkout */}
+              <div className="pt-2 border-t border-slate-700/60">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Checkout</p>
+                {draft.checkedOutTo ? (
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-1.5 px-2 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                      <Clock size={12} className="shrink-0 mt-0.5 text-amber-400" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-amber-300 font-medium truncate">Checked out to: {draft.checkedOutTo}</p>
+                        {draft.checkedOutAt != null && (
+                          <p className="text-xs text-slate-500 mt-0.5">Since: {new Date(draft.checkedOutAt).toLocaleDateString()}</p>
+                        )}
+                        {draft.checkedOutDue != null && (
+                          <p className={`text-xs mt-0.5 ${draft.checkedOutDue < Date.now() ? 'text-red-400 font-medium' : 'text-slate-500'}`}>
+                            Due: {new Date(draft.checkedOutDue).toLocaleDateString()}{draft.checkedOutDue < Date.now() ? ' — OVERDUE' : ''}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => patchDraft({ checkedOutTo: undefined, checkedOutAt: undefined, checkedOutDue: undefined })}
+                      className="w-full px-3 py-1.5 rounded-lg text-sm font-medium bg-slate-700 border border-slate-600 text-slate-300 hover:text-slate-100 hover:bg-slate-600 transition-colors"
+                    >
+                      Check In
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Row2 label="Operator / machine">
+                      <input
+                        type="text"
+                        value={checkedOutName}
+                        onChange={(e) => setCheckedOutName(e.target.value)}
+                        placeholder="e.g. John / VMC-1"
+                        className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </Row2>
+                    <Row2 label="Due back (optional)">
+                      <input
+                        type="date"
+                        title="Due back date (optional)"
+                        value={checkedOutDueStr}
+                        onChange={(e) => setCheckedOutDueStr(e.target.value)}
+                        className="w-full px-2.5 py-1.5 text-sm bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </Row2>
+                    <button
+                      type="button"
+                      disabled={!checkedOutName.trim()}
+                      onClick={() => {
+                        const dueMs = checkedOutDueStr ? new Date(checkedOutDueStr).getTime() : undefined;
+                        patchDraft({ checkedOutTo: checkedOutName.trim(), checkedOutAt: Date.now(), checkedOutDue: dueMs || undefined });
+                        setCheckedOutName('');
+                        setCheckedOutDueStr('');
+                      }}
+                      className="w-full px-3 py-1.5 rounded-lg text-sm font-semibold bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Check Out
+                    </button>
+                  </div>
+                )}
+              </div>
+              {/* Instances */}
+              <div className="pt-2 border-t border-slate-700/60">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Instances</p>
+                  <button
+                    type="button"
+                    title={`Sync instances to quantity (${draft.quantity ?? 0}), max ${settings.maxToolInstances}`}
+                    onClick={() => patchDraft({ instances: syncInstancesToQuantity(draft.instances ?? [], draft.quantity ?? 0, settings.maxToolInstances) })}
+                    className="flex items-center gap-1 text-xs text-slate-500 hover:text-blue-400 transition-colors"
+                  >
+                    {(() => {
+                      const qty = draft.quantity ?? 0;
+                      const capped = qty > settings.maxToolInstances;
+                      return <><Plus size={11} /> Sync with qty ({capped ? `${settings.maxToolInstances} max` : qty})</>;
+                    })()}
+                  </button>
+                </div>
+                {(draft.instances?.length ?? 0) === 0 ? (
+                  <p className="text-xs text-slate-600 italic">No instances. Click "Sync with qty" to auto-create one per unit in stock.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {(draft.instances ?? []).map((inst, idx) => (
+                      <InstanceRow
+                        key={inst.letter}
+                        inst={inst}
+                        unit={draft.unit}
+                        onActivate={() => patchDraft({ instances: setActiveInstance(draft.instances ?? [], inst.letter) })}
+                        onChange={(patch) => {
+                          const next = [...(draft.instances ?? [])];
+                          next[idx] = { ...inst, ...patch };
+                          patchDraft({ instances: next });
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <Row2 label="Supplier">
                 <TextF
                   value={draft.supplier ?? ''}

@@ -1,6 +1,27 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import type { CustomToolTypeDefinition } from '../lib/customToolTypes';
 
+// ── F&S Preset ────────────────────────────────────────────────────────────────
+
+/** A saved named speeds-and-feeds configuration. */
+export interface FSPreset {
+  id:         string;
+  name:       string;
+  /** Surface speed value (m/min when metric, SFM when imperial) */
+  vc:         number;
+  /** Spindle RPM (used when driver is 'rpm') */
+  rpm:        number;
+  /** Which field was the primary input when saved */
+  driver:     'vc' | 'rpm';
+  /** Feed per tooth (mm/tooth or in/tooth) */
+  chipLoad:   number;
+  /** Plunge feed as % of cutting feed */
+  plungePct:  number;
+  /** 'metric' | 'imperial' — the unit context when the preset was saved */
+  unit:       'metric' | 'imperial';
+  createdAt:  number;
+}
+
 export interface TableColumnVisibility {
   // Identity
   type:         boolean;
@@ -60,6 +81,8 @@ export interface Settings {
   libraryDefaultMachineGroup: string;
   libraryDefaultToolNumber:   number;
   libraryDefaultType:         string;
+  /** Maximum number of instances (lettered copies) allowed per tool. Default 10. */
+  maxToolInstances: number;
 
   // Tool Library — Import Defaults
   libraryImportDefaultMachineGroup: string;
@@ -94,6 +117,9 @@ export interface Settings {
   remoteDbUsername: string;                 // Basic auth username
   remoteDbToken:    string;                 // Bearer token OR Basic auth password
   remoteDbAutoSync: boolean;               // Push after every write
+
+  // F&S presets
+  fsPresets: FSPreset[];
 
   // Developer
   devMode: boolean;
@@ -150,6 +176,7 @@ export const DEFAULT_SETTINGS: Settings = {
   libraryDefaultMachineGroup:       '',
   libraryDefaultToolNumber:         1,
   libraryDefaultType:               'flat end mill',
+  maxToolInstances:                 10,
   libraryImportDefaultMachineGroup: '',
   libraryImportOverwrite:           false,
   librarySortKey:                   'addedAt',
@@ -173,6 +200,8 @@ export const DEFAULT_SETTINGS: Settings = {
   remoteDbUsername: '',
   remoteDbToken:    '',
   remoteDbAutoSync: false,
+
+  fsPresets: [],
 
   devMode: false,
 };

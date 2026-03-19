@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeftRight, Library, Settings, ChevronRight, Bug, Download, PanelLeftClose, PanelLeftOpen, Palette, type LucideIcon } from 'lucide-react';
+import { ArrowLeftRight, Library, Settings, ChevronRight, Bug, Download, PanelLeftClose, PanelLeftOpen, Palette, Cpu, GitBranch, type LucideIcon } from 'lucide-react';
 import type { Page } from '../App';
 import { useSettings } from '../contexts/SettingsContext';
 import { daysSinceBackup } from '../lib/backupNudge';
@@ -28,6 +28,11 @@ const NAV_ITEMS: NavItem[] = [
     icon:  Library,
   },
   {
+    id:    'machines',
+    label: 'Machines',
+    icon:  Cpu,
+  },
+  {
     id:    'settings',
     label: 'Settings',
     icon:  Settings,
@@ -44,11 +49,18 @@ const NAV_ITEMS: NavItem[] = [
     icon:  Palette,
     badge: 'DEV',
   },
+  {
+    id:    'format-map',
+    label: 'Format Mapping',
+    icon:  GitBranch,
+    badge: 'DEV',
+  },
 ];
 
 export default function Sidebar({ activePage, onNavigate }: SidebarProps) {
   const { settings } = useSettings();
-  const visibleItems = NAV_ITEMS.filter(item => item.id !== 'debug' || settings.devMode);
+  const DEV_PAGES = new Set(['debug', 'themes', 'format-map']);
+  const visibleItems = NAV_ITEMS.filter(item => !DEV_PAGES.has(item.id) || settings.devMode);
 
   const [collapsed, setCollapsed] = useState(() => {
     return localStorage.getItem('sidebar-collapsed') === 'true';

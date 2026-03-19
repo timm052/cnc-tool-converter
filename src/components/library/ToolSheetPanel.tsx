@@ -79,14 +79,16 @@ export default function ToolSheetPanel({ tools, onClose }: ToolSheetPanelProps) 
           <div>
             <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-2">Sections to include</p>
             <div className="rounded-lg border border-slate-700 bg-slate-800/40 p-3 grid grid-cols-2 gap-y-2.5 gap-x-4">
-              <FieldToggle label="Geometry"      checked={opts.showGeometry}      onChange={(v) => patch({ showGeometry: v })} />
-              <FieldToggle label="Cutting params" checked={opts.showCutting}      onChange={(v) => patch({ showCutting: v })} />
-              <FieldToggle label="Material"      checked={opts.showMaterial}      onChange={(v) => patch({ showMaterial: v })} />
-              <FieldToggle label="Machine group"  checked={opts.showMachineGroup} onChange={(v) => patch({ showMachineGroup: v })} />
-              <FieldToggle label="Tags"           checked={opts.showTags}         onChange={(v) => patch({ showTags: v })} />
-              <FieldToggle label="Manufacturer"   checked={opts.showManufacturer} onChange={(v) => patch({ showManufacturer: v })} />
-              <FieldToggle label="Comments"       checked={opts.showComment}      onChange={(v) => patch({ showComment: v })} />
-              <FieldToggle label="Crib / Inventory" checked={opts.showCrib}       onChange={(v) => patch({ showCrib: v })} />
+              <FieldToggle label="Geometry"           checked={opts.showGeometry}      onChange={(v) => patch({ showGeometry: v })} />
+              <FieldToggle label="Cutting params"    checked={opts.showCutting}       onChange={(v) => patch({ showCutting: v })} />
+              <FieldToggle label="Material"          checked={opts.showMaterial}      onChange={(v) => patch({ showMaterial: v })} />
+              <FieldToggle label="Machine group"     checked={opts.showMachineGroup}  onChange={(v) => patch({ showMachineGroup: v })} />
+              <FieldToggle label="Tags"              checked={opts.showTags}          onChange={(v) => patch({ showTags: v })} />
+              <FieldToggle label="Manufacturer"      checked={opts.showManufacturer}  onChange={(v) => patch({ showManufacturer: v })} />
+              <FieldToggle label="Comments"          checked={opts.showComment}       onChange={(v) => patch({ showComment: v })} />
+              <FieldToggle label="Crib / Inventory"  checked={opts.showCrib}          onChange={(v) => patch({ showCrib: v })} />
+              <FieldToggle label="Instances (A/B…)"  checked={opts.showInstances}     onChange={(v) => patch({ showInstances: v })} />
+              <FieldToggle label="Use actual diameter" checked={opts.useActualDiameter} onChange={(v) => patch({ useActualDiameter: v })} />
             </div>
           </div>
 

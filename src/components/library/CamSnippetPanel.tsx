@@ -5,13 +5,14 @@ import { useSettings } from '../../contexts/SettingsContext';
 import { CAM_DIALECTS, generateSnippet, type CamDialect } from '../../lib/camSnippet';
 
 interface CamSnippetPanelProps {
-  tools:   LibraryTool[];
-  onClose: () => void;
+  tools:           LibraryTool[];
+  onClose:         () => void;
+  defaultDialect?: CamDialect;
 }
 
-export default function CamSnippetPanel({ tools, onClose }: CamSnippetPanelProps) {
+export default function CamSnippetPanel({ tools, onClose, defaultDialect }: CamSnippetPanelProps) {
   const { settings } = useSettings();
-  const [dialect,  setDialect]  = useState<CamDialect>('fanuc');
+  const [dialect,  setDialect]  = useState<CamDialect>(defaultDialect ?? 'fanuc');
   const [copied,   setCopied]   = useState(false);
 
   const snippet = useMemo(

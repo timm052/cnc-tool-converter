@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import {
   Library, Plus, Upload, Download, Search, Star, X,
   ChevronDown, ChevronLeft, ChevronRight, Layers, Tag, RotateCcw, Keyboard, SlidersHorizontal, Columns2, Hash,
-  Printer, QrCode, FlaskConical, Wrench, ScanLine, Copy, Package,
+  Printer, QrCode, FlaskConical, Wrench, ScanLine, Copy, Package, Clock,
   Calculator, AlertTriangle, FileText, ArrowRightLeft, BookTemplate, Wand2, Code2, Camera, MapPin,
   Cloud, CloudUpload, CloudDownload, CloudOff, CheckCircle2, RefreshCw, Briefcase,
 } from 'lucide-react';
@@ -10,6 +10,7 @@ import { useLibrary } from '../../contexts/LibraryContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useHolders } from '../../contexts/HolderContext';
 import { useMaterials } from '../../contexts/MaterialContext';
+import { useMachines } from '../../contexts/MachineContext';
 import type { LibraryTool, ToolCondition } from '../../types/libraryTool';
 import { TOOL_CONDITION_LABELS } from '../../types/libraryTool';
 import LibraryTable from '../library/LibraryTable';
@@ -53,6 +54,7 @@ function MachineGroupSidebar({
   onSelect,
   inventoryValue,
   lowStockCount,
+  machines,
 }: {
   groups:            string[];
   toolCountByGroup:  Record<string, number>;
@@ -61,6 +63,7 @@ function MachineGroupSidebar({
   onSelect:          (group: string | null) => void;
   inventoryValue?:   number;
   lowStockCount?:    number;
+  machines:          import('../../types/machine').Machine[];
 }) {
   const [collapsed, setCollapsed] = useState(() =>
     localStorage.getItem('machine-sidebar-collapsed') === 'true',
@@ -172,24 +175,34 @@ function MachineGroupSidebar({
 
       {groups.length > 0 && (
         <div className="mt-1 border-t border-slate-700/60">
-          {groups.map((group) => (
-            <button
-              key={group}
-              type="button"
-              onClick={() => onSelect(group)}
-              className={[
-                'w-full flex items-center justify-between px-3 py-2 text-sm transition-colors text-left',
-                active === group
-                  ? 'bg-blue-600 text-white'
-                  : 'text-slate-300 hover:bg-slate-700',
-              ].join(' ')}
-            >
-              <span className="truncate">{group}</span>
-              <span className={`ml-1 text-xs px-1.5 py-0.5 rounded-full shrink-0 ${active === group ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-400'}`}>
-                {toolCountByGroup[group] ?? 0}
-              </span>
-            </button>
-          ))}
+          {groups.map((group) => {
+            const machineInfo = machines.find((m) => m.name === group);
+            return (
+              <button
+                key={group}
+                type="button"
+                onClick={() => onSelect(group)}
+                className={[
+                  'w-full flex items-center justify-between px-3 py-1.5 text-sm transition-colors text-left',
+                  active === group
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-300 hover:bg-slate-700',
+                ].join(' ')}
+              >
+                <span className="flex flex-col min-w-0">
+                  <span className="truncate">{group}</span>
+                  {machineInfo && (
+                    <span className={`text-xs truncate ${active === group ? 'text-blue-200' : 'text-slate-500'}`}>
+                      {machineInfo.type}{machineInfo.controlType ? ` · ${machineInfo.controlType.toUpperCase()}` : ''}
+                    </span>
+                  )}
+                </span>
+                <span className={`ml-1 text-xs px-1.5 py-0.5 rounded-full shrink-0 ${active === group ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-400'}`}>
+                  {toolCountByGroup[group] ?? 0}
+                </span>
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -542,6 +555,13 @@ export default function ToolManagerPage() {
   const { settings, updateSettings } = useSettings();
   const { holders, addHolders }     = useHolders();
   const { materials, addMaterials } = useMaterials();
+  const { machines }                = useMachines();
+
+  // Merge machine groups from library tools and from the Machines page
+  const mergedMachineGroups = useMemo(
+    () => [...new Set([...allMachineGroups, ...machines.map((m) => m.name)])].sort(),
+    [allMachineGroups, machines],
+  );
 
   const restoreInputRef  = useRef<HTMLInputElement>(null);
 
@@ -635,8 +655,9 @@ export default function ToolManagerPage() {
   // ── Filter / selection / keyboard nav state ───────────────────────────────
   const [searchQuery,     setSearchQuery]     = useState('');
   const [machineFilter,   setMachineFilter]   = useState<string | null>(null);
-  const [starredOnly,     setStarredOnly]     = useState(false);
-  const [lowStockOnly,    setLowStockOnly]    = useState(false);
+  const [starredOnly,       setStarredOnly]       = useState(false);
+  const [lowStockOnly,      setLowStockOnly]      = useState(false);
+  const [filterCheckedOut,  setFilterCheckedOut]  = useState(false);
   const [conditionFilter, setConditionFilter] = useState<ToolCondition | null>(null);
   const [tagFilter,       setTagFilter]       = useState<string[]>([]);
   const [tagDropdownOpen, setTagDropdownOpen] = useState(false);
@@ -671,7 +692,8 @@ export default function ToolManagerPage() {
     let list = tools;
     if (machineFilter !== null) list = list.filter((t) => (t.machineGroups ?? []).includes(machineFilter));
     if (starredOnly)            list = list.filter((t) => t.starred);
-    if (lowStockOnly)             list = list.filter((t) => t.reorderPoint != null && t.quantity != null && t.quantity <= t.reorderPoint);
+    if (lowStockOnly)           list = list.filter((t) => t.reorderPoint != null && t.quantity != null && t.quantity <= t.reorderPoint);
+    if (filterCheckedOut)       list = list.filter((t) => !!t.checkedOutTo);
     if (conditionFilter !== null) list = list.filter((t) => t.condition === conditionFilter);
     if (tagFilter.length > 0)     list = list.filter((t) => tagFilter.every((tag) => t.tags.includes(tag)));
     if (searchQuery.trim()) {
@@ -688,7 +710,7 @@ export default function ToolManagerPage() {
       );
     }
     return list;
-  }, [tools, machineFilter, starredOnly, lowStockOnly, conditionFilter, tagFilter, searchQuery]);
+  }, [tools, machineFilter, starredOnly, lowStockOnly, filterCheckedOut, conditionFilter, tagFilter, searchQuery]);
 
   const toolCountByGroup = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -704,7 +726,7 @@ export default function ToolManagerPage() {
     () => filteredTools.filter((t) => selectedIds.has(t.id)),
     [filteredTools, selectedIds],
   );
-  const hasFilters    = starredOnly || lowStockOnly || conditionFilter !== null || tagFilter.length > 0 || searchQuery.trim() !== '' || machineFilter !== null;
+  const hasFilters    = starredOnly || lowStockOnly || filterCheckedOut || conditionFilter !== null || tagFilter.length > 0 || searchQuery.trim() !== '' || machineFilter !== null;
 
   const inventoryValue = useMemo(() => {
     const total = tools.reduce((sum, t) => {
@@ -1293,6 +1315,23 @@ export default function ToolManagerPage() {
             Low Stock
           </button>
 
+          {tools.some((t) => t.checkedOutTo) && (
+            <button
+              type="button"
+              onClick={() => setFilterCheckedOut((f) => !f)}
+              title="Show only checked-out tools"
+              className={[
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors border',
+                filterCheckedOut
+                  ? 'bg-amber-500/10 text-amber-400 border-amber-500/40'
+                  : 'text-slate-400 hover:text-slate-200 border-slate-700 hover:border-slate-600 bg-slate-800',
+              ].join(' ')}
+            >
+              <Clock size={13} />
+              Checked out
+            </button>
+          )}
+
           {/* Condition filter */}
           <div className="relative">
             <select
@@ -1400,13 +1439,14 @@ export default function ToolManagerPage() {
       ) : (
         <div className="flex flex-1 overflow-hidden">
           <MachineGroupSidebar
-            groups={allMachineGroups}
+            groups={mergedMachineGroups}
             toolCountByGroup={toolCountByGroup}
             totalCount={tools.length}
             active={machineFilter}
             onSelect={setMachineFilter}
             inventoryValue={inventoryValue ?? undefined}
             lowStockCount={lowStockCount}
+            machines={machines}
           />
           <div className="flex flex-col flex-1 overflow-hidden">
             <LibraryTable
@@ -1417,7 +1457,7 @@ export default function ToolManagerPage() {
               onToggleStar={handleToggleStar}
               onEdit={openEdit}
               onPatchTool={updateTool}
-              showMachineCol={machineFilter === null && allMachineGroups.length > 0}
+              showMachineCol={machineFilter === null && mergedMachineGroups.length > 0}
               focusedId={focusedId ?? undefined}
               onFocusId={setFocusedId}
               allMaterials={materials}
@@ -1438,7 +1478,7 @@ export default function ToolManagerPage() {
         <ToolEditor
           tool={editingTool}
           allTags={allTags}
-          allMachineGroups={allMachineGroups}
+          allMachineGroups={mergedMachineGroups}
           allHolders={holders}
           allMaterials={materials}
           onSave={handleSaveTool}
@@ -1450,7 +1490,7 @@ export default function ToolManagerPage() {
       {activePanel === 'bulk-edit' && (
         <BulkEditPanel
           tools={filteredTools.filter((t) => selectedIds.has(t.id))}
-          allGroups={allMachineGroups}
+          allGroups={mergedMachineGroups}
           allTags={allTags}
           allMaterials={materials}
           onApply={snapAndPatchEach}
@@ -1503,26 +1543,45 @@ export default function ToolManagerPage() {
           onClose={closePanel}
         />
       )}
-      {activePanel === 'cam-snippet' && (
-        <CamSnippetPanel
-          tools={selectedTools.length > 0 ? selectedTools : tools}
-          onClose={closePanel}
-        />
-      )}
+      {activePanel === 'cam-snippet' && (() => {
+        // Look up control type of first selected tool's first machine group
+        const firstGroup = selectedTools[0]?.machineGroups?.[0];
+        const camMachine = firstGroup ? machines.find((m) => m.name === firstGroup) : undefined;
+        const controlToDialect = (ct: import('../../types/machine').ControlType | undefined): import('../../lib/camSnippet').CamDialect => {
+          if (ct === 'haas')    return 'haas';
+          if (ct === 'siemens') return 'siemens';
+          if (ct === 'linuxcnc') return 'linuxcnc';
+          if (ct === 'mach3')   return 'mach3';
+          return 'fanuc';
+        };
+        return (
+          <CamSnippetPanel
+            tools={selectedTools.length > 0 ? selectedTools : tools}
+            defaultDialect={camMachine ? controlToDialect(camMachine.controlType) : undefined}
+            onClose={closePanel}
+          />
+        );
+      })()}
       {activePanel === 'snapshots' && (
         <SnapshotPanel onClose={closePanel} />
       )}
       {activePanel === 'work-offsets' && (
-        <WorkOffsetSheetPanel machineGroups={allMachineGroups} onClose={closePanel} />
+        <WorkOffsetSheetPanel machineGroups={mergedMachineGroups} onClose={closePanel} />
       )}
-      {activePanel === 'feeds' && (
-        <SpeedsFeedsPanel
-          tool={selectedTools.length === 1 ? selectedTools[0] : null}
-          allMaterials={materials}
-          onApply={selectedTools.length === 1 ? (patch) => updateTool(selectedTools[0].id, patch) : undefined}
-          onClose={closePanel}
-        />
-      )}
+      {activePanel === 'feeds' && (() => {
+        const feedTool = selectedTools.length === 1 ? selectedTools[0] : null;
+        const feedGroup = feedTool?.machineGroups?.[0];
+        const feedMachine = feedGroup ? machines.find((m) => m.name === feedGroup) : undefined;
+        return (
+          <SpeedsFeedsPanel
+            tool={feedTool}
+            allMaterials={materials}
+            machine={feedMachine}
+            onApply={feedTool ? (patch) => updateTool(feedTool.id, patch) : undefined}
+            onClose={closePanel}
+          />
+        );
+      })()}
       {activePanel === 'validation' && (
         <ValidationPanel
           tools={tools}
@@ -1536,7 +1595,7 @@ export default function ToolManagerPage() {
       {activePanel === 'copy-group' && (
         <CopyToGroupModal
           tools={selectedTools}
-          allGroups={allMachineGroups}
+          allGroups={mergedMachineGroups}
           onCopy={async (copies) => {
             for (const c of copies) await addTool(c);
             closePanel();
@@ -1572,7 +1631,7 @@ export default function ToolManagerPage() {
         />
       )}
       {activePanel === 'jobs' && (
-        <JobsPanel allTools={tools} allMachineGroups={allMachineGroups} onClose={closePanel} />
+        <JobsPanel allTools={tools} allMachineGroups={mergedMachineGroups} onClose={closePanel} />
       )}
 
       {/* ── Keyboard shortcuts legend ─────────────────────────────────────── */}

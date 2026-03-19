@@ -6,6 +6,8 @@ import type { WorkMaterial } from '../../types/material';
 import { useSettings } from '../../contexts/SettingsContext';
 import { triggerDownload, triggerBinaryDownload } from '../../lib/downloadUtils';
 import { exportToolsToXlsx } from '../../lib/xlsxExport';
+import { resolveToolForExport } from '../../lib/toolInstance';
+import FieldToggle from '../ui/FieldToggle';
 
 interface ExportPanelProps {
   selectedTools: LibraryTool[];
@@ -22,9 +24,13 @@ export default function ExportPanel({ selectedTools, allMaterials, onClose }: Ex
   const { settings } = useSettings();
   const exportableFormats = registry.getExportableFormats();
 
-  const [formatId,    setFormatId]    = useState(exportableFormats[0]?.id ?? 'xlsx');
-  const [splitMode,   setSplitMode]   = useState<SplitMode>('none');
-  const [isExporting, setIsExporting] = useState(false);
+  const [formatId,          setFormatId]          = useState(exportableFormats[0]?.id ?? 'xlsx');
+  const [splitMode,         setSplitMode]         = useState<SplitMode>('none');
+  const [isExporting,       setIsExporting]       = useState(false);
+  const [useActualDiameter, setUseActualDiameter] = useState(false);
+
+  // Tools resolved with active-instance data (offsets + optional actual diameter)
+  const resolvedTools = selectedTools.map((t) => resolveToolForExport(t, useActualDiameter));
 
   const noSplit = NO_SPLIT_FORMATS.has(formatId);
 
@@ -74,7 +80,7 @@ export default function ExportPanel({ selectedTools, allMaterials, onClose }: Ex
 
       // ── Single file ──────────────────────────────────────────────────────────
       if (splitMode === 'none') {
-        const result = await converter.write(selectedTools, writerOpts);
+        const result = await converter.write(resolvedTools, writerOpts);
         triggerDownload(result.content, result.mimeType, result.filename);
         onClose();
         return;
@@ -83,14 +89,14 @@ export default function ExportPanel({ selectedTools, allMaterials, onClose }: Ex
       // ── Split by material ────────────────────────────────────────────────────
       if (splitMode === 'material') {
         const matMap = new Map<string, LibraryTool[]>();
-        for (const tool of selectedTools) {
+        for (const tool of resolvedTools) {
           for (const entry of tool.toolMaterials ?? []) {
             const list = matMap.get(entry.materialId) ?? [];
             list.push(tool);
             matMap.set(entry.materialId, list);
           }
         }
-        const unassigned = selectedTools.filter((t) => !t.toolMaterials?.length);
+        const unassigned = resolvedTools.filter((t) => !t.toolMaterials?.length);
         const files: { content: string | Uint8Array; mimeType: string; filename: string }[] = [];
 
         for (const [materialId, tools] of matMap) {
@@ -133,7 +139,7 @@ export default function ExportPanel({ selectedTools, allMaterials, onClose }: Ex
         const files: { content: string | Uint8Array; mimeType: string; filename: string }[] = [];
 
         for (const group of allGroups) {
-          const groupTools = selectedTools.filter((t) => (t.machineGroups ?? []).includes(group));
+          const groupTools = resolvedTools.filter((t) => (t.machineGroups ?? []).includes(group));
           if (groupTools.length === 0) continue;
           const safeName = group.replace(/[^a-z0-9_-]/gi, '_');
           // For formats that expect a single machine group, pin it to the current group
@@ -145,7 +151,7 @@ export default function ExportPanel({ selectedTools, allMaterials, onClose }: Ex
           files.push(result);
         }
         // Tools belonging to no group
-        const ungrouped = selectedTools.filter((t) => !(t.machineGroups ?? []).length);
+        const ungrouped = resolvedTools.filter((t) => !(t.machineGroups ?? []).length);
         if (ungrouped.length > 0) {
           const result = await converter.write(ungrouped, { ...writerOpts, filename: 'export_ungrouped' });
           files.push(result);
@@ -272,6 +278,24 @@ export default function ExportPanel({ selectedTools, allMaterials, onClose }: Ex
                       : 'No tools have per-material F&S data.'
                   }
                 />
+              </div>
+            </div>
+          )}
+
+          {/* Active instance */}
+          {!noSplit && (
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-2">Active instance</p>
+              <div className="rounded-lg border border-slate-700 bg-slate-800/40 p-3">
+                <FieldToggle
+                  label="Use actual diameter"
+                  checked={useActualDiameter}
+                  onChange={setUseActualDiameter}
+                />
+                <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                  Replaces the nominal diameter with the active instance's measured actual diameter, where set.
+                  Active-instance offsets are always applied.
+                </p>
               </div>
             </div>
           )}

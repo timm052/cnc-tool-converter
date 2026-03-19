@@ -58,6 +58,36 @@ export interface ToolMaterialEntry {
   notes?: string;
 }
 
+// ── Axis keys shared between tool offsets and instance offsets ────────────────
+export type OffsetAxis = 'x' | 'y' | 'z' | 'a' | 'b' | 'c' | 'u' | 'v' | 'w';
+
+/**
+ * One physical copy of a tool in stock.
+ * When a tool has quantity N, it has N instances labelled A, B, C…
+ * Only the active instance is used during export and print.
+ */
+export interface ToolInstance {
+  /** Letter identifier — A, B, C… (up to ZZ for 702 units) */
+  letter: string;
+  /** Whether this is the currently-active (in-use) copy */
+  isActive: boolean;
+  /** Per-instance comment (e.g. "set for job 44", "sharpened 2026-03-01") */
+  comment?: string;
+  /** Physical condition of this specific copy */
+  condition?: ToolCondition;
+  /**
+   * Measured actual diameter of this copy.
+   * Overrides geometry.diameter during export/print when the
+   * "use actual diameter" option is enabled.
+   */
+  actualDiameter?: number;
+  /**
+   * Per-instance axis offsets — override the tool-level offsets for this copy.
+   * Typically Z (length) and/or X/Y (diameter compensation) differ between copies.
+   */
+  offsets?: Partial<Record<OffsetAxis, number>>;
+}
+
 /**
  * A tool stored in the persistent local library.
  * Extends the canonical Tool model with library-specific metadata.
@@ -109,6 +139,22 @@ export interface LibraryTool extends Tool {
   // ── Custom fields ─────────────────────────────────────────────────────────
   /** User-defined key-value metadata */
   customFields?: Record<string, string>;
+
+  // ── Instances (per-physical-copy tracking) ───────────────────────────────
+  /**
+   * One entry per physical copy of this tool in stock.
+   * Auto-synced with `quantity`; labelled A, B, C…
+   * The active instance is the one exported to CAM / printed.
+   */
+  instances?: ToolInstance[];
+
+  // ── Checkout ─────────────────────────────────────────────────────────────
+  /** Name of the operator or machine the tool is currently checked out to */
+  checkedOutTo?:  string;
+  /** Unix ms timestamp when the tool was checked out */
+  checkedOutAt?:  number;
+  /** Unix ms timestamp when the tool is due back (optional) */
+  checkedOutDue?: number;
 
   // ── Photo ──────────────────────────────────────────────────────────────────
   /**

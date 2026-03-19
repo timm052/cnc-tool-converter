@@ -56,6 +56,13 @@ export interface WriteOptions {
 export interface Converter {
   format: FormatInfo;
   /**
+   * Optional inline sample content for dev tooling (Format Mapping page).
+   * Set this on text-based converters so the "Load & parse sample" button works
+   * without needing a real file. Binary/XML formats leave this undefined.
+   * New converters are automatically picked up by the dev page when this is set.
+   */
+  sample?: string;
+  /**
    * Parse a file into the internal tool model.
    * @param content  Raw file content (string for text formats, ArrayBuffer for binary/UTF-16)
    * @param filename Optional source filename (used for error messages and output naming)

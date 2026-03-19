@@ -6,11 +6,13 @@
  * Step 3: Review suggested values and apply to the tool's per-material entry
  */
 
-import { useState } from 'react';
-import { X, Wand2, ChevronRight, ChevronLeft, Check } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { X, Wand2, ChevronRight, ChevronLeft, Check, Bookmark, ChevronDown } from 'lucide-react';
 import type { LibraryTool, ToolMaterialEntry } from '../../types/libraryTool';
 import type { WorkMaterial } from '../../types/material';
 import { SURFACE_SPEED_GROUPS, vcToSfm, type ToolMaterial } from '../../lib/surfaceSpeedPresets';
+import { useSettings } from '../../contexts/SettingsContext';
+import type { FSPreset } from '../../contexts/SettingsContext';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -59,6 +61,7 @@ function calcRpm(vc: number, dia: number, metric: boolean) {
 // ── Panel ─────────────────────────────────────────────────────────────────────
 
 export default function CuttingWizardPanel({ tools, allMaterials, onApply, onClose }: Props) {
+  const { settings } = useSettings();
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
   // Step 1 selections
@@ -70,6 +73,21 @@ export default function CuttingWizardPanel({ tools, allMaterials, onApply, onClo
   const [machine,  setMachine]  = useState<MachineType>('vertical-mill');
   const [docPct,   setDocPct]   = useState(30);   // axial DOC as % of diameter
   const [stepover, setStepover] = useState(50);   // radial as % of diameter
+
+  // F&S preset override (loaded from saved presets)
+  const [loadedPreset, setLoadedPreset] = useState<FSPreset | null>(null);
+  const [presetOpen,   setPresetOpen]   = useState(false);
+  const presetRef = useRef<HTMLDivElement>(null);
+
+  // Close preset dropdown on outside click
+  useEffect(() => {
+    if (!presetOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (!presetRef.current?.contains(e.target as Node)) setPresetOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [presetOpen]);
 
   // ── Derived data ──────────────────────────────────────────────────────────
 
@@ -100,10 +118,17 @@ export default function CuttingWizardPanel({ tools, allMaterials, onApply, onClo
   const clBase   = clf
     ? (isMetric ? dia : dia / 25.4) * ((clf.min + clf.max) / 2)
     : (isMetric ? dia * 0.01 : (dia / 25.4) * 0.01);
-  const chipLoad = parseFloat(clBase.toFixed(4));
 
-  const feedRate   = rpm * chipLoad * flutes;
-  const plungeRate = feedRate * 0.4;
+  // If a user preset is loaded, it overrides the calculated Vc/RPM/chipLoad
+  const effectiveVcFinal  = loadedPreset != null ? loadedPreset.vc : vcFinal;
+  const effectiveRpm      = loadedPreset != null ? loadedPreset.rpm : rpm;
+  const chipLoad          = loadedPreset != null
+    ? loadedPreset.chipLoad
+    : parseFloat(clBase.toFixed(4));
+  const plungePct         = loadedPreset?.plungePct ?? 40;
+
+  const feedRate   = effectiveRpm * chipLoad * flutes;
+  const plungeRate = feedRate * (plungePct / 100);
 
   const docValue  = (dia * docPct) / 100;
   const wocValue  = (dia * stepover) / 100;
@@ -172,11 +197,72 @@ export default function CuttingWizardPanel({ tools, allMaterials, onApply, onClo
   // ── Step 2 ────────────────────────────────────────────────────────────────
 
   function renderStep2() {
+    const hasPresets = settings.fsPresets.length > 0;
     return (
       <div className="space-y-5">
-        <p className="text-xs text-slate-400">
-          Specify the cutting tool grade and machine setup. These affect the suggested surface speed.
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-xs text-slate-400">
+            Specify the cutting tool grade and machine setup. These affect the suggested surface speed.
+          </p>
+          {/* Load saved preset */}
+          {hasPresets && (
+            <div className="relative shrink-0" ref={presetRef}>
+              <button
+                type="button"
+                onClick={() => setPresetOpen((o) => !o)}
+                title="Load a saved F&S preset"
+                className={[
+                  'flex items-center gap-1 px-2 py-1 rounded text-xs font-medium border transition-colors whitespace-nowrap',
+                  loadedPreset
+                    ? 'bg-blue-600/20 border-blue-500 text-blue-300'
+                    : 'text-slate-400 hover:text-slate-200 border-slate-600 hover:bg-slate-700',
+                ].join(' ')}
+              >
+                <Bookmark size={11} />
+                {loadedPreset ? loadedPreset.name : 'Load preset'}
+                <ChevronDown size={10} className={presetOpen ? 'rotate-180 transition-transform' : 'transition-transform'} />
+              </button>
+              {presetOpen && (
+                <div className="absolute right-0 top-full mt-1 w-60 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-10 overflow-hidden">
+                  {loadedPreset && (
+                    <button
+                      type="button"
+                      onClick={() => { setLoadedPreset(null); setPresetOpen(false); }}
+                      className="w-full text-left px-3 py-2 text-xs text-slate-400 hover:bg-slate-800 border-b border-slate-700"
+                    >
+                      ✕ Clear preset (use calculated values)
+                    </button>
+                  )}
+                  <div className="max-h-52 overflow-y-auto">
+                    {settings.fsPresets.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => { setLoadedPreset(p); setPresetOpen(false); }}
+                        className="w-full text-left px-3 py-2 hover:bg-slate-800 transition-colors"
+                      >
+                        <div className="text-xs font-medium text-slate-200">{p.name}</div>
+                        <div className="text-xs text-slate-500">
+                          {p.driver === 'vc'
+                            ? `Vc ${p.vc} ${p.unit === 'metric' ? 'm/min' : 'SFM'}`
+                            : `${p.rpm.toLocaleString()} RPM`}
+                          {' · '}fz {p.chipLoad}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {loadedPreset && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/30 text-xs text-blue-300">
+            <Bookmark size={11} className="shrink-0" />
+            Using preset <span className="font-semibold">{loadedPreset.name}</span> — Vc/RPM and chip load overridden. Tool grade and machine type still apply for DOC guidance.
+          </div>
+        )}
 
         <div>
           <p className="text-xs font-medium text-slate-400 mb-2">Tool Grade</p>
@@ -251,8 +337,8 @@ export default function CuttingWizardPanel({ tools, allMaterials, onApply, onClo
 
   function renderStep3() {
     const rows = [
-      { label: `Surface speed (Vc)`, value: parseFloat(vcFinal.toFixed(1)), unit: vcUnit },
-      { label: 'Spindle speed',       value: rpm,                            unit: 'rpm'   },
+      { label: `Surface speed (Vc)`, value: parseFloat(effectiveVcFinal.toFixed(1)), unit: vcUnit },
+      { label: 'Spindle speed',       value: effectiveRpm,                             unit: 'rpm'   },
       { label: 'Chip load',           value: chipLoad,                       unit: clUnit  },
       { label: 'Feed rate',           value: Math.round(feedRate),           unit: fedUnit },
       { label: 'Plunge rate',         value: Math.round(plungeRate),         unit: fedUnit },
@@ -268,6 +354,11 @@ export default function CuttingWizardPanel({ tools, allMaterials, onApply, onClo
           <span className="text-slate-200 font-medium">{mat?.name ?? '—'}</span>
           {' '}·{' '}<span className="text-slate-300">{TOOL_MAT_OPTIONS.find((o) => o.value === toolMat)?.label}</span>
           {' '}·{' '}<span className="text-slate-300">{MACHINE_LABELS[machine]}</span>
+          {loadedPreset && (
+            <span className="ml-2 inline-flex items-center gap-1 text-blue-400">
+              <Bookmark size={10} /> {loadedPreset.name}
+            </span>
+          )}
         </div>
 
         {!preset && (
@@ -303,8 +394,8 @@ export default function CuttingWizardPanel({ tools, allMaterials, onApply, onClo
     if (!tool || !mat) return;
     const entry: ToolMaterialEntry = {
       materialId:   matId,
-      rpm,
-      surfaceSpeed: parseFloat(vcFinal.toFixed(1)),
+      rpm:          effectiveRpm,
+      surfaceSpeed: parseFloat(effectiveVcFinal.toFixed(1)),
       feedRate:     Math.round(feedRate * 10) / 10,
       feedPlunge:   Math.round(plungeRate * 10) / 10,
       feedPerTooth: chipLoad,

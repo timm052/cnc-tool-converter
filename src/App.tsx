@@ -3,6 +3,7 @@ import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 import { LibraryProvider } from './contexts/LibraryContext';
 import { MaterialProvider } from './contexts/MaterialContext';
 import { HolderProvider } from './contexts/HolderContext';
+import { MachineProvider } from './contexts/MachineContext';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import ChangelogModal, { shouldShowChangelog } from './components/ChangelogModal';
@@ -12,8 +13,10 @@ const ToolManagerPage    = lazy(() => import('./components/pages/ToolManagerPage
 const SettingsPage       = lazy(() => import('./components/pages/SettingsPage'));
 const ToolDebugPage      = lazy(() => import('./components/pages/ToolDebugPage'));
 const ThemeShowcasePage  = lazy(() => import('./components/pages/ThemeShowcasePage'));
+const MachinesPage       = lazy(() => import('./components/pages/MachinesPage'));
+const FormatMappingPage  = lazy(() => import('./components/pages/FormatMappingPage'));
 
-export type Page = 'converter' | 'tools' | 'settings' | 'debug' | 'themes';
+export type Page = 'converter' | 'tools' | 'machines' | 'settings' | 'debug' | 'themes' | 'format-map';
 
 function PageFallback() {
   return (
@@ -63,6 +66,7 @@ export default function App() {
       <LibraryProvider>
         <MaterialProvider>
           <HolderProvider>
+            <MachineProvider>
             <ThemeWrapper>
               <Header />
               <div className="flex flex-1 overflow-hidden">
@@ -71,8 +75,10 @@ export default function App() {
                   <Suspense fallback={<PageFallback />}>
                     {activePage === 'converter' && <ConverterPage />}
                     {activePage === 'tools'     && <ToolManagerPage />}
+                    {activePage === 'machines'  && <MachinesPage />}
                     {activePage === 'settings'  && <SettingsPage />}
-                    {activePage === 'debug'     && <ToolDebugPage />}
+                    {activePage === 'debug'      && <ToolDebugPage />}
+                    {activePage === 'format-map' && <FormatMappingPage />}
                   </Suspense>
                   <Suspense fallback={null}>
                     {activePage === 'themes' && <ThemeShowcasePage onClose={closeThemes} />}
@@ -81,6 +87,7 @@ export default function App() {
               </div>
               {showChangelog && <ChangelogModal onClose={closeChangelog} />}
             </ThemeWrapper>
+            </MachineProvider>
           </HolderProvider>
         </MaterialProvider>
       </LibraryProvider>

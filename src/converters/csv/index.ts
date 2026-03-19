@@ -13,6 +13,8 @@ import type { Converter } from '../../types/converter';
 import type { LibraryTool } from '../../types/libraryTool';
 import { toolsToCsv, csvToTools } from '../../lib/csvLibrary';
 
+const CSV_HEADER = 'T#,Type,Description,Diameter,Unit,FluteLength,OverallLength,Flutes,RPM,FeedCutting,Material,MachineGroup,Tags,Starred,Quantity,ReorderPoint,Supplier,UnitCost,Location,HolderId,AssemblyStickOut,CustomFields,ToolMaterials';
+
 export const csvConverter: Converter = {
   format: {
     id:             'csv',
@@ -24,6 +26,12 @@ export const csvConverter: Converter = {
     canExport:      true,
     readAs:         'text',
   },
+
+  sample: [
+    CSV_HEADER,
+    '1,flat end mill,10mm 4-Flute Flat EM,10,mm,30,72,4,8000,800,carbide,Mill-1,roughing,false,2,1,Sandvik,15.00,,,,,',
+    '2,ball end mill,6mm Ball Nose,6,mm,22,60,2,12000,600,carbide,Mill-1,finishing,true,1,1,Kennametal,12.50,,,,,',
+  ].join('\n'),
 
   async parse(content, filename) {
     const text = typeof content === 'string'

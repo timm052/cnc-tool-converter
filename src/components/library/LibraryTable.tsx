@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, memo, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { ChevronUp, ChevronDown, Star, Pencil, AlertTriangle, Columns2, Plus, Minus, Layers, X } from 'lucide-react';
+import { ChevronUp, ChevronDown, Star, Pencil, AlertTriangle, Columns2, Plus, Minus, Layers, X, Clock } from 'lucide-react';
 import type { LibraryTool } from '../../types/libraryTool';
 import { TOOL_CONDITION_LABELS, TOOL_CONDITION_COLOURS } from '../../types/libraryTool';
 import type { WorkMaterial } from '../../types/material';
@@ -85,12 +85,26 @@ const ALL_COL_DEFS: ColDef[] = [
   },
   {
     id: 'description', label: 'Description', group: 'Identity', sortKey: 'description',
-    render: (t) => (
-      <span
-        className="block truncate max-w-[220px]"
-        title={t.comment ? `${t.description}\n─\n${t.comment}` : t.description}
-      >{t.description}</span>
-    ),
+    render: (t) => {
+      const isOverdue = !!t.checkedOutDue && t.checkedOutDue < Date.now();
+      return (
+        <span className="flex items-center gap-1 max-w-[220px]">
+          <span
+            className="block truncate"
+            title={t.comment ? `${t.description}\n─\n${t.comment}` : t.description}
+          >{t.description}</span>
+          {t.checkedOutTo && (
+            <span
+              title={`Checked out to: ${t.checkedOutTo}${isOverdue ? ' — OVERDUE' : ''}`}
+              className={`inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-xs shrink-0 ${isOverdue ? 'text-red-400' : 'text-amber-400'}`}
+            >
+              <Clock size={10} />
+              {t.checkedOutTo.length > 12 ? t.checkedOutTo.slice(0, 10) + '…' : t.checkedOutTo}
+            </span>
+          )}
+        </span>
+      );
+    },
     editType: 'text',
     getEditRaw: (t) => t.description,
     getPatch: (raw) => ({ description: raw }),

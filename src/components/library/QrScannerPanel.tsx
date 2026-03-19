@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { X, Camera, AlertCircle, CheckCircle, RotateCcw, Search, Archive, Plus, Minus, Printer, Pencil, ScanLine } from 'lucide-react';
+import { X, Camera, AlertCircle, CheckCircle, RotateCcw, Search, Archive, Plus, Minus, Printer, Pencil, ScanLine, Usb } from 'lucide-react';
 import jsQR from 'jsqr';
 import type { LibraryTool } from '../../types/libraryTool';
 import { printLabels, DEFAULT_LABEL_OPTIONS } from '../../lib/printUtils';
@@ -27,10 +27,34 @@ interface StockEntry {
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const SCAN_INTERVAL_MS  = 66;    // ~15 fps
-const RESCAN_DEBOUNCE   = 1500;  // ms before same QR can be acted on again
+const SCAN_INTERVAL_MS    = 66;   // ~15 fps
+const RESCAN_DEBOUNCE     = 1500; // ms before same QR/barcode can be acted on again
+// USB HID scanners: typically < 5 ms between chars.
+// Bluetooth HID scanners: typically < 50 ms between chars.
+// Human typing at 120 WPM: ~100 ms between chars.
+// Threshold set at 80 ms — fast enough to exclude human typing while catching Bluetooth lag.
+const HID_CHAR_THRESHOLD  = 80;   // ms — chars arriving faster than this = scanner (USB or BT)
+const HID_COMMIT_DELAY    = 250;  // ms — process buffer if no Enter after last char
+const HID_MIN_LEN         = 4;    // min chars to treat as a scan (filters stray keys)
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
+
+/**
+ * Find a tool by UUID or by barcode tool-number format (e.g. "T001", "T42").
+ * Returns undefined if no match.
+ */
+function findToolByCode(tools: LibraryTool[], code: string): LibraryTool | undefined {
+  // Try UUID match first
+  const byId = tools.find((t) => t.id === code);
+  if (byId) return byId;
+  // Try T-number format: "T001", "T1", "T042" etc.
+  const tnMatch = /^T0*(\d+)$/i.exec(code.trim());
+  if (tnMatch) {
+    const num = parseInt(tnMatch[1], 10);
+    return tools.find((t) => t.toolNumber === num);
+  }
+  return undefined;
+}
 
 /** Map a jsQR video-pixel point to overlay-canvas CSS-pixel space (object-cover aware). */
 function toCanvasPt(
@@ -78,6 +102,12 @@ export default function QrScannerPanel({
   useEffect(() => { onFoundRef.current  = onFound;       }, [onFound]);
   useEffect(() => { onUpdateRef.current = onUpdateTool;  }, [onUpdateTool]);
 
+  // ── HID scanner refs (USB + Bluetooth) ─────────────────────────────────────
+  const usbBuf        = useRef('');
+  const usbLastCharAt = useRef(0);
+  const usbTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const manualInputRef = useRef<HTMLInputElement>(null);
+
   // ── UI state ────────────────────────────────────────────────────────────────
   const [status,       setStatus]       = useState<Status>('starting');
   const [errorMsg,     setErrorMsg]     = useState('');
@@ -92,6 +122,7 @@ export default function QrScannerPanel({
   const [manualUuid,   setManualUuid]   = useState('');
   const [manualError,  setManualError]  = useState('');
   const [isHttpWarn,   setIsHttpWarn]   = useState(false);
+  const [hidLastScan,  setHidLastScan]  = useState<string>('');
 
   // Keep mode/dir/amount refs in sync with state
   useEffect(() => { modeRef.current        = mode;        }, [mode]);
@@ -187,7 +218,7 @@ export default function QrScannerPanel({
 
             // Debounce: don't act on the same QR twice in quick succession
             if (code.data !== lastActedId.current) {
-              const tool = toolsRef.current.find((t) => t.id === code.data);
+              const tool = findToolByCode(toolsRef.current, code.data);
               if (tool) {
                 lastActedId.current = code.data;
                 setTimeout(() => { lastActedId.current = ''; }, RESCAN_DEBOUNCE);
@@ -254,14 +285,101 @@ export default function QrScannerPanel({
     };
   }, [activeCamId]); // restart when user switches camera
 
-  // ── Manual UUID lookup ──────────────────────────────────────────────────────
+  // ── Auto-focus manual input on mount ────────────────────────────────────────
+  useEffect(() => {
+    setTimeout(() => manualInputRef.current?.focus(), 300);
+  }, []);
+
+  // ── USB scanner global keyboard listener ────────────────────────────────────
+  // USB HID scanners emulate a keyboard and send characters very rapidly
+  // (typically < 10 ms apart). We detect this by timing and buffer the input.
+  useEffect(() => {
+    function processUsbCode(code: string) {
+      const trimmed = code.trim();
+      if (trimmed.length < HID_MIN_LEN) return;
+      setHidLastScan(trimmed);
+      setManualError('');
+
+      const tool = findToolByCode(toolsRef.current, trimmed);
+      if (!tool) return;
+
+      if (modeRef.current === 'find') {
+        if (trimmed !== lastActedId.current) {
+          lastActedId.current = trimmed;
+          setTimeout(() => { lastActedId.current = ''; }, RESCAN_DEBOUNCE);
+          setFoundTool(tool);
+          setStatus('found');
+        }
+      } else {
+        if (trimmed !== lastActedId.current) {
+          lastActedId.current = trimmed;
+          setTimeout(() => { lastActedId.current = ''; }, RESCAN_DEBOUNCE);
+          const delta  = stockDirRef.current === 'in' ? stockAmountRef.current : -stockAmountRef.current;
+          const newQty = Math.max(0, (tool.quantity ?? 0) + delta);
+          onUpdateRef.current(tool.id, { quantity: newQty });
+          setStockLog((prev) => [
+            { toolNumber: tool.toolNumber, description: tool.description, delta, newQty, time: Date.now() },
+            ...prev.slice(0, 19),
+          ]);
+        }
+      }
+    }
+
+    function handleKeyDown(e: KeyboardEvent) {
+      // If the user is actively typing in an input/textarea, skip
+      const target = document.activeElement;
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement
+      ) return;
+
+      const now = Date.now();
+
+      if (e.key === 'Enter') {
+        if (usbTimerRef.current) clearTimeout(usbTimerRef.current);
+        if (usbBuf.current.length >= HID_MIN_LEN) {
+          processUsbCode(usbBuf.current);
+        }
+        usbBuf.current = '';
+        return;
+      }
+
+      if (e.key.length === 1) {
+        const gap = now - usbLastCharAt.current;
+        // If gap is too large (user is typing slowly), reset buffer
+        if (usbBuf.current.length > 0 && gap > HID_CHAR_THRESHOLD * 3) {
+          usbBuf.current = '';
+        }
+        usbBuf.current        += e.key;
+        usbLastCharAt.current  = now;
+
+        // Commit after a timeout in case there's no Enter (some scanners omit it)
+        if (usbTimerRef.current) clearTimeout(usbTimerRef.current);
+        usbTimerRef.current = setTimeout(() => {
+          if (usbBuf.current.length >= HID_MIN_LEN) {
+            processUsbCode(usbBuf.current);
+          }
+          usbBuf.current = '';
+        }, HID_COMMIT_DELAY);
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      if (usbTimerRef.current) clearTimeout(usbTimerRef.current);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Manual lookup (UUID or T-number) ────────────────────────────────────────
 
   function handleManualLookup() {
     setManualError('');
-    const uuid = manualUuid.trim();
-    if (!uuid) return;
-    const tool = tools.find((t) => t.id === uuid);
-    if (!tool) { setManualError('No tool found with this UUID'); return; }
+    const code = manualUuid.trim();
+    if (!code) return;
+    const tool = findToolByCode(tools, code);
+    if (!tool) { setManualError('No tool found — enter a UUID or tool number (e.g. T42)'); return; }
 
     if (mode === 'find') {
       onFound(tool);
@@ -453,13 +571,13 @@ export default function QrScannerPanel({
             <span className="ml-auto text-xs text-slate-500">
               {unknownText
                 ? <span className="text-amber-400">No match: <span className="font-mono">{unknownText}</span></span>
-                : 'Point at a QR label'}
+                : 'Point camera at a QR or barcode label'}
             </span>
           )}
           {status === 'scanning' && isStock && (
             <span className="ml-auto text-xs text-slate-500">
               {unknownText
-                ? <span className="text-amber-400">QR detected — no matching tool</span>
+                ? <span className="text-amber-400">Code detected — no matching tool</span>
                 : 'Scan labels to adjust qty'}
             </span>
           )}
@@ -473,17 +591,29 @@ export default function QrScannerPanel({
         {/* ── Scrollable body ─────────────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto min-h-0">
 
-          {/* Manual UUID input */}
-          <div className="px-4 py-3 border-b border-slate-700/50">
-            <p className="text-xs font-medium text-slate-500 mb-1.5">Manual lookup — paste UUID</p>
+          {/* USB scanner indicator + manual input */}
+          <div className="px-4 py-3 border-b border-slate-700/50 space-y-2.5">
+            {/* HID scanner hint (USB + Bluetooth) */}
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <Usb size={11} className="shrink-0 text-slate-600" />
+              <span>
+                USB / Bluetooth scanner active — scan any barcode or QR label
+                {hidLastScan ? (
+                  <span className="ml-1 text-green-400 font-mono">· last: {hidLastScan.length > 20 ? hidLastScan.slice(0, 18) + '…' : hidLastScan}</span>
+                ) : null}
+              </span>
+            </div>
+
+            <p className="text-xs font-medium text-slate-500">Manual lookup — paste UUID or tool number (T42)</p>
             <div className="flex gap-2">
               <input
+                ref={manualInputRef}
                 type="text"
                 value={manualUuid}
                 onChange={(e) => { setManualUuid(e.target.value); setManualError(''); }}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleManualLookup(); }}
-                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                title="Tool UUID"
+                placeholder="UUID or T42 / T001"
+                title="Tool UUID or tool number"
                 className="flex-1 min-w-0 px-2.5 py-1.5 text-xs font-mono bg-slate-900 border border-slate-700 rounded-lg text-slate-300 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button

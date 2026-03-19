@@ -1,47 +1,71 @@
 import QRCode from 'qrcode';
+import JsBarcode from 'jsbarcode';
 import jsPDF from 'jspdf';
-import type { LibraryTool } from '../types/libraryTool';
+import type { LibraryTool, ToolInstance } from '../types/libraryTool';
+import { TOOL_CONDITION_LABELS } from '../types/libraryTool';
 import { esc } from './stringUtils';
+import { getActiveInstance } from './toolInstance';
 
 // ── Label options ─────────────────────────────────────────────────────────────
 
 export interface LabelOptions {
-  widthMm:      number;
-  heightMm:     number;
-  columns:      number;
-  gapMm:        number;
-  showQr:       boolean;
-  qrContent:    'id' | 'description' | 'full';
-  showTNumber:  boolean;
-  showDesc:     boolean;
-  showType:     boolean;
-  showDiameter: boolean;
-  showFlutes:   boolean;
-  showMachine:  boolean;
-  showTags:     boolean;
+  widthMm:             number;
+  heightMm:            number;
+  columns:             number;
+  gapMm:               number;
+  showQr:              boolean;
+  /** Whether to use a QR code or a 1D barcode (Code 128) */
+  codeType:            'qr' | 'barcode';
+  qrContent:           'id' | 'toolnumber' | 'description' | 'full';
+  showTNumber:         boolean;
+  showDesc:            boolean;
+  showType:            boolean;
+  showDiameter:        boolean;
+  showFlutes:          boolean;
+  showMachine:         boolean;
+  showTags:            boolean;
+  /** Show the active instance letter (e.g. "A") next to the T# */
+  showInstanceLetter:  boolean;
+  /** Replace nominal diameter with the active instance's measured actual diameter */
+  useActualDiameter:   boolean;
+  /**
+   * How to expand tools with instances into labels:
+   * - 'one'          One label per tool, using the active instance (default)
+   * - 'per-instance' One label per physical copy — shows each instance's letter,
+   *                  condition, actual diameter, and comment
+   * - 'range'        One label per tool showing the full letter range (e.g. A–E);
+   *                  intended for cases / trays that hold multiple copies
+   */
+  instanceMode: 'one' | 'per-instance' | 'range';
 }
 
 export const DEFAULT_LABEL_OPTIONS: LabelOptions = {
-  widthMm:      62,
-  heightMm:     29,
-  columns:       3,
-  gapMm:         2,
-  showQr:       true,
-  qrContent:    'id',
-  showTNumber:  true,
-  showDesc:     true,
-  showType:     true,
-  showDiameter: true,
-  showFlutes:   false,
-  showMachine:  false,
-  showTags:     false,
+  widthMm:            62,
+  heightMm:           29,
+  columns:             3,
+  gapMm:               2,
+  showQr:             true,
+  codeType:           'qr',
+  qrContent:          'id',
+  showTNumber:        true,
+  showDesc:           true,
+  showType:           true,
+  showDiameter:       true,
+  showFlutes:         false,
+  showMachine:        false,
+  showTags:           false,
+  showInstanceLetter: false,
+  useActualDiameter:  false,
+  instanceMode:       'one',
 };
 
-// ── QR content builder ────────────────────────────────────────────────────────
+// ── Code content builder ──────────────────────────────────────────────────────
 
+/** Builds the text to encode in a QR code or barcode. */
 export function buildQrText(tool: LibraryTool, mode: LabelOptions['qrContent']): string {
   switch (mode) {
     case 'id':          return tool.id;
+    case 'toolnumber':  return `T${String(tool.toolNumber).padStart(3, '0')}`;
     case 'description': return `T${tool.toolNumber}: ${tool.description}`;
     case 'full':        return [
       `T${tool.toolNumber}: ${tool.description}`,
@@ -59,7 +83,61 @@ export async function generateQrDataUrl(text: string, sizePx = 120): Promise<str
   return QRCode.toDataURL(text, { margin: 1, width: sizePx, errorCorrectionLevel: 'M' });
 }
 
+// ── Barcode data URL helper ───────────────────────────────────────────────────
+
+/**
+ * Generates a Code 128 barcode as a PNG data URL.
+ * Synchronous — uses an off-screen canvas.
+ * Returns empty string if the text is empty or rendering fails.
+ */
+export function generateBarcodeDataUrl(text: string, heightPx = 60): string {
+  if (!text) return '';
+  try {
+    const canvas = document.createElement('canvas');
+    JsBarcode(canvas, text, {
+      format:       'CODE128',
+      width:        1,
+      height:       heightPx,
+      displayValue: false,
+      margin:       4,
+      lineColor:    '#000000',
+      background:   '#ffffff',
+    });
+    return canvas.toDataURL('image/png');
+  } catch {
+    return '';
+  }
+}
+
 // ── Print labels ──────────────────────────────────────────────────────────────
+
+/** Internal — one item to render as a label */
+type LabelItem = {
+  tool:     LibraryTool;
+  instance: ToolInstance | undefined; // specific copy for per-instance mode
+  isRange:  boolean;                  // range (case) label
+};
+
+function buildLabelItems(tools: LibraryTool[], mode: LabelOptions['instanceMode']): LabelItem[] {
+  const items: LabelItem[] = [];
+  for (const tool of tools) {
+    const hasInstances = (tool.instances?.length ?? 0) > 0;
+    if (mode === 'per-instance' && hasInstances) {
+      for (const inst of tool.instances!) {
+        items.push({ tool, instance: inst, isRange: false });
+      }
+    } else if (mode === 'range' && hasInstances) {
+      items.push({ tool, instance: undefined, isRange: true });
+    } else {
+      items.push({ tool, instance: undefined, isRange: false });
+    }
+  }
+  return items;
+}
+
+export function countLabels(tools: LibraryTool[], mode: LabelOptions['instanceMode']): number {
+  return buildLabelItems(tools, mode).length;
+}
 
 export async function printLabels(tools: LibraryTool[], opts: LabelOptions): Promise<void> {
   // Open window immediately (before any awaits) to avoid popup blockers
@@ -79,28 +157,86 @@ export async function printLabels(tools: LibraryTool[], opts: LabelOptions): Pro
   // Generate at ≥180px so the QR is always scannable regardless of label size
   const qrSizePx = Math.max(180, Math.round(qrDisplayMm * 3.78));
 
-  const qrUrls = opts.showQr
-    ? await Promise.all(tools.map((t) => generateQrDataUrl(buildQrText(t, opts.qrContent), qrSizePx)))
-    : tools.map(() => '');
+  // Expand tools into per-label items
+  const items = buildLabelItems(tools, opts.instanceMode);
 
-  const labelCells = tools.map((tool, i) => {
+  const useBarcode = opts.showQr && opts.codeType === 'barcode';
+  const barcodeHeightMm = Math.max(6, opts.heightMm * 0.28);
+
+  const qrUrls = opts.showQr
+    ? useBarcode
+      ? items.map(({ tool }) => generateBarcodeDataUrl(buildQrText(tool, opts.qrContent), 80))
+      : await Promise.all(items.map(({ tool }) => generateQrDataUrl(buildQrText(tool, opts.qrContent), qrSizePx)))
+    : items.map(() => '');
+
+  const labelCells = items.map(({ tool, instance, isRange }, i) => {
     const qr = qrUrls[i];
+
+    // ── Range (case) label ────────────────────────────────────────────────────
+    if (isRange) {
+      const instances  = tool.instances!;
+      const first      = instances[0].letter;
+      const last       = instances[instances.length - 1].letter;
+      const rangeText  = first === last ? first : `${first}–${last}`;
+      const countText  = instances.length > 1 ? ` · ${instances.length}\u202fpcs` : '';
+      const infoLines: string[] = [];
+      if (opts.showTNumber) infoLines.push(`<div class="tnum">T${tool.toolNumber}</div>`);
+      infoLines.push(`<div class="range">${rangeText}${countText}</div>`);
+      if (opts.showDesc)    infoLines.push(`<div class="desc">${esc(tool.description)}</div>`);
+      if (opts.showType)    infoLines.push(`<div class="field">${esc(tool.type)}</div>`);
+      const nomDiam = tool.geometry.diameter;
+      if (opts.showDiameter) infoLines.push(`<div class="field">Ø${nomDiam}&nbsp;${tool.unit}</div>`);
+      if (opts.showFlutes && tool.geometry.numberOfFlutes)
+                            infoLines.push(`<div class="field">${tool.geometry.numberOfFlutes} flutes</div>`);
+      if (opts.showMachine && (tool.machineGroups?.length ?? 0) > 0)
+                            infoLines.push(`<div class="field">${esc(tool.machineGroups!.join(', '))}</div>`);
+      if (opts.showTags && tool.tags.length)
+                            infoLines.push(`<div class="field tags">${tool.tags.map(esc).join(' · ')}</div>`);
+      return useBarcode
+        ? `<div class="label barcode-label">
+            <div class="info">${infoLines.join('')}</div>
+            ${opts.showQr && qr ? `<img class="barcode" src="${qr}" alt="" />` : ''}
+          </div>`
+        : `<div class="label">
+            ${opts.showQr && qr ? `<img class="qr" src="${qr}" alt="" />` : ''}
+            <div class="info">${infoLines.join('')}</div>
+          </div>`;
+    }
+
+    // ── Per-instance or normal label ──────────────────────────────────────────
+    const activeInst    = instance ?? getActiveInstance(tool);
+    const displayDiam   = opts.useActualDiameter && activeInst?.actualDiameter != null
+      ? activeInst.actualDiameter
+      : tool.geometry.diameter;
+    // In per-instance mode always show the letter; otherwise respect showInstanceLetter
+    const letterSuffix  = instance
+      ? `-${instance.letter}`
+      : (opts.showInstanceLetter && activeInst ? `-${activeInst.letter}` : '');
+
     const infoLines: string[] = [];
-    if (opts.showTNumber)  infoLines.push(`<div class="tnum">T${tool.toolNumber}</div>`);
+    if (opts.showTNumber)  infoLines.push(`<div class="tnum">T${tool.toolNumber}${letterSuffix}</div>`);
     if (opts.showDesc)     infoLines.push(`<div class="desc">${esc(tool.description)}</div>`);
     if (opts.showType)     infoLines.push(`<div class="field">${esc(tool.type)}</div>`);
-    if (opts.showDiameter) infoLines.push(`<div class="field">Ø${tool.geometry.diameter}&nbsp;${tool.unit}</div>`);
+    if (opts.showDiameter) infoLines.push(`<div class="field">Ø${displayDiam}&nbsp;${tool.unit}${opts.useActualDiameter && activeInst?.actualDiameter != null ? ' <span class="actual">(actual)</span>' : ''}</div>`);
     if (opts.showFlutes && tool.geometry.numberOfFlutes)
                            infoLines.push(`<div class="field">${tool.geometry.numberOfFlutes} flutes</div>`);
     if (opts.showMachine && (tool.machineGroups?.length ?? 0) > 0)
                            infoLines.push(`<div class="field">${esc(tool.machineGroups!.join(', '))}</div>`);
     if (opts.showTags && tool.tags.length)
                            infoLines.push(`<div class="field tags">${tool.tags.map(esc).join(' · ')}</div>`);
+    // Per-instance extras: condition + comment from the specific copy
+    if (instance?.condition) infoLines.push(`<div class="field inst">${esc(TOOL_CONDITION_LABELS[instance.condition as keyof typeof TOOL_CONDITION_LABELS])}</div>`);
+    if (instance?.comment)   infoLines.push(`<div class="field inst">${esc(instance.comment)}</div>`);
 
-    return `<div class="label">
-      ${opts.showQr && qr ? `<img class="qr" src="${qr}" alt="" />` : ''}
-      <div class="info">${infoLines.join('')}</div>
-    </div>`;
+    return useBarcode
+      ? `<div class="label barcode-label">
+          <div class="info">${infoLines.join('')}</div>
+          ${opts.showQr && qr ? `<img class="barcode" src="${qr}" alt="" />` : ''}
+        </div>`
+      : `<div class="label">
+          ${opts.showQr && qr ? `<img class="qr" src="${qr}" alt="" />` : ''}
+          <div class="info">${infoLines.join('')}</div>
+        </div>`;
   }).join('');
 
   const html = `<!DOCTYPE html>
@@ -127,11 +263,16 @@ body { font-family: Arial, Helvetica, sans-serif; background: #fff; }
   page-break-inside: avoid;
 }
 .qr  { width: ${qrDisplayMm}mm; height: ${qrDisplayMm}mm; flex-shrink: 0; image-rendering: crisp-edges; }
+.barcode-label { flex-direction: column; align-items: stretch; padding: 1mm 1.5mm 0.8mm; gap: 0.5mm; }
+.barcode { width: 100%; height: ${barcodeHeightMm}mm; object-fit: fill; flex-shrink: 0; image-rendering: crisp-edges; }
 .info { flex: 1; min-width: 0; overflow: hidden; }
 .tnum { font-size: ${fTnum}pt; font-weight: bold; color: #1a4db8; font-family: monospace; white-space: nowrap; }
 .desc { font-size: ${fDesc}pt; font-weight: 600; color: #111; line-height: 1.25; margin: 0.4mm 0; word-break: break-word; }
 .field { font-size: ${fField}pt; color: #444; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tags { color: #666; }
+.tags   { color: #666; }
+.actual { color: #888; font-style: italic; }
+.range  { font-size: ${fTnum}pt; font-weight: bold; color: #0d7377; font-family: monospace; white-space: nowrap; letter-spacing: 0.3px; }
+.inst   { color: #555; font-style: italic; }
 @media print {
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   @page { margin: 0; }
@@ -149,27 +290,33 @@ body { font-family: Arial, Helvetica, sans-serif; background: #fff; }
 // ── Sheet options ─────────────────────────────────────────────────────────────
 
 export interface SheetOptions {
-  columns:         1 | 2 | 3;
-  showGeometry:    boolean;
-  showCutting:     boolean;
-  showMaterial:    boolean;
+  columns:          1 | 2 | 3;
+  showGeometry:     boolean;
+  showCutting:      boolean;
+  showMaterial:     boolean;
   showMachineGroup: boolean;
-  showTags:        boolean;
+  showTags:         boolean;
   showManufacturer: boolean;
-  showComment:     boolean;
-  showCrib:        boolean;
+  showComment:      boolean;
+  showCrib:         boolean;
+  /** Include a section listing each instance's letter, condition, actual Ø, comment */
+  showInstances:    boolean;
+  /** Replace nominal diameter with the active instance's measured actual diameter */
+  useActualDiameter: boolean;
 }
 
 export const DEFAULT_SHEET_OPTIONS: SheetOptions = {
-  columns:          2,
-  showGeometry:     true,
-  showCutting:      true,
-  showMaterial:     true,
-  showMachineGroup: true,
-  showTags:         true,
-  showManufacturer: true,
-  showComment:      true,
-  showCrib:         true,
+  columns:           2,
+  showGeometry:      true,
+  showCutting:       true,
+  showMaterial:      true,
+  showMachineGroup:  true,
+  showTags:          true,
+  showManufacturer:  true,
+  showComment:       true,
+  showCrib:          true,
+  showInstances:     true,
+  useActualDiameter: false,
 };
 
 // ── PDF tool sheet ────────────────────────────────────────────────────────────
@@ -194,9 +341,16 @@ function buildPdfRows(tool: LibraryTool, opts: SheetOptions): SheetRow[] {
     out.push({ kind: 'section', label });
   }
 
+  // Resolve diameter — use active instance's actual diameter if requested
+  const active       = getActiveInstance(tool);
+  const displayDiam  = opts.useActualDiameter && active?.actualDiameter != null
+    ? active.actualDiameter
+    : geo.diameter;
+  const diamLabel    = opts.useActualDiameter && active?.actualDiameter != null ? 'Ø (actual)' : 'Ø';
+
   // Basic (always shown)
   row('Type', tool.type);
-  row('Ø', `${geo.diameter}\u202f${tool.unit}`);
+  row(diamLabel, `${displayDiam}\u202f${tool.unit}`);
   if (opts.showGeometry) {
     if (geo.overallLength  != null) row('OAL',      `${geo.overallLength}\u202f${tool.unit}`);
     if (geo.fluteLength    != null) row('Flute L',  `${geo.fluteLength}\u202f${tool.unit}`);
@@ -244,6 +398,19 @@ function buildPdfRows(tool: LibraryTool, opts: SheetOptions): SheetRow[] {
   if (opts.showManufacturer  && tool.productId)     row('Prod. ID', tool.productId);
   if (opts.showComment       && tool.comment)       row('Notes',    tool.comment);
   if (out.length > metaBefore) out.splice(metaBefore, 0, { kind: 'section', label: 'Info' });
+
+  if (opts.showInstances && (tool.instances?.length ?? 0) > 0) {
+    section('Instances');
+    for (const inst of tool.instances!) {
+      const parts: string[] = [];
+      if (inst.isActive)             parts.push('ACTIVE');
+      if (inst.condition)            parts.push(TOOL_CONDITION_LABELS[inst.condition]);
+      if (inst.actualDiameter != null) parts.push(`Ø${inst.actualDiameter}\u202f${tool.unit}`);
+      if (inst.offsets?.z != null)   parts.push(`Z${inst.offsets.z}`);
+      if (inst.comment)              parts.push(inst.comment);
+      row(inst.letter, parts.join('  ·  ') || '—');
+    }
+  }
 
   return out;
 }

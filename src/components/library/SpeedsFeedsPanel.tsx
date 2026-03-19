@@ -7,10 +7,14 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Calculator, ArrowLeftRight, ChevronDown, Zap } from 'lucide-react';
+import { X, Calculator, ArrowLeftRight, ChevronDown, Zap, AlertTriangle, Bookmark, BookmarkPlus, Trash2 } from 'lucide-react';
 import type { LibraryTool } from '../../types/libraryTool';
 import type { WorkMaterial } from '../../types/material';
+import type { Machine } from '../../types/machine';
 import { SURFACE_SPEED_GROUPS, vcToSfm, type ToolMaterial } from '../../lib/surfaceSpeedPresets';
+import { useSettings } from '../../contexts/SettingsContext';
+import type { FSPreset } from '../../contexts/SettingsContext';
+import { generateId } from '../../lib/uuid';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -37,6 +41,7 @@ interface Props {
   allMaterials: WorkMaterial[];
   onApply?:     (patch: Partial<LibraryTool>) => void;
   onClose:      () => void;
+  machine?:     Machine;
 }
 
 // ── Panel ──────────────────────────────────────────────────────────────────────
@@ -49,8 +54,9 @@ const TOOL_MAT_LABELS: Record<ToolMaterial, string> = {
   diamond: 'Diamond (PCD)',
 };
 
-export default function SpeedsFeedsPanel({ tool, allMaterials, onApply, onClose }: Props) {
+export default function SpeedsFeedsPanel({ tool, allMaterials, onApply, onClose, machine }: Props) {
   const isMetric = tool?.unit !== 'inch';
+  const { settings, updateSettings } = useSettings();
 
   // Inputs
   const [diameter,  setDiameter]  = useState(tool?.geometry?.diameter ?? 10);
@@ -67,8 +73,12 @@ export default function SpeedsFeedsPanel({ tool, allMaterials, onApply, onClose 
   const [driver, setDriver] = useState<'vc' | 'rpm'>('rpm');
 
   // Quick fill dropdown
-  const [quickOpen, setQuickOpen] = useState(false);
-  const quickRef = useRef<HTMLDivElement>(null);
+  const [quickOpen,    setQuickOpen]    = useState(false);
+  const [presetsOpen,  setPresetsOpen]  = useState(false);
+  const [savePresetName, setSavePresetName] = useState('');
+  const [showSaveForm, setShowSaveForm] = useState(false);
+  const quickRef   = useRef<HTMLDivElement>(null);
+  const presetsRef = useRef<HTMLDivElement>(null);
 
   // ── Derived calculations ──────────────────────────────────────────────────
 
@@ -104,6 +114,16 @@ export default function SpeedsFeedsPanel({ tool, allMaterials, onApply, onClose 
     return () => document.removeEventListener('mousedown', handleClick);
   }, [quickOpen]);
 
+  // Close presets dropdown on outside click
+  useEffect(() => {
+    if (!presetsOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (!presetsRef.current?.contains(e.target as Node)) setPresetsOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [presetsOpen]);
+
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   function handleVcChange(v: number) { setVc(v); setDriver('vc'); }
@@ -133,6 +153,38 @@ export default function SpeedsFeedsPanel({ tool, allMaterials, onApply, onClose 
       },
     });
     onClose();
+  }
+
+  function handleSavePreset() {
+    const name = savePresetName.trim();
+    if (!name) return;
+    const preset: FSPreset = {
+      id:        generateId(),
+      name,
+      vc:        driver === 'vc' ? vc : parseFloat(displayVc.toFixed(2)),
+      rpm:       driver === 'rpm' ? rpm : Math.round(displayRpm),
+      driver,
+      chipLoad,
+      plungePct,
+      unit:      isMetric ? 'metric' : 'imperial',
+      createdAt: Date.now(),
+    };
+    updateSettings({ fsPresets: [...settings.fsPresets, preset] });
+    setSavePresetName('');
+    setShowSaveForm(false);
+  }
+
+  function loadPreset(p: FSPreset) {
+    setVc(p.vc);
+    setRpm(p.rpm);
+    setDriver(p.driver);
+    setChipLoad(p.chipLoad);
+    setPlungePct(p.plungePct);
+    setPresetsOpen(false);
+  }
+
+  function deletePreset(id: string) {
+    updateSettings({ fsPresets: settings.fsPresets.filter((p) => p.id !== id) });
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -332,6 +384,97 @@ export default function SpeedsFeedsPanel({ tool, allMaterials, onApply, onClose 
                 </span>
               </div>
             ))}
+          </div>
+
+          {/* Machine RPM warning */}
+          {machine?.maxSpindleRpm != null && Math.round(displayRpm) > machine.maxSpindleRpm && (
+            <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs">
+              <AlertTriangle size={13} className="shrink-0" />
+              Exceeds machine max ({machine.maxSpindleRpm.toLocaleString()} RPM)
+            </div>
+          )}
+
+          {/* My presets */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-medium uppercase tracking-wider text-slate-400">My Presets</p>
+              <div className="flex items-center gap-1.5">
+                {/* Load preset dropdown */}
+                {settings.fsPresets.length > 0 && (
+                  <div className="relative" ref={presetsRef}>
+                    <button
+                      type="button"
+                      onClick={() => setPresetsOpen((o) => !o)}
+                      title="Load a saved preset"
+                      className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-700 border border-slate-600 transition-colors"
+                    >
+                      <Bookmark size={11} /> Load
+                      <ChevronDown size={10} className={presetsOpen ? 'rotate-180 transition-transform' : 'transition-transform'} />
+                    </button>
+                    {presetsOpen && (
+                      <div className="absolute right-0 top-full mt-1 w-64 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-10 overflow-hidden">
+                        <div className="max-h-56 overflow-y-auto">
+                          {settings.fsPresets.map((p) => (
+                            <div key={p.id} className="flex items-center gap-1 px-3 py-2 hover:bg-slate-800 group">
+                              <button
+                                type="button"
+                                onClick={() => loadPreset(p)}
+                                className="flex-1 text-left"
+                              >
+                                <div className="text-xs font-medium text-slate-200">{p.name}</div>
+                                <div className="text-xs text-slate-500">
+                                  {p.driver === 'vc'
+                                    ? `Vc ${p.vc} ${p.unit === 'metric' ? 'm/min' : 'SFM'}`
+                                    : `${p.rpm.toLocaleString()} RPM`}
+                                  {' · '}fz {p.chipLoad} · {p.plungePct}% plunge
+                                </div>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => deletePreset(p.id)}
+                                title="Delete preset"
+                                className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-red-400 transition-all"
+                              >
+                                <Trash2 size={11} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {/* Save preset button */}
+                <button
+                  type="button"
+                  onClick={() => setShowSaveForm((s) => !s)}
+                  title="Save current values as a preset"
+                  className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 border border-blue-500/30 transition-colors"
+                >
+                  <BookmarkPlus size={11} /> Save
+                </button>
+              </div>
+            </div>
+            {showSaveForm && (
+              <div className="flex gap-2 items-center">
+                <input
+                  type="text"
+                  value={savePresetName}
+                  onChange={(e) => setSavePresetName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSavePreset(); if (e.key === 'Escape') setShowSaveForm(false); }}
+                  placeholder="Preset name (e.g. Al roughing)"
+                  autoFocus
+                  className="flex-1 px-2.5 py-1.5 text-xs bg-slate-700 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button type="button" onClick={handleSavePreset}
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white transition-colors">
+                  Save
+                </button>
+              </div>
+            )}
+            {settings.fsPresets.length === 0 && !showSaveForm && (
+              <p className="text-xs text-slate-600">No presets saved — set values above then click Save.</p>
+            )}
           </div>
 
         </div>
