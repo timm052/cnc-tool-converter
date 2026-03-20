@@ -113,8 +113,13 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
 
   // ── Mutations ──────────────────────────────────────────────────────────────
 
+  function requireAdapter() {
+    if (!adapterRef.current) throw new Error('Database not ready — please wait a moment and try again.');
+    return adapterRef.current;
+  }
+
   const addTool = useCallback(async (tool: LibraryTool) => {
-    const adapter = adapterRef.current!;
+    const adapter = requireAdapter();
     await adapter.toolsAdd(tool);
     setTools(await adapter.toolsGetAll());
     broadcast();
@@ -124,7 +129,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     incoming: LibraryTool[],
     overwrite = false,
   ): Promise<{ added: number; skipped: number }> => {
-    const adapter = adapterRef.current!;
+    const adapter = requireAdapter();
     const existingNums = new Set(tools.map((t) => t.toolNumber));
     const result = await adapter.toolsAddConditional(incoming, existingNums, overwrite);
     setTools(await adapter.toolsGetAll());
@@ -133,7 +138,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   }, [tools]);
 
   const updateTool = useCallback(async (id: string, patch: Partial<LibraryTool>) => {
-    const adapter  = adapterRef.current!;
+    const adapter  = requireAdapter();
     const now      = Date.now();
     const existing = await adapter.toolsGet(id);
 
@@ -183,7 +188,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const patchEach = useCallback(async (updates: { id: string; patch: Partial<LibraryTool> }[]) => {
-    const adapter = adapterRef.current!;
+    const adapter = requireAdapter();
     const now = Date.now();
     await adapter.toolsBulkPatch(updates, now);
     setTools(await adapter.toolsGetAll());
@@ -191,14 +196,14 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const deleteTool = useCallback(async (id: string) => {
-    const adapter = adapterRef.current!;
+    const adapter = requireAdapter();
     await adapter.toolsDelete(id);
     setTools((prev) => prev.filter((t) => t.id !== id));
     broadcast();
   }, []);
 
   const deleteTools = useCallback(async (ids: string[]) => {
-    const adapter = adapterRef.current!;
+    const adapter = requireAdapter();
     await adapter.toolsBulkDelete(ids);
     setTools((prev) => prev.filter((t) => !ids.includes(t.id)));
     broadcast();
@@ -207,13 +212,13 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   // ── Templates ──────────────────────────────────────────────────────────────
 
   const saveTemplate = useCallback(async (template: ToolTemplate) => {
-    const adapter = adapterRef.current!;
+    const adapter = requireAdapter();
     await adapter.templatesPut(template);
     setTemplates(await adapter.templatesGetAll());
   }, []);
 
   const deleteTemplate = useCallback(async (id: string) => {
-    const adapter = adapterRef.current!;
+    const adapter = requireAdapter();
     await adapter.templatesDelete(id);
     setTemplates((prev) => prev.filter((t) => t.id !== id));
   }, []);
@@ -221,24 +226,24 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   // ── Stock transactions ──────────────────────────────────────────────────────
 
   const logTransaction = useCallback(async (tx: Omit<StockTransaction, 'id' | 'timestamp'>) => {
-    const adapter = adapterRef.current!;
+    const adapter = requireAdapter();
     await adapter.transactionsAdd({ ...tx, id: crypto.randomUUID(), timestamp: Date.now() });
   }, []);
 
   const getTransactions = useCallback(async (toolId: string): Promise<StockTransaction[]> => {
-    const adapter = adapterRef.current!;
+    const adapter = requireAdapter();
     return adapter.transactionsGetByToolId(toolId);
   }, []);
 
   const getAuditLog = useCallback(async (toolId: string) => {
-    const adapter = adapterRef.current!;
+    const adapter = requireAdapter();
     return adapter.auditGetByToolId(toolId);
   }, []);
 
   // ── Snapshots ──────────────────────────────────────────────────────────────
 
   const saveSnapshot = useCallback(async (label?: string) => {
-    const adapter = adapterRef.current!;
+    const adapter = requireAdapter();
     const [currentTools, currentMaterials, currentHolders] = await Promise.all([
       adapter.toolsGetAll(),
       adapter.materialsGetAll(),
@@ -264,12 +269,12 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const listSnapshots = useCallback(async (): Promise<LibrarySnapshot[]> => {
-    const adapter = adapterRef.current!;
+    const adapter = requireAdapter();
     return adapter.snapshotsGetAll();
   }, []);
 
   const restoreSnapshot = useCallback(async (id: string) => {
-    const adapter = adapterRef.current!;
+    const adapter = requireAdapter();
     const snap = await adapter.snapshotsGet(id);
     if (!snap) return;
     await adapter.replaceLibrary(snap.tools, snap.materials, snap.holders);
@@ -278,7 +283,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const deleteSnapshot = useCallback(async (id: string) => {
-    const adapter = adapterRef.current!;
+    const adapter = requireAdapter();
     await adapter.snapshotsDelete(id);
   }, []);
 
@@ -287,7 +292,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     newMaterials: import('../types/material').WorkMaterial[],
     newHolders:   import('../types/holder').ToolHolder[],
   ) => {
-    const adapter = adapterRef.current!;
+    const adapter = requireAdapter();
     await adapter.replaceLibrary(newTools, newMaterials, newHolders);
     setTools(await adapter.toolsGetAll());
     broadcast();
