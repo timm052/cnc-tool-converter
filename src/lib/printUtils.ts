@@ -1,6 +1,7 @@
 import QRCode from 'qrcode';
 import JsBarcode from 'jsbarcode';
 import jsPDF from 'jspdf';
+import { savePdfDoc } from './tauri/pdfSave';
 import type { LibraryTool, ToolInstance } from '../types/libraryTool';
 import { TOOL_CONDITION_LABELS } from '../types/libraryTool';
 import { esc } from './stringUtils';
@@ -140,11 +141,6 @@ export function countLabels(tools: LibraryTool[], mode: LabelOptions['instanceMo
 }
 
 export async function printLabels(tools: LibraryTool[], opts: LabelOptions): Promise<void> {
-  // Open window immediately (before any awaits) to avoid popup blockers
-  const win = window.open('', '_blank');
-  if (!win) { alert('Could not open print window — check your popup blocker.'); return; }
-  win.document.write('<html><head><title>Tool Labels</title></head><body style="font-family:sans-serif;padding:8mm">Generating labels…</body></html>');
-  win.document.close();
 
   // Font sizes scale with label height (29mm is the reference at 7/6/5.5pt)
   const fontScale  = opts.heightMm / 29;
@@ -279,12 +275,24 @@ body { font-family: Arial, Helvetica, sans-serif; background: #fff; }
 }
 </style></head>
 <body><div class="grid">${labelCells}</div>
-<script>window.onload = () => { setTimeout(() => window.print(), 200); }<\/script>
 </body></html>`;
 
-  win.document.open();
-  win.document.write(html);
-  win.document.close();
+  // Use a hidden iframe — works in both browsers and Tauri WebView (window.open is blocked in Tauri)
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;width:0;height:0;opacity:0;pointer-events:none;border:none;';
+  document.body.appendChild(iframe);
+
+  iframe.onload = () => {
+    setTimeout(() => {
+      iframe.contentWindow?.print();
+      setTimeout(() => { try { document.body.removeChild(iframe); } catch { /* ignore */ } }, 2000);
+    }, 150);
+  };
+
+  const idoc = iframe.contentDocument!;
+  idoc.open();
+  idoc.write(html);
+  idoc.close();
 }
 
 // ── Sheet options ─────────────────────────────────────────────────────────────
@@ -446,7 +454,7 @@ function drawPageHeader(doc: jsPDF, count: number, date: string, pageW: number, 
   doc.text(date, pageW - margin, margin + 4, { align: 'right' });
 }
 
-export function generateToolSheetPdf(tools: LibraryTool[], opts: SheetOptions): void {
+export async function generateToolSheetPdf(tools: LibraryTool[], opts: SheetOptions): Promise<void> {
   const doc      = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const PAGE_W   = 210;
   const PAGE_H   = 297;
@@ -571,7 +579,7 @@ export function generateToolSheetPdf(tools: LibraryTool[], opts: SheetOptions): 
     y += cardH + GAP_Y;
   }
 
-  doc.save(`tool-sheet-${new Date().toISOString().slice(0, 10)}.pdf`);
+  await savePdfDoc(doc, `tool-sheet-${new Date().toISOString().slice(0, 10)}.pdf`);
 }
 
 

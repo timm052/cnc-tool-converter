@@ -15,13 +15,19 @@ interface ToolSheetPanelProps {
 
 export default function ToolSheetPanel({ tools, onClose }: ToolSheetPanelProps) {
   const [opts, setOpts] = useState<SheetOptions>(DEFAULT_SHEET_OPTIONS);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   function patch(p: Partial<SheetOptions>) {
     setOpts((prev) => ({ ...prev, ...p }));
   }
 
-  function handlePrint() {
-    generateToolSheetPdf(tools, opts);
+  async function handlePrint() {
+    setIsPrinting(true);
+    try {
+      await generateToolSheetPdf(tools, opts);
+    } finally {
+      setIsPrinting(false);
+    }
   }
 
   return (
@@ -101,11 +107,15 @@ export default function ToolSheetPanel({ tools, onClose }: ToolSheetPanelProps) 
           </button>
           <button
             type="button"
-            onClick={handlePrint}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+            onClick={() => void handlePrint()}
+            disabled={isPrinting}
+            className={[
+              'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors',
+              !isPrinting ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-slate-700 text-slate-500 cursor-not-allowed',
+            ].join(' ')}
           >
             <Printer size={14} />
-            Print {tools.length} tool{tools.length !== 1 ? 's' : ''}
+            {isPrinting ? 'Generating…' : `Print ${tools.length} tool${tools.length !== 1 ? 's' : ''}`}
           </button>
         </div>
       </div>

@@ -804,6 +804,7 @@ export default function ToolEditor({
   const { saveTemplate } = useLibrary();
   const [activeTab,      setActiveTab]      = useState<Tab>('library');
   const [isSaving,       setIsSaving]       = useState(false);
+  const [saveError,      setSaveError]      = useState<string | null>(null);
   const [showConfirm,    setShowConfirm]    = useState(false);
   const [showSaveTmpl,   setShowSaveTmpl]   = useState(false);
   const [templateName,   setTemplateName]   = useState('');
@@ -899,10 +900,13 @@ export default function ToolEditor({
   }
 
   async function handleSave() {
+    setSaveError(null);
     setIsSaving(true);
     try {
       await onSave({ ...draft, updatedAt: Date.now() });
       onClose();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsSaving(false);
     }
@@ -2046,6 +2050,9 @@ export default function ToolEditor({
               <button onClick={handleDelete} className="px-2.5 py-1.5 text-xs rounded-lg bg-red-600 hover:bg-red-500 text-white">Yes, delete</button>
               <button onClick={() => setShowConfirm(false)} className="px-2.5 py-1.5 text-xs rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300">Cancel</button>
             </div>
+          )}
+          {saveError && (
+            <p className="text-xs text-red-400 mr-auto max-w-xs truncate" title={saveError}>{saveError}</p>
           )}
           <div className="flex-1" />
           <button

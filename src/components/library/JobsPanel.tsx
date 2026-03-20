@@ -4,10 +4,12 @@ import { jsPDF } from 'jspdf';
 import type { LibraryTool } from '../../types/libraryTool';
 import type { Job } from '../../types/job';
 import { loadJobs, saveJob, deleteJob, createJob } from '../../lib/jobStore';
+import { savePdfDoc } from '../../lib/tauri/pdfSave';
+import { triggerDownload } from '../../lib/downloadUtils';
 
 // ── CSV export ────────────────────────────────────────────────────────────────
 
-function downloadJobCsv(job: Job, tools: LibraryTool[]) {
+async function downloadJobCsv(job: Job, tools: LibraryTool[]) {
   const jobTools = tools.filter(t => job.toolIds.includes(t.id));
   const header = ['T#', 'Description', 'Type', 'Diameter', 'Flutes', 'RPM', 'Feed'];
   const rows = jobTools.map(t => [
@@ -20,16 +22,12 @@ function downloadJobCsv(job: Job, tools: LibraryTool[]) {
     String(t.cutting?.feedCutting ?? ''),
   ]);
   const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
-  const a = Object.assign(document.createElement('a'), {
-    href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })),
-    download: `${job.name.replace(/\s+/g, '-').toLowerCase()}-tools.csv`,
-  });
-  a.click();
+  await triggerDownload(csv, 'text/csv', `${job.name.replace(/\s+/g, '-').toLowerCase()}-tools.csv`);
 }
 
 // ── PDF export ────────────────────────────────────────────────────────────────
 
-function downloadJobPdf(job: Job, tools: LibraryTool[]) {
+async function downloadJobPdf(job: Job, tools: LibraryTool[]) {
   const jobTools = tools.filter(t => job.toolIds.includes(t.id));
   const doc = new jsPDF();
   let y = 20;
@@ -68,7 +66,7 @@ function downloadJobPdf(job: Job, tools: LibraryTool[]) {
     y += 5;
   }
 
-  doc.save(`${job.name.replace(/\s+/g, '-').toLowerCase()}-tools.pdf`);
+  await savePdfDoc(doc, `${job.name.replace(/\s+/g, '-').toLowerCase()}-tools.pdf`);
 }
 
 // ── Props ─────────────────────────────────────────────────────────────────────

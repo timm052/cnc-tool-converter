@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import { db } from '../db/library';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
+import { getAdapter } from '../lib/db';
+import type { IDbAdapter }  from '../lib/db';
 import type { WorkMaterial } from '../types/material';
 
 interface MaterialContextValue {
@@ -13,47 +14,51 @@ interface MaterialContextValue {
 
 const MaterialContext = createContext<MaterialContextValue | null>(null);
 
-async function loadAll(): Promise<WorkMaterial[]> {
-  return db.materials.orderBy('createdAt').toArray();
-}
-
 export function MaterialProvider({ children }: { children: ReactNode }) {
   const [materials,  setMaterials]  = useState<WorkMaterial[]>([]);
   const [isLoading,  setIsLoading]  = useState(true);
+  const adapterRef = useRef<IDbAdapter | null>(null);
+
+  function requireAdapter() {
+    if (!adapterRef.current) throw new Error('Database not ready — please wait a moment and try again.');
+    return adapterRef.current;
+  }
 
   useEffect(() => {
-    loadAll()
-      .then(setMaterials)
-      .catch(console.error)
-      .finally(() => setIsLoading(false));
+    getAdapter().then(async (adapter) => {
+      adapterRef.current = adapter;
+      setMaterials(await adapter.materialsGetAll());
+    }).catch(console.error).finally(() => setIsLoading(false));
   }, []);
 
   const addMaterial = useCallback(async (m: WorkMaterial) => {
-    await db.materials.add(m);
-    setMaterials(await loadAll());
+    const adapter = requireAdapter();
+    await adapter.materialsAdd(m);
+    setMaterials(await adapter.materialsGetAll());
   }, []);
 
   const addMaterials = useCallback(async (ms: WorkMaterial[]): Promise<{ added: number; skipped: number }> => {
-    const existingNames = new Set((await loadAll()).map((m) => m.name.toLowerCase()));
-    let added = 0;
-    let skipped = 0;
-    await db.transaction('rw', db.materials, async () => {
-      for (const m of ms) {
-        if (existingNames.has(m.name.toLowerCase())) { skipped++; }
-        else { await db.materials.add(m); added++; }
-      }
-    });
-    setMaterials(await loadAll());
+    const adapter = requireAdapter();
+    const existing = await adapter.materialsGetAll();
+    const existingNames = new Set(existing.map((m) => m.name.toLowerCase()));
+    let added = 0; let skipped = 0;
+    for (const m of ms) {
+      if (existingNames.has(m.name.toLowerCase())) { skipped++; }
+      else { await adapter.materialsAdd(m); added++; }
+    }
+    setMaterials(await adapter.materialsGetAll());
     return { added, skipped };
   }, []);
 
   const updateMaterial = useCallback(async (id: string, patch: Partial<WorkMaterial>) => {
-    await db.materials.update(id, { ...patch, updatedAt: Date.now() });
-    setMaterials(await loadAll());
+    const adapter = requireAdapter();
+    await adapter.materialsUpdate(id, { ...patch, updatedAt: Date.now() });
+    setMaterials(await adapter.materialsGetAll());
   }, []);
 
   const deleteMaterial = useCallback(async (id: string) => {
-    await db.materials.delete(id);
+    const adapter = requireAdapter();
+    await adapter.materialsDelete(id);
     setMaterials((prev) => prev.filter((m) => m.id !== id));
   }, []);
 

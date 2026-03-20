@@ -5,6 +5,7 @@ import type { LibraryTool } from '../../types/libraryTool';
 import type { WorkMaterial } from '../../types/material';
 import { useSettings } from '../../contexts/SettingsContext';
 import { triggerDownload, triggerBinaryDownload } from '../../lib/downloadUtils';
+import { isTauri } from '../../lib/tauri/fs';
 import { exportToolsToXlsx } from '../../lib/xlsxExport';
 import { resolveToolForExport } from '../../lib/toolInstance';
 import FieldToggle from '../ui/FieldToggle';
@@ -52,14 +53,19 @@ export default function ExportPanel({ selectedTools, allMaterials, onClose }: Ex
     hsmlibMachineModel:           settings.hsmlibDefaultMachineModel  || undefined,
   };
 
-  // Helper: stagger multiple file downloads so browsers don't block them
+  // Helper: stagger multiple file downloads so browsers don't block them.
+  // In Tauri each save shows a native dialog, so no stagger is needed.
   async function staggeredDownload(items: { content: string | Uint8Array; mimeType: string; filename: string }[]) {
     for (let i = 0; i < items.length; i++) {
-      await new Promise<void>((resolve) => setTimeout(() => {
-        const c = items[i].content;
-        triggerDownload(typeof c === 'string' ? c : new TextDecoder().decode(c), items[i].mimeType, items[i].filename);
-        resolve();
-      }, i * 300));
+      const c = items[i].content;
+      if (isTauri()) {
+        await triggerDownload(typeof c === 'string' ? c : new TextDecoder().decode(c), items[i].mimeType, items[i].filename);
+      } else {
+        await new Promise<void>((resolve) => setTimeout(async () => {
+          await triggerDownload(typeof c === 'string' ? c : new TextDecoder().decode(c), items[i].mimeType, items[i].filename);
+          resolve();
+        }, i * 300));
+      }
     }
   }
 
@@ -70,7 +76,7 @@ export default function ExportPanel({ selectedTools, allMaterials, onClose }: Ex
       if (formatId === 'xlsx') {
         const date = new Date().toISOString().slice(0, 10);
         const bytes = exportToolsToXlsx(selectedTools);
-        triggerBinaryDownload(bytes.buffer as ArrayBuffer, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', `tool-library-${date}.xlsx`);
+        await triggerBinaryDownload(bytes.buffer as ArrayBuffer, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', `tool-library-${date}.xlsx`);
         onClose();
         return;
       }
@@ -81,7 +87,7 @@ export default function ExportPanel({ selectedTools, allMaterials, onClose }: Ex
       // ── Single file ──────────────────────────────────────────────────────────
       if (splitMode === 'none') {
         const result = await converter.write(resolvedTools, writerOpts);
-        triggerDownload(result.content, result.mimeType, result.filename);
+        await triggerDownload(result.content, result.mimeType, result.filename);
         onClose();
         return;
       }
