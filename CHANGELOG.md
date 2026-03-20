@@ -2,7 +2,7 @@
 
 All notable changes to CNC Tool Converter are documented here.
 
-## [1.0.0] — 2026-03-20 (unreleased)
+## [1.1.0] — 2026-03-21
 
 First desktop release — Tauri-packaged `.exe` / `.dmg` / `.AppImage`.
 
@@ -18,9 +18,14 @@ First desktop release — Tauri-packaged `.exe` / `.dmg` / `.AppImage`.
 - `triggerDownload` / `triggerBinaryDownload` are now `async` and show native Save-As dialogs in the desktop build
 - `renderOffsetPdf` / `generateToolSheetPdf` use `savePdfDoc()` — native dialog in desktop, `doc.save()` in browser
 
+### Fixed
+- Release workflow: corrected GitHub secret names (`TAURI_SIGNING_PRIVATE_KEY` / `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`)
+- Release workflow: added `"tauri"` npm script required by `tauri-apps/tauri-action`
+- Release workflow: removed empty Apple signing env vars that caused macOS codesign failure
+
 ### Notes
-- Updater public key must be set before distributing — see [Setup: Updater signing](#setup-updater-signing)
-- Icons are placeholder (based on Playwright logo); replace `src-tauri/icons/icon.png` and regenerate with `npx tauri icon src-tauri/icons/icon.png` before release
+- macOS builds are unsigned (no Apple Developer account); users must right-click → Open on first launch
+- Icons are placeholder (based on Playwright logo); replace `src-tauri/icons/icon.png` and regenerate with `npx tauri icon src-tauri/icons/icon.png` before a future release
 
 ---
 

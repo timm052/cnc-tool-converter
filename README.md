@@ -2,11 +2,11 @@
 
 A CNC tool library manager and format converter. Available as a **desktop app** (Tauri, ~10 MB) and as a **web app** (no install). Convert tool definitions between formats, maintain a persistent tool library with inventory tracking — everything runs locally, no server required.
 
-**Current version: v1.0.0** (desktop release; Phase 4 complete)
+**Current version: v1.1.0** (desktop release; Phase 4 complete)
 
 ## Desktop App
 
-Download the latest installer from [GitHub Releases](https://github.com/cnc-tool-converter/cnc-tool-converter/releases).
+Download the latest installer from [GitHub Releases](https://github.com/timm052/cnc-tool-converter/releases).
 
 | Platform | File |
 |---|---|
@@ -29,11 +29,11 @@ Before publishing a release, generate a signing keypair once:
 
 ```bash
 npm run tauri -- signer generate -w updater.key
-# Outputs: updater.key (private — add as TAURI_PRIVATE_KEY secret)
+# Outputs: updater.key (private — add as TAURI_SIGNING_PRIVATE_KEY secret)
 #          updater.key.pub (public — paste into tauri.conf.json "pubkey")
 ```
 
-Add secrets to GitHub: `TAURI_PRIVATE_KEY`, `TAURI_KEY_PASSWORD` (can be empty).
+Add secrets to GitHub: `TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` (can be empty).
 
 ---
 

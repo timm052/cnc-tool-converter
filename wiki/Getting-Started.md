@@ -2,11 +2,44 @@
 
 ## Running the app
 
-### Hosted version
+### Desktop app (recommended)
 
-If you have a deployed build, simply open the URL in your browser — no installation required.
+Download the latest installer from [GitHub Releases](https://github.com/timm052/cnc-tool-converter/releases):
 
-### Running locally
+| Platform | File |
+|---|---|
+| Windows (installer) | `CNC-Tool-Converter_*_x64-setup.exe` |
+| Windows (MSI) | `CNC-Tool-Converter_*_x64_en-US.msi` |
+| macOS (Apple Silicon) | `CNC-Tool-Converter_*_aarch64.dmg` |
+| macOS (Intel) | `CNC-Tool-Converter_*_x64.dmg` |
+| Linux (.deb) | `cnc-tool-converter_*_amd64.deb` |
+| Linux (AppImage) | `cnc-tool-converter_*_amd64.AppImage` |
+
+The desktop app stores your library in SQLite and uses native file-open/save dialogs for imports, exports, and backups.
+
+> **macOS note:** builds are currently unsigned. Right-click → Open on first launch to bypass Gatekeeper.
+
+#### Desktop CLI
+
+The desktop build also ships a CLI for headless/batch use:
+
+```
+CncToolConverter.exe convert tools.hsmlib --to linuxcnc
+CncToolConverter.exe formats
+CncToolConverter.exe inspect tools.hsmlib
+```
+
+On macOS/Linux use the binary name without `.exe`.
+
+---
+
+### Web / PWA (no install)
+
+If you have a deployed build, simply open the URL in your browser — no installation required. The app works fully offline after the first load and can be installed as a PWA from your browser's address bar.
+
+Data is stored in your browser's IndexedDB. Use the Backup button regularly, since clearing browser site data will erase the library.
+
+### Running locally (development)
 
 **Prerequisites:** Node.js 18 or later (includes npm).
 
@@ -19,7 +52,7 @@ npm run dev
 
 Open **http://localhost:5173** in your browser.
 
-### Building for production
+### Building for production (web)
 
 ```bash
 npm run build        # outputs to dist/
@@ -84,9 +117,14 @@ See [Importing Tools](Importing-Tools) for full details.
 
 ## Data storage
 
-All data is stored in your browser's IndexedDB under the database name `cnc-tool-library`. It persists between sessions and survives browser restarts.
+| Build | Storage | Location |
+|-------|---------|----------|
+| Desktop app | SQLite | `cnc-tool-converter.db` in your OS app-data folder |
+| Web / PWA | IndexedDB | Browser database `cnc-tool-library` |
 
-> **Important:** Clearing your browser's site data or using private/incognito mode will delete the library. Use [Snapshots and Backup](Snapshots-and-Backup) to protect your data.
+Both builds persist data between sessions automatically.
+
+> **Web/PWA:** Clearing your browser's site data or using private/incognito mode will delete the library. Use [Snapshots and Backup](Snapshots-and-Backup) to protect your data.
 
 ---
 
