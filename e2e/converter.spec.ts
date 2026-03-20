@@ -17,7 +17,7 @@ const MACH3_CSV = `TOOL,FPT,SFM,Z OFFSET,X OFFSET,DIAMETER,FLUTES,COMMENT
 
 async function suppressChangelog(page: import('@playwright/test').Page) {
   await page.addInitScript(() => {
-    localStorage.setItem('cnc-tool-converter:lastSeenVersion', '0.2.0');
+    localStorage.setItem('cnc-tool-converter:lastSeenVersion', '1.1.0');
   });
 }
 

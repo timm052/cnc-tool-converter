@@ -1,4 +1,5 @@
 import { Wrench, Github } from 'lucide-react';
+import { version as VERSION } from '../../package.json';
 
 export default function Header() {
   return (
@@ -13,7 +14,7 @@ export default function Header() {
             CNC Tool Converter
           </span>
           <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-blue-600/20 text-blue-400 border border-blue-600/30">
-            v0.5
+            v{VERSION}
           </span>
         </div>
       </div>

@@ -32,6 +32,19 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.1.0',
+    date:    'March 2026',
+    items: [
+      'Tauri desktop app — native Windows, macOS, and Linux builds with installer',
+      'Native save/open dialogs — PDF, TXT, CSV, and backup files use OS file picker',
+      'CLI tool — convert tool libraries from the command line via `cnc-convert`',
+      'Tool Offset Sheet panel — export Z-offsets as PDF or TXT with field and sort options',
+      'Print labels fixed — iframe-based printing works inside Tauri (no popup blocker)',
+      'Work Offset Sheet data-loss fix — switching machines no longer wipes saved offsets',
+      'Consistent export/print states — all export buttons disable and show progress while busy',
+    ],
+  },
+  {
     version: '0.5.0',
     date:    'March 2026',
     items: [

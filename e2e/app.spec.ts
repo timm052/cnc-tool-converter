@@ -4,9 +4,9 @@
 import { test, expect } from '@playwright/test';
 
 // Suppress the "What's New" changelog modal that appears on first load.
-// The modal shows when stored version !== app version (currently "0.2.0").
+// The modal shows when stored version !== app version (currently "1.1.0").
 const SUPPRESS_CHANGELOG = () => {
-  localStorage.setItem('cnc-tool-converter:lastSeenVersion', '0.2.0');
+  localStorage.setItem('cnc-tool-converter:lastSeenVersion', '1.1.0');
 };
 
 test.describe('App shell', () => {

@@ -13,7 +13,7 @@ import { test, expect } from '@playwright/test';
 
 async function goToSettings({ page }: { page: import('@playwright/test').Page }) {
   await page.addInitScript(() => {
-    localStorage.setItem('cnc-tool-converter:lastSeenVersion', '0.2.0');
+    localStorage.setItem('cnc-tool-converter:lastSeenVersion', '1.1.0');
   });
   await page.goto('/');
   await page.waitForLoadState('networkidle');
