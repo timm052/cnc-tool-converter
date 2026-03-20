@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Download, FileText, Plus, Trash2, MapPin } from 'lucide-react';
 import {
   DIALECTS, getDialect, defaultEntries,
@@ -20,29 +20,38 @@ export default function WorkOffsetSheetPanel({ machineGroups, onClose }: WorkOff
   );
   const [dialectId, setDialectId] = useState<WcsDialect>('fanuc');
   const [entries,   setEntries]   = useState<WcsEntry[]>([]);
+  const [isBusy,    setIsBusy]    = useState(false);
+  // True only after a user action (not after the initial load from localStorage).
+  // Prevents the save effect from overwriting localStorage with empty state before
+  // the load effect can populate entries (a React StrictMode double-fire issue).
+  const userModifiedRef = useRef(false);
 
   const dialect = getDialect(dialectId);
 
   // Load this machine's record whenever the selected machine changes
   useEffect(() => {
+    userModifiedRef.current = false; // reset: next save will be skipped until user edits
     const rec = loadMachineRecord(machineKey);
     const loadedDialect: WcsDialect = rec?.dialect ?? 'fanuc';
     setDialectId(loadedDialect);
     setEntries(defaultEntries(getDialect(loadedDialect), rec?.entries));
   }, [machineKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Persist whenever entries or dialect change — but only after a user-initiated change
+  useEffect(() => {
+    if (!userModifiedRef.current) return;
+    saveMachineRecord(machineKey, { dialect: dialectId, entries });
+  }, [machineKey, dialectId, entries]);
+
   // When the user manually changes the dialect, reset entries to defaults for new dialect
   const handleDialectChange = useCallback((id: WcsDialect) => {
+    userModifiedRef.current = true;
     setDialectId(id);
     setEntries(defaultEntries(getDialect(id)));
   }, []);
 
-  // Persist whenever entries or dialect change
-  useEffect(() => {
-    saveMachineRecord(machineKey, { dialect: dialectId, entries });
-  }, [machineKey, dialectId, entries]);
-
   const updateEntry = useCallback((idx: number, patch: Partial<WcsEntry>) => {
+    userModifiedRef.current = true;
     setEntries((prev) => prev.map((e, i) => i === idx ? { ...e, ...patch } : e));
   }, []);
 
@@ -50,24 +59,32 @@ export default function WorkOffsetSheetPanel({ machineGroups, onClose }: WorkOff
     const usedCodes = new Set(entries.map((e) => e.slotCode));
     const next = dialect.slots.find((s) => !usedCodes.has(s.code));
     if (!next) return;
+    userModifiedRef.current = true;
     setEntries((prev) => [...prev, { slotCode: next.code, name: '', x: '', y: '', z: '', a: '', b: '' }]);
   }, [entries, dialect]);
 
   const removeEntry = useCallback((idx: number) => {
+    userModifiedRef.current = true;
     setEntries((prev) => prev.filter((_, i) => i !== idx));
   }, []);
 
   const changeSlotCode = useCallback((idx: number, code: string) => {
+    userModifiedRef.current = true;
     setEntries((prev) => prev.map((e, i) => i === idx ? { ...e, slotCode: code } : e));
   }, []);
 
   async function handleDownload(format: 'pdf' | 'csv') {
-    const displayName = machineKey === DEFAULT_MACHINE_KEY ? '' : machineKey;
-    const date = new Date().toISOString().slice(0, 10);
-    if (format === 'pdf') {
-      await renderOffsetPdf(entries, dialect, displayName);
-    } else {
-      await triggerDownload(renderOffsetCsv(entries), 'text/csv', `work-offsets-${date}.csv`);
+    setIsBusy(true);
+    try {
+      const displayName = machineKey === DEFAULT_MACHINE_KEY ? '' : machineKey;
+      const date = new Date().toISOString().slice(0, 10);
+      if (format === 'pdf') {
+        await renderOffsetPdf(entries, dialect, displayName);
+      } else {
+        await triggerDownload(renderOffsetCsv(entries), 'text/csv', `work-offsets-${date}.csv`);
+      }
+    } finally {
+      setIsBusy(false);
     }
   }
 
@@ -233,19 +250,27 @@ export default function WorkOffsetSheetPanel({ machineGroups, onClose }: WorkOff
             </button>
             <button
               type="button"
-              onClick={() => handleDownload('csv')}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-slate-700 hover:bg-slate-600 border border-slate-600 text-slate-200 transition-colors"
+              onClick={() => void handleDownload('csv')}
+              disabled={isBusy}
+              className={[
+                'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border transition-colors',
+                !isBusy ? 'bg-slate-700 hover:bg-slate-600 border-slate-600 text-slate-200' : 'bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed',
+              ].join(' ')}
             >
               <Download size={14} />
               CSV
             </button>
             <button
               type="button"
-              onClick={() => handleDownload('pdf')}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+              onClick={() => void handleDownload('pdf')}
+              disabled={isBusy}
+              className={[
+                'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors',
+                !isBusy ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-slate-700 text-slate-500 cursor-not-allowed',
+              ].join(' ')}
             >
               <FileText size={14} />
-              PDF Card
+              {isBusy ? 'Generating…' : 'PDF Card'}
             </button>
           </div>
         </div>

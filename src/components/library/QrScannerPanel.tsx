@@ -113,6 +113,7 @@ export default function QrScannerPanel({
   const [errorMsg,     setErrorMsg]     = useState('');
   const [unknownText,  setUnknownText]  = useState('');
   const [foundTool,    setFoundTool]    = useState<LibraryTool | null>(null);
+  const [isPrintingLabel, setIsPrintingLabel] = useState(false);
   const [mode,         setMode]         = useState<ScanMode>('find');
   const [stockDir,     setStockDir]     = useState<StockDir>('in');
   const [stockAmount,  setStockAmount]  = useState(1);
@@ -656,10 +657,17 @@ export default function QrScannerPanel({
                   </button>
                   <button
                     type="button"
-                    onClick={() => void printLabels([foundTool], DEFAULT_LABEL_OPTIONS)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors"
+                    disabled={isPrintingLabel}
+                    onClick={() => {
+                      setIsPrintingLabel(true);
+                      void printLabels([foundTool], DEFAULT_LABEL_OPTIONS).finally(() => setIsPrintingLabel(false));
+                    }}
+                    className={[
+                      'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors',
+                      !isPrintingLabel ? 'bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600' : 'bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed',
+                    ].join(' ')}
                   >
-                    <Printer size={13} /> Print Label
+                    <Printer size={13} /> {isPrintingLabel ? 'Opening…' : 'Print Label'}
                   </button>
                   <button
                     type="button"

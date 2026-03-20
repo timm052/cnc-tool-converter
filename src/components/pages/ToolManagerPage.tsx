@@ -36,14 +36,14 @@ import LowStockPanel from '../library/LowStockPanel';
 import CamSnippetPanel from '../library/CamSnippetPanel';
 import SnapshotPanel from '../library/SnapshotPanel';
 import WorkOffsetSheetPanel from '../library/WorkOffsetSheetPanel';
-import { downloadGcodeOffsetSheet } from '../../lib/gcodeOffsetSheet';
+import ToolOffsetSheetPanel from '../library/ToolOffsetSheetPanel';
 import { recordBackup } from '../../lib/backupNudge';
 import { convertToolUnit } from '../../lib/unitConvert';
 import { isTauri, saveTextFile, openFiles } from '../../lib/tauri/fs';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Panel = 'import' | 'export' | 'edit' | 'bulk-edit' | 'compare' | 'renumber' | 'label-print' | 'sheet-print' | 'materials' | 'holders' | 'duplicates' | 'qr-scan' | 'feeds' | 'validation' | 'copy-group' | 'templates' | 'low-stock' | 'wizard' | 'cam-snippet' | 'snapshots' | 'work-offsets' | 'jobs' | null;
+type Panel = 'import' | 'export' | 'edit' | 'bulk-edit' | 'compare' | 'renumber' | 'label-print' | 'sheet-print' | 'tool-offsets' | 'materials' | 'holders' | 'duplicates' | 'qr-scan' | 'feeds' | 'validation' | 'copy-group' | 'templates' | 'low-stock' | 'wizard' | 'cam-snippet' | 'snapshots' | 'work-offsets' | 'jobs' | null;
 
 // ── Machine group sidebar ─────────────────────────────────────────────────────
 
@@ -1157,7 +1157,7 @@ export default function ToolManagerPage() {
                   <button type="button" onClick={() => { setActivePanel('sheet-print'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
                     <Printer size={14} className="text-slate-400 shrink-0" /> Tool Sheet
                   </button>
-                  <button type="button" onClick={() => { downloadGcodeOffsetSheet(selectedTools.length > 0 ? selectedTools : filteredTools); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
+                  <button type="button" onClick={() => { setActivePanel('tool-offsets'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
                     <FileText size={14} className="text-slate-400 shrink-0" /> Tool Offsets
                   </button>
                   <button type="button" onClick={() => { setActivePanel('work-offsets'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
@@ -1585,6 +1585,12 @@ export default function ToolManagerPage() {
       })()}
       {activePanel === 'snapshots' && (
         <SnapshotPanel onClose={closePanel} />
+      )}
+      {activePanel === 'tool-offsets' && (
+        <ToolOffsetSheetPanel
+          tools={selectedTools.length > 0 ? selectedTools : filteredTools}
+          onClose={closePanel}
+        />
       )}
       {activePanel === 'work-offsets' && (
         <WorkOffsetSheetPanel machineGroups={mergedMachineGroups} onClose={closePanel} />
