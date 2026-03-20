@@ -19,6 +19,10 @@
 import type { LibraryTool }  from '../types/libraryTool';
 import type { WorkMaterial } from '../types/material';
 import type { ToolHolder }   from '../types/holder';
+import type { ToolSet }      from '../types/toolSet';
+import type { Job }          from '../types/job';
+import { loadSets, saveSets } from './toolSetStore';
+import { loadJobs }           from './jobStore';
 
 // ── Payload ───────────────────────────────────────────────────────────────────
 
@@ -30,6 +34,10 @@ export interface SyncPayload {
   tools:            LibraryTool[];
   materials:        WorkMaterial[];
   holders:          ToolHolder[];
+  /** Tool sets (localStorage) — optional for backward compat with v2 payloads */
+  toolSets?:        ToolSet[];
+  /** Jobs / BOMs (localStorage) — optional for backward compat with v2 payloads */
+  jobs?:            Job[];
 }
 
 export function buildPayload(
@@ -47,6 +55,8 @@ export function buildPayload(
     tools,
     materials,
     holders,
+    toolSets:        loadSets(),
+    jobs:            loadJobs(),
   };
 }
 
@@ -234,14 +244,24 @@ export function mergePayloads(
   local:      { tools: LibraryTool[]; materials: WorkMaterial[]; holders: ToolHolder[] },
   remote:     SyncPayload,
   lastPullAt: number,
-): { tools: LibraryTool[]; materials: WorkMaterial[]; holders: ToolHolder[]; stats: MergeStats } {
+): { tools: LibraryTool[]; materials: WorkMaterial[]; holders: ToolHolder[]; toolSets: ToolSet[]; jobs: Job[]; stats: MergeStats } {
   const stats: MergeStats = { addedFromRemote: 0, updatedFromRemote: 0, conflicts: 0, localOnly: 0 };
+  const localSets  = loadSets();
+  const localJobs  = loadJobs() as (Job & Timestamped)[];
   return {
     tools:     mergeById(local.tools,     remote.tools,     lastPullAt, stats),
     materials: mergeById(local.materials, remote.materials, lastPullAt, stats),
     holders:   mergeById(local.holders,   remote.holders,   lastPullAt, stats),
+    toolSets:  mergeById(localSets as (ToolSet & Timestamped)[], (remote.toolSets ?? []) as (ToolSet & Timestamped)[], lastPullAt, stats),
+    jobs:      mergeById(localJobs,       (remote.jobs ?? []) as (Job & Timestamped)[],    lastPullAt, stats),
     stats,
   };
+}
+
+/** Persist the localStorage-stored parts of a merge result. */
+export function applyLocalStorageMerge(toolSets: ToolSet[], jobs: Job[]): void {
+  saveSets(toolSets);
+  try { localStorage.setItem('cnc-tool-jobs', JSON.stringify(jobs)); } catch { /* quota */ }
 }
 
 // ── Type guard ────────────────────────────────────────────────────────────────

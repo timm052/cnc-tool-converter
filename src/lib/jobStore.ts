@@ -24,3 +24,10 @@ export function deleteJob(id: string): void {
 export function createJob(name: string, description?: string, machineGroup?: string): Job {
   return { id: crypto.randomUUID(), name, description, machineGroup, toolIds: [], createdAt: Date.now(), updatedAt: Date.now() };
 }
+
+export function restoreJobs(jobs: Job[]): void {
+  const existing = loadJobs();
+  const existingIds = new Set(existing.map((j) => j.id));
+  const merged = [...existing, ...jobs.filter((j) => !existingIds.has(j.id))];
+  localStorage.setItem(KEY, JSON.stringify(merged));
+}

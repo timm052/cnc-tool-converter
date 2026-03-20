@@ -36,13 +36,20 @@ import LowStockPanel from '../library/LowStockPanel';
 import CamSnippetPanel from '../library/CamSnippetPanel';
 import SnapshotPanel from '../library/SnapshotPanel';
 import WorkOffsetSheetPanel from '../library/WorkOffsetSheetPanel';
+import SetupSheetPanel from '../library/SetupSheetPanel';
+import ToolSetPanel from '../library/ToolSetPanel';
+import SupplierInvoicePanel from '../library/SupplierInvoicePanel';
 import { downloadGcodeOffsetSheet } from '../../lib/gcodeOffsetSheet';
 import { recordBackup } from '../../lib/backupNudge';
+import { loadSets, restoreSets } from '../../lib/toolSetStore';
+import { loadJobs, restoreJobs } from '../../lib/jobStore';
+import type { ToolSet } from '../../types/toolSet';
+import type { Job } from '../../types/job';
 import { convertToolUnit } from '../../lib/unitConvert';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Panel = 'import' | 'export' | 'edit' | 'bulk-edit' | 'compare' | 'renumber' | 'label-print' | 'sheet-print' | 'materials' | 'holders' | 'duplicates' | 'qr-scan' | 'feeds' | 'validation' | 'copy-group' | 'templates' | 'low-stock' | 'wizard' | 'cam-snippet' | 'snapshots' | 'work-offsets' | 'jobs' | null;
+type Panel = 'import' | 'export' | 'edit' | 'bulk-edit' | 'compare' | 'renumber' | 'label-print' | 'sheet-print' | 'materials' | 'holders' | 'duplicates' | 'qr-scan' | 'feeds' | 'validation' | 'copy-group' | 'templates' | 'low-stock' | 'wizard' | 'cam-snippet' | 'snapshots' | 'work-offsets' | 'jobs' | 'setup-sheet' | 'tool-sets' | 'supplier-invoice' | null;
 
 // ── Machine group sidebar ─────────────────────────────────────────────────────
 
@@ -790,13 +797,15 @@ export default function ToolManagerPage() {
   }, []);
 
   const handleBackup = useCallback(() => {
-    // v2 sync package — includes tools, materials, and holders
+    // v3 backup — includes tools, materials, holders, toolSets, and jobs
     const payload = JSON.stringify({
-      version:    2,
+      version:    3,
       exportedAt: Date.now(),
       tools,
       materials,
       holders,
+      toolSets:   loadSets(),
+      jobs:       loadJobs(),
     }, null, 2);
     const blob = new Blob([payload], { type: 'application/json' });
     const url  = URL.createObjectURL(blob);
@@ -818,15 +827,21 @@ export default function ToolManagerPage() {
         tools?: LibraryTool[];
         materials?: import('../../types/material').WorkMaterial[];
         holders?: import('../../types/holder').ToolHolder[];
+        toolSets?: ToolSet[];
+        jobs?: Job[];
       } | LibraryTool[];
 
-      const incomingTools:     LibraryTool[] = Array.isArray(data) ? data : (data.tools ?? []);
-      const incomingMaterials                = Array.isArray(data) ? [] : (data.materials ?? []);
-      const incomingHolders                  = Array.isArray(data) ? [] : (data.holders ?? []);
+      const incomingTools     = Array.isArray(data) ? data : (data.tools ?? []);
+      const incomingMaterials = Array.isArray(data) ? [] : (data.materials ?? []);
+      const incomingHolders   = Array.isArray(data) ? [] : (data.holders ?? []);
+      const incomingToolSets  = Array.isArray(data) ? [] : (data.toolSets ?? []);
+      const incomingJobs      = Array.isArray(data) ? [] : (data.jobs ?? []);
 
       await addTools(incomingTools, false);
-      if (incomingMaterials.length) await addMaterials(incomingMaterials);
-      if (incomingHolders.length)   await addHolders(incomingHolders);
+      if (incomingMaterials.length)  await addMaterials(incomingMaterials);
+      if (incomingHolders.length)    await addHolders(incomingHolders);
+      if (incomingToolSets.length)   restoreSets(incomingToolSets);
+      if (incomingJobs.length)       restoreJobs(incomingJobs);
     } catch (err) {
       console.error('Restore failed:', err);
     }
@@ -1076,6 +1091,9 @@ export default function ToolManagerPage() {
                 <button type="button" onClick={() => { setActivePanel('jobs'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
                   <Briefcase size={14} className="text-slate-400 shrink-0" /> Jobs
                 </button>
+                <button type="button" onClick={() => { setActivePanel('tool-sets'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
+                  <Layers size={14} className="text-slate-400 shrink-0" /> Tool Sets
+                </button>
               </div>
             )}
           </div>
@@ -1114,6 +1132,10 @@ export default function ToolManagerPage() {
                   <button type="button" onClick={() => { setActivePanel('snapshots'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
                     <Camera size={14} className="text-slate-400 shrink-0" /> Snapshots
                   </button>
+                  <div className="my-1 border-t border-slate-700/60" />
+                  <button type="button" onClick={() => { setActivePanel('supplier-invoice'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
+                    <Package size={14} className="text-slate-400 shrink-0" /> Supplier Invoice
+                  </button>
                 </div>
               )}
             </div>
@@ -1133,6 +1155,9 @@ export default function ToolManagerPage() {
               </button>
               {openDropdown === 'print' && (
                 <div className="absolute right-0 top-full mt-1 w-44 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-30 py-1 overflow-hidden">
+                  <button type="button" onClick={() => { setActivePanel('setup-sheet'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
+                    <FileText size={14} className="text-slate-400 shrink-0" /> Setup Sheet
+                  </button>
                   <button type="button" onClick={() => { setActivePanel('sheet-print'); setOpenDropdown(null); }} className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors text-left">
                     <Printer size={14} className="text-slate-400 shrink-0" /> Tool Sheet
                   </button>
@@ -1568,6 +1593,9 @@ export default function ToolManagerPage() {
       {activePanel === 'work-offsets' && (
         <WorkOffsetSheetPanel machineGroups={mergedMachineGroups} onClose={closePanel} />
       )}
+      {activePanel === 'setup-sheet' && (
+        <SetupSheetPanel machineGroups={mergedMachineGroups} onClose={closePanel} />
+      )}
       {activePanel === 'feeds' && (() => {
         const feedTool = selectedTools.length === 1 ? selectedTools[0] : null;
         const feedGroup = feedTool?.machineGroups?.[0];
@@ -1632,6 +1660,12 @@ export default function ToolManagerPage() {
       )}
       {activePanel === 'jobs' && (
         <JobsPanel allTools={tools} allMachineGroups={mergedMachineGroups} onClose={closePanel} />
+      )}
+      {activePanel === 'tool-sets' && (
+        <ToolSetPanel onClose={closePanel} />
+      )}
+      {activePanel === 'supplier-invoice' && (
+        <SupplierInvoicePanel onClose={closePanel} />
       )}
 
       {/* ── Keyboard shortcuts legend ─────────────────────────────────────── */}

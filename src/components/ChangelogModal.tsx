@@ -32,6 +32,24 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.5.0',
+    date:    'March 2026',
+    items: [
+      'Settings page redesigned — tabbed sidebar layout replaces long single-column scroll',
+      'Format Mapping dev page — parse any format and see field coverage + JSON inspector',
+      'Setup sheet generator — one-click PDF combining work offsets + tool list per machine',
+      'Column width memory — resized library table columns persist across sessions',
+      'Tool checkout / check-in — assign tools to operators with optional due-back date',
+      'Tool life prediction — projects regrind date from average uses/day',
+      'F&S preset favourites — save and load named speed/feed presets across tools',
+      'PWA install support — installable from Chrome/Edge; offline-first service worker',
+      'Machines management page — CRUD for shop machines with RPM + control metadata',
+      'Barcode labels + HID scanner — Code 128 on printed labels; USB + Bluetooth scanners',
+      'Tool instances — per-copy condition, measured diameter, and offset tracking',
+      'Theme showcase and format mapping pages gated behind dev mode toggle',
+    ],
+  },
+  {
     version: '0.2.0',
     date:    'March 2026',
     items: [

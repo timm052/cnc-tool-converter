@@ -22,7 +22,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useSettings } from '../contexts/SettingsContext';
 import {
-  pushLibrary, pullWithEtag, buildPayload, mergePayloads,
+  pushLibrary, pullWithEtag, buildPayload, mergePayloads, applyLocalStorageMerge,
   loadLastSync, saveLastSync, SyncError, MAX_RETRIES,
 } from '../lib/remoteSync';
 import type { LastSyncMeta, SyncPayload, MergeStats, RemoteAuth } from '../lib/remoteSync';
@@ -113,6 +113,7 @@ export function useRemoteSync(
           if (merged.stats.addedFromRemote > 0 || merged.stats.updatedFromRemote > 0) {
             // Apply the merge to local DB before pushing
             await onApply(merged.tools, merged.materials, merged.holders);
+            applyLocalStorageMerge(merged.toolSets, merged.jobs);
           }
           currentTools     = merged.tools;
           currentMaterials = merged.materials;
@@ -170,6 +171,7 @@ export function useRemoteSync(
         lastPullAt,
       );
       await onApply(merged.tools, merged.materials, merged.holders);
+      applyLocalStorageMerge(merged.toolSets, merged.jobs);
 
       refreshMeta({
         pulledAt:    new Date().toISOString(),

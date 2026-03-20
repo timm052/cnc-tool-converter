@@ -37,6 +37,7 @@ export interface LibraryTableProps {
 const KNOWN_TYPES = [...BUILTIN_TYPES] as string[];
 const KNOWN_MATERIALS  = ['carbide', 'hss', 'ceramics', 'diamond', 'other'];
 const KNOWN_COOLANTS   = ['flood', 'air', 'mist', 'suction', 'disabled'];
+const COL_WIDTHS_KEY   = 'cnc-tool-converter:colWidths';
 
 // ── Tag colours ───────────────────────────────────────────────────────────────
 
@@ -335,31 +336,50 @@ const ALL_COL_DEFS: ColDef[] = [
 // Group columns for the picker dropdown
 const COL_GROUPS = ['Identity', 'Geometry', 'Cutting', 'Library'] as const;
 
+// ── Resize handle ─────────────────────────────────────────────────────────────
+
+function ResizeHandle({ onMouseDown }: { onMouseDown: (e: React.MouseEvent) => void }) {
+  return (
+    <div
+      onMouseDown={onMouseDown}
+      className="absolute right-0 top-0 h-full w-2 cursor-col-resize z-10 hover:bg-blue-500/30"
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Resize column"
+    />
+  );
+}
+
 // ── Sort header ───────────────────────────────────────────────────────────────
 
-function SortHeader({ label, sortKey, currentKey, dir, onSort }: {
+function SortHeader({ label, sortKey, currentKey, dir, onSort, onResizeStart }: {
   label: string; sortKey: SortKey; currentKey: SortKey; dir: SortDir; onSort: (k: SortKey) => void;
+  onResizeStart?: (e: React.MouseEvent) => void;
 }) {
   const active = currentKey === sortKey;
   return (
     <th
       onClick={() => onSort(sortKey)}
-      className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-400 cursor-pointer hover:text-slate-200 select-none whitespace-nowrap"
+      className="relative px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-400 cursor-pointer hover:text-slate-200 select-none whitespace-nowrap"
     >
       <span className="flex items-center gap-1">
         {label}
         {active ? (dir === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />) : <span className="w-3" />}
       </span>
+      {onResizeStart && <ResizeHandle onMouseDown={(e) => { e.stopPropagation(); onResizeStart(e); }} />}
     </th>
   );
 }
 
 // ── Plain (non-sortable) header ───────────────────────────────────────────────
 
-function PlainHeader({ label }: { label: string }) {
+function PlainHeader({ label, onResizeStart }: {
+  label: string; onResizeStart?: (e: React.MouseEvent) => void;
+}) {
   return (
-    <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-400 whitespace-nowrap">
+    <th className="relative px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-400 whitespace-nowrap">
       {label}
+      {onResizeStart && <ResizeHandle onMouseDown={onResizeStart} />}
     </th>
   );
 }
@@ -603,6 +623,37 @@ function LibraryTable({
     setEditingCell(null);
   }, []);
 
+  // ── Column widths (resize + localStorage) ───────────────────────────────
+  const [colWidths, setColWidths] = useState<Record<string, number>>(() => {
+    try { return JSON.parse(localStorage.getItem(COL_WIDTHS_KEY) ?? '{}'); } catch { return {}; }
+  });
+  // Mirror state in a ref so the drag onUp closure can persist without a stale capture
+  const colWidthsRef = useRef(colWidths);
+  colWidthsRef.current = colWidths;
+
+  const dragRef = useRef<{ colId: string; startX: number; startW: number } | null>(null);
+
+  const startColResize = useCallback((colId: string, e: React.MouseEvent, currentW: number) => {
+    e.preventDefault();
+    dragRef.current = { colId, startX: e.clientX, startW: currentW };
+    const onMove = (mv: MouseEvent) => {
+      if (!dragRef.current) return;
+      const delta = mv.clientX - dragRef.current.startX;
+      const next  = Math.max(40, dragRef.current.startW + delta);
+      setColWidths((prev) => ({ ...prev, [dragRef.current!.colId]: next }));
+    };
+    const onUp = () => {
+      if (dragRef.current) {
+        try { localStorage.setItem(COL_WIDTHS_KEY, JSON.stringify(colWidthsRef.current)); } catch { /* quota */ }
+        dragRef.current = null;
+      }
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, []);
+
   // ── Column picker ────────────────────────────────────────────────────────
   const [colPickerOpen,    setColPickerOpen]    = useState(false);
   const [newCustomColName, setNewCustomColName] = useState('');
@@ -697,6 +748,22 @@ function LibraryTable({
     <div ref={scrollRef} className="flex-1 overflow-auto">
       <table className="w-full border-collapse text-sm">
 
+        {/* ── Column widths (set via colgroup to avoid inline styles on th) ── */}
+        <colgroup>
+          <col width={32} />  {/* fav */}
+          <col width={32} />  {/* select */}
+          <col width={32} />  {/* edit */}
+          <col width={72} />  {/* T# */}
+          {visibleCols.map((col) => (
+            <col key={col.id} width={colWidths[col.id] ?? undefined} />
+          ))}
+          {customFieldCols.map((key) => (
+            <col key={`cf:${key}`} width={colWidths[`cf:${key}`] ?? undefined} />
+          ))}
+          <col />  {/* tags */}
+          <col width={32} />  {/* col picker */}
+        </colgroup>
+
         {/* ── Header ──────────────────────────────────────────────────────── */}
         <thead className="sticky top-0 bg-slate-800 border-b border-slate-700 z-10">
           <tr>
@@ -743,13 +810,16 @@ function LibraryTable({
             {/* Dynamic columns */}
             {visibleCols.map((col) =>
               col.sortKey
-                ? <SortHeader key={col.id} label={col.label} sortKey={col.sortKey} currentKey={sortKey} dir={sortDir} onSort={handleSort} />
-                : <PlainHeader key={col.id} label={col.label} />
+                ? <SortHeader key={col.id} label={col.label} sortKey={col.sortKey} currentKey={sortKey} dir={sortDir} onSort={handleSort}
+                    onResizeStart={(e) => startColResize(col.id, e, colWidths[col.id] ?? 120)} />
+                : <PlainHeader key={col.id} label={col.label}
+                    onResizeStart={(e) => startColResize(col.id, e, colWidths[col.id] ?? 120)} />
             )}
 
             {/* Custom field columns */}
             {customFieldCols.map((key) => (
-              <PlainHeader key={`cf:${key}`} label={key} />
+              <PlainHeader key={`cf:${key}`} label={key}
+                onResizeStart={(e) => startColResize(`cf:${key}`, e, colWidths[`cf:${key}`] ?? 120)} />
             ))}
 
             {/* Tags — always visible */}

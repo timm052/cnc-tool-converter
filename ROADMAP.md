@@ -201,14 +201,14 @@ These can be picked up opportunistically when they fit alongside other work.
 | **Machine OEE tie-in** | — | Link tool usage to machine utilisation data (via CSV upload from OEE software) |
 | **Augmented reality label** | — | QR code on label links to the tool's live record in the app (when hosted as PWA) |
 | **Voice search** | — | `window.SpeechRecognition` — say "show all 10mm drills" to filter the table |
-| **Favourite cutting conditions** | — | Save named F&S presets (e.g. "Aluminium roughing") and apply them to any tool in one click. |
+| **Favourite cutting conditions** | ✅ Done | Save named F&S presets (e.g. "Aluminium roughing") in Settings; "My presets" dropdown in Speeds & Feeds panel loads them with one click. |
 | **Tool set / kit grouping** | — | Group tools into named sets (e.g. "Fixture drilling kit"). Export a kit as a single file. |
 | **Configurable low-stock colour** | — | Let users choose the threshold colour for low-stock qty cells (default red). |
 | **Drag to reorder tools** | — | Drag rows in the library table to manually reorder, then lock order with a "manual sort" setting. |
-| **Column width memory** | — | Persist resized column widths to settings, restored on reload. |
+| **Column width memory** | ✅ Done | Drag the right edge of any column header to resize; widths persisted to localStorage under `cnc-tool-converter:colWidths`. |
 | **Mastercam .tooldb import** | Blocked | Requires real sample files to reverse-engineer. |
 | **SFM / Vc lookup table in F&S panel** | — | Drop-down of common material + tool-material combos with recommended Vc ranges pre-filled. |
-| **Setup sheet generator** | — | One-click PDF that combines: work offsets, tool list (T# / description / offset), and part program header. Machine-group scoped. |
+| **Setup sheet generator** | ✅ Done | Print → Setup Sheet slide-over: machine group, job name, operator, unit, include-offsets toggle. Generates an A4 PDF with work offsets + tool list, sorted by T#. |
 | **Tool instances (per-copy tracking)** | ✅ Done | Each tool gets one lettered instance (A, B, C…) per unit in stock. Per-instance: condition, measured actual diameter, comment, axis offsets. One active at a time. Active instance's offsets + actual diameter applied on export/print. "Use actual diameter" toggle in Export, Label Print, and Tool Sheet. |
 | **Tool checkout / check-in** | ✅ Done | See above |
 | **Tool life prediction** | ✅ Done | See above |
@@ -248,7 +248,7 @@ _Goal: Support shops with multiple sites or teams that need a shared, always-in-
 | **v0.2** | Phase 1 complete — HAAS/Fanuc/Mach3/CSV/XLSX converters, F&S calculator, templates, backup nudge | ✅ Done |
 | **v0.3** | Phase 2 complete — inventory tracking, assembly view, improved import, material presets, audit log | ✅ Done |
 | **v0.4** | Phase 3 complete — table virtualisation, remote sync (REST + WebDAV), CAM snippets, work offset sheet (per-machine PDF card), snapshots, Jobs/BOM, sticky columns | ✅ Done |
-| **v0.5** | Nice-to-haves — tool instances, machines page, barcode labels, HID scanner, F&S presets, tool checkout, tool life prediction, PWA install | ✅ Done |
+| **v0.5** | Nice-to-haves — tool instances, machines page, barcode labels, HID scanner, F&S presets, tool checkout, tool life prediction, PWA install, setup sheet PDF, column width memory, settings redesign, format mapping dev page | ✅ Done |
 | **v1.0** | Phase 4 complete — Tauri desktop app, SQLite, native dialogs, auto-updater | Planned |
-| **v1.x** | Further nice-to-haves: setup sheet generator, ISO 13399, manufacturer barcode lookup, tool family grouping | Future |
+| **v1.x** | Further nice-to-haves: ISO 13399, manufacturer barcode lookup, tool family grouping, tool set/kit grouping | Future |
 | **v2.0** | Phase 5 — Hosted backend, real-time sync, mobile PWA, MES integration | Future |
