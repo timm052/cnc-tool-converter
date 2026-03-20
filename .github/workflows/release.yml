@@ -1,0 +1,99 @@
+name: Release
+
+# Triggered when a version tag is pushed: git tag v1.0.0 && git push --tags
+on:
+  push:
+    tags:
+      - 'v[0-9]*'
+
+# Needs write access to create releases and upload artifacts
+permissions:
+  contents: write
+
+jobs:
+  # ── Build on all three platforms ──────────────────────────────────────────
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu-22.04
+            args: ''
+          - platform: macos-latest
+            args: '--target aarch64-apple-darwin'
+          - platform: macos-latest
+            args: '--target x86_64-apple-darwin'
+          - platform: windows-latest
+            args: ''
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Node.js ───────────────────────────────────────────────────────────
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      # ── Rust ──────────────────────────────────────────────────────────────
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Cache Rust dependencies
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      # ── Linux system deps (WebKitGTK etc.) ────────────────────────────────
+      - name: Install Linux system dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libssl-dev \
+            libsoup-3.0-dev
+
+      # ── Tauri build ───────────────────────────────────────────────────────
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN:         ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+          # macOS code signing (optional — leave secrets empty to skip)
+          APPLE_CERTIFICATE:            ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD:   ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY:       ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID:                     ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD:               ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID:                ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          tagName:     ${{ github.ref_name }}
+          releaseName: 'CNC Tool Converter ${{ github.ref_name }}'
+          releaseBody: |
+            See the [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
+
+            **Downloads**
+            | Platform | File |
+            |---|---|
+            | Windows (installer) | `CNC-Tool-Converter_*_x64-setup.exe` |
+            | Windows (MSI)       | `CNC-Tool-Converter_*_x64_en-US.msi` |
+            | macOS (Apple Silicon) | `CNC-Tool-Converter_*_aarch64.dmg` |
+            | macOS (Intel)         | `CNC-Tool-Converter_*_x64.dmg` |
+            | Linux (.deb)          | `cnc-tool-converter_*_amd64.deb` |
+            | Linux (.AppImage)     | `cnc-tool-converter_*_amd64.AppImage` |
+          releaseDraft: false
+          prerelease:  ${{ contains(github.ref_name, '-') }}
+          args:        ${{ matrix.args }}

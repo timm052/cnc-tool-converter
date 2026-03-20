@@ -1,8 +1,39 @@
 # CNC Tool Converter
 
-A browser-based CNC tool library manager and format converter. Convert tool definitions between formats, maintain a persistent tool library with inventory tracking, and sync to a remote server — all without installing anything. Everything runs locally in your browser.
+A CNC tool library manager and format converter. Available as a **desktop app** (Tauri, ~10 MB) and as a **web app** (no install). Convert tool definitions between formats, maintain a persistent tool library with inventory tracking — everything runs locally, no server required.
 
-**Current version: v0.3** (Phase 1 + 2 complete; Phase 3 in progress)
+**Current version: v1.0.0** (desktop release; Phase 4 complete)
+
+## Desktop App
+
+Download the latest installer from [GitHub Releases](https://github.com/cnc-tool-converter/cnc-tool-converter/releases).
+
+| Platform | File |
+|---|---|
+| Windows | `CNC-Tool-Converter_*_x64-setup.exe` |
+| macOS (Apple Silicon) | `CNC-Tool-Converter_*_aarch64.dmg` |
+| macOS (Intel)         | `CNC-Tool-Converter_*_x64.dmg` |
+| Linux                 | `cnc-tool-converter_*_amd64.AppImage` |
+
+### CLI (desktop build)
+
+```
+CncToolConverter.exe convert tools.hsmlib --to linuxcnc
+CncToolConverter.exe formats
+CncToolConverter.exe inspect tools.hsmlib
+```
+
+### Setup: Updater signing
+
+Before publishing a release, generate a signing keypair once:
+
+```bash
+npm run tauri -- signer generate -w updater.key
+# Outputs: updater.key (private — add as TAURI_PRIVATE_KEY secret)
+#          updater.key.pub (public — paste into tauri.conf.json "pubkey")
+```
+
+Add secrets to GitHub: `TAURI_PRIVATE_KEY`, `TAURI_KEY_PASSWORD` (can be empty).
 
 ---
 

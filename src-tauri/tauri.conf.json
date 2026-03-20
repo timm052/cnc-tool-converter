@@ -19,28 +19,60 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": [],
+    "resources": {
+      "cli/cnc-convert.ts": "resources/cli/cnc-convert.ts",
+      "src/converters/**/*": "resources/src/converters/",
+      "src/types/**/*":      "resources/src/types/"
+    },
     "fileAssociations": [
       {
         "ext": ["hsmlib"],
         "name": "HSM Tool Library",
-        "description": "Fusion 360 HSM Tool Library"
+        "description": "Fusion 360 / Inventor CAM Tool Library"
       },
       {
-        "ext": ["tbl"],
+        "ext": ["tbl", "tool"],
         "name": "LinuxCNC Tool Table",
         "description": "LinuxCNC Tool Table"
       },
       {
         "ext": ["ofs"],
         "name": "HAAS Offset Table",
-        "description": "HAAS Offset Table"
+        "description": "HAAS Offset / Tool Table"
+      },
+      {
+        "ext": ["vkb"],
+        "name": "RhinoCAM Tool Library",
+        "description": "RhinoCAM / VisualMill Tool Library"
       }
     ],
     "windows": {
-      "wix": {},
-      "nsis": {}
-    }
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": "http://timestamp.sectigo.com",
+      "wix": {
+        "language": "en-US"
+      },
+      "nsis": {
+        "languages": ["English"],
+        "displayLanguageSelector": false,
+        "installMode": "currentUser"
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.15",
+      "signingIdentity": null,
+      "providerShortName": null
+    },
+    "linux": {
+      "deb": {
+        "depends": []
+      }
+    },
+    "publisher": "CNC Tool Converter Contributors",
+    "copyright": "Copyright © 2024–2026 CNC Tool Converter Contributors",
+    "shortDescription": "Convert CNC tool libraries between CAM formats",
+    "longDescription": "CNC Tool Converter converts tool library files between Fusion 360, LinuxCNC, HAAS, Fanuc, Mach3, RhinoCAM and other CAM/CNC formats. Includes a persistent tool library, job lists, work offset sheets, and F&S calculations."
   },
   "app": {
     "windows": [
@@ -64,7 +96,9 @@
     },
     "updater": {
       "pubkey": "",
-      "endpoints": []
+      "endpoints": [
+        "https://github.com/cnc-tool-converter/cnc-tool-converter/releases/latest/download/latest.json"
+      ]
     }
   }
 }
