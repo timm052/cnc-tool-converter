@@ -1,0 +1,34 @@
+[package]
+name = "cnc-tool-converter"
+version = "1.0.0"
+description = "CNC Tool Converter — Convert, manage, and print CNC tool libraries"
+authors = ["CNC Tool Converter Contributors"]
+edition = "2021"
+rust-version = "1.77.2"
+
+# See https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "cnc_tool_converter_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri          = { version = "2", features = [] }
+tauri-plugin-sql          = { version = "2", features = ["sqlite"] }
+tauri-plugin-dialog       = "2"
+tauri-plugin-fs           = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-updater      = "2"
+tauri-plugin-shell        = "2"
+serde      = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+# Optimise for binary size (desktop app, not a server)
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true

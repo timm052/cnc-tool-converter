@@ -1,0 +1,15 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/schema/desktop-schema.json",
+  "identifier": "default",
+  "description": "Default capabilities for CNC Tool Converter",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "dialog:default",
+    "fs:default",
+    "shell:default",
+    "notification:default",
+    "sql:default",
+    "updater:default"
+  ]
+}

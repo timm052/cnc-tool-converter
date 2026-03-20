@@ -6,8 +6,25 @@ import { dirname } from 'path'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
+// When running inside Tauri, TAURI_DEV_HOST is set by `tauri dev`
+const tauriHost = process.env.TAURI_DEV_HOST;
+
 export default defineConfig({
   root: __dirname,
+  // Prevent Vite from masking Rust errors
+  clearScreen: false,
+  server: {
+    // Tauri needs a fixed port so tauri.conf.json devUrl can reference it
+    port: 5173,
+    strictPort: true,
+    // When running on a mobile device via `tauri dev`, TAURI_DEV_HOST is set
+    host: tauriHost || false,
+    hmr: tauriHost ? { protocol: 'ws', host: tauriHost, port: 5183 } : undefined,
+    watch: {
+      // Avoid high CPU on Windows from watching Rust/Cargo output directories
+      ignored: ['**/node_modules/**', '**/src-tauri/**'],
+    },
+  },
   plugins: [
     react(),
     VitePWA({

@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import { db } from '../db/library';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
+import { getAdapter } from '../lib/db';
+import type { IDbAdapter } from '../lib/db';
 import type { ToolHolder } from '../types/holder';
 
 interface HolderContextValue {
@@ -13,45 +14,46 @@ interface HolderContextValue {
 
 const HolderContext = createContext<HolderContextValue | null>(null);
 
-async function loadAll(): Promise<ToolHolder[]> {
-  return db.holders.orderBy('createdAt').toArray();
-}
-
 export function HolderProvider({ children }: { children: ReactNode }) {
   const [holders,   setHolders]   = useState<ToolHolder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const adapterRef = useRef<IDbAdapter | null>(null);
 
   useEffect(() => {
-    loadAll()
-      .then(setHolders)
-      .catch(console.error)
-      .finally(() => setIsLoading(false));
+    getAdapter().then(async (adapter) => {
+      adapterRef.current = adapter;
+      setHolders(await adapter.holdersGetAll());
+    }).catch(console.error).finally(() => setIsLoading(false));
   }, []);
 
   const addHolder = useCallback(async (h: ToolHolder) => {
-    await db.holders.add(h);
-    setHolders(await loadAll());
+    const adapter = adapterRef.current!;
+    await adapter.holdersAdd(h);
+    setHolders(await adapter.holdersGetAll());
   }, []);
 
   const addHolders = useCallback(async (hs: ToolHolder[]): Promise<{ added: number; skipped: number }> => {
-    const existing = new Set((await db.holders.toArray()).map((h) => h.id));
+    const adapter = adapterRef.current!;
+    const existing = new Set((await adapter.holdersGetAll()).map((h) => h.id));
     let added = 0; let skipped = 0;
     for (const h of hs) {
       if (existing.has(h.id)) { skipped++; continue; }
-      await db.holders.add(h);
+      await adapter.holdersAdd(h);
       added++;
     }
-    setHolders(await loadAll());
+    setHolders(await adapter.holdersGetAll());
     return { added, skipped };
   }, []);
 
   const updateHolder = useCallback(async (id: string, patch: Partial<ToolHolder>) => {
-    await db.holders.update(id, { ...patch, updatedAt: Date.now() });
-    setHolders(await loadAll());
+    const adapter = adapterRef.current!;
+    await adapter.holdersUpdate(id, { ...patch, updatedAt: Date.now() });
+    setHolders(await adapter.holdersGetAll());
   }, []);
 
   const deleteHolder = useCallback(async (id: string) => {
-    await db.holders.delete(id);
+    const adapter = adapterRef.current!;
+    await adapter.holdersDelete(id);
     setHolders((prev) => prev.filter((h) => h.id !== id));
   }, []);
 

@@ -1,0 +1,70 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "identifier": "com.cnctoolconverter.app",
+  "productName": "CNC Tool Converter",
+  "version": "1.0.0",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": [],
+    "fileAssociations": [
+      {
+        "ext": ["hsmlib"],
+        "name": "HSM Tool Library",
+        "description": "Fusion 360 HSM Tool Library"
+      },
+      {
+        "ext": ["tbl"],
+        "name": "LinuxCNC Tool Table",
+        "description": "LinuxCNC Tool Table"
+      },
+      {
+        "ext": ["ofs"],
+        "name": "HAAS Offset Table",
+        "description": "HAAS Offset Table"
+      }
+    ],
+    "windows": {
+      "wix": {},
+      "nsis": {}
+    }
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "CNC Tool Converter",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 900,
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "plugins": {
+    "sql": {
+      "preload": ["sqlite:cnc-tool-converter.db"]
+    },
+    "updater": {
+      "pubkey": "",
+      "endpoints": []
+    }
+  }
+}
