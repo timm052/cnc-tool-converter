@@ -19,11 +19,6 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": {
-      "cli/cnc-convert.ts": "resources/cli/cnc-convert.ts",
-      "src/converters/**/*": "resources/src/converters/",
-      "src/types/**/*":      "resources/src/types/"
-    },
     "fileAssociations": [
       {
         "ext": ["hsmlib"],
