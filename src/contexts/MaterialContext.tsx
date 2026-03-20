@@ -19,6 +19,11 @@ export function MaterialProvider({ children }: { children: ReactNode }) {
   const [isLoading,  setIsLoading]  = useState(true);
   const adapterRef = useRef<IDbAdapter | null>(null);
 
+  function requireAdapter() {
+    if (!adapterRef.current) throw new Error('Database not ready — please wait a moment and try again.');
+    return adapterRef.current;
+  }
+
   useEffect(() => {
     getAdapter().then(async (adapter) => {
       adapterRef.current = adapter;
@@ -27,13 +32,13 @@ export function MaterialProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addMaterial = useCallback(async (m: WorkMaterial) => {
-    const adapter = adapterRef.current!;
+    const adapter = requireAdapter();
     await adapter.materialsAdd(m);
     setMaterials(await adapter.materialsGetAll());
   }, []);
 
   const addMaterials = useCallback(async (ms: WorkMaterial[]): Promise<{ added: number; skipped: number }> => {
-    const adapter = adapterRef.current!;
+    const adapter = requireAdapter();
     const existing = await adapter.materialsGetAll();
     const existingNames = new Set(existing.map((m) => m.name.toLowerCase()));
     let added = 0; let skipped = 0;
@@ -46,13 +51,13 @@ export function MaterialProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateMaterial = useCallback(async (id: string, patch: Partial<WorkMaterial>) => {
-    const adapter = adapterRef.current!;
+    const adapter = requireAdapter();
     await adapter.materialsUpdate(id, { ...patch, updatedAt: Date.now() });
     setMaterials(await adapter.materialsGetAll());
   }, []);
 
   const deleteMaterial = useCallback(async (id: string) => {
-    const adapter = adapterRef.current!;
+    const adapter = requireAdapter();
     await adapter.materialsDelete(id);
     setMaterials((prev) => prev.filter((m) => m.id !== id));
   }, []);

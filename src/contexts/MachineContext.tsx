@@ -19,6 +19,11 @@ export function MachineProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const adapterRef = useRef<IDbAdapter | null>(null);
 
+  function requireAdapter() {
+    if (!adapterRef.current) throw new Error('Database not ready — please wait a moment and try again.');
+    return adapterRef.current;
+  }
+
   useEffect(() => {
     getAdapter().then(async (adapter) => {
       adapterRef.current = adapter;
@@ -27,19 +32,19 @@ export function MachineProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addMachine = useCallback(async (m: Machine) => {
-    const adapter = adapterRef.current!;
+    const adapter = requireAdapter();
     await adapter.machinesAdd(m);
     setMachines(await adapter.machinesGetAll());
   }, []);
 
   const updateMachine = useCallback(async (id: string, patch: Partial<Machine>) => {
-    const adapter = adapterRef.current!;
+    const adapter = requireAdapter();
     await adapter.machinesUpdate(id, { ...patch, updatedAt: Date.now() });
     setMachines(await adapter.machinesGetAll());
   }, []);
 
   const deleteMachine = useCallback(async (id: string) => {
-    const adapter = adapterRef.current!;
+    const adapter = requireAdapter();
     await adapter.machinesDelete(id);
     setMachines((prev) => prev.filter((m) => m.id !== id));
   }, []);

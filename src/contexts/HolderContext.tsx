@@ -19,6 +19,11 @@ export function HolderProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const adapterRef = useRef<IDbAdapter | null>(null);
 
+  function requireAdapter() {
+    if (!adapterRef.current) throw new Error('Database not ready — please wait a moment and try again.');
+    return adapterRef.current;
+  }
+
   useEffect(() => {
     getAdapter().then(async (adapter) => {
       adapterRef.current = adapter;
@@ -27,13 +32,13 @@ export function HolderProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addHolder = useCallback(async (h: ToolHolder) => {
-    const adapter = adapterRef.current!;
+    const adapter = requireAdapter();
     await adapter.holdersAdd(h);
     setHolders(await adapter.holdersGetAll());
   }, []);
 
   const addHolders = useCallback(async (hs: ToolHolder[]): Promise<{ added: number; skipped: number }> => {
-    const adapter = adapterRef.current!;
+    const adapter = requireAdapter();
     const existing = new Set((await adapter.holdersGetAll()).map((h) => h.id));
     let added = 0; let skipped = 0;
     for (const h of hs) {
@@ -46,13 +51,13 @@ export function HolderProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateHolder = useCallback(async (id: string, patch: Partial<ToolHolder>) => {
-    const adapter = adapterRef.current!;
+    const adapter = requireAdapter();
     await adapter.holdersUpdate(id, { ...patch, updatedAt: Date.now() });
     setHolders(await adapter.holdersGetAll());
   }, []);
 
   const deleteHolder = useCallback(async (id: string) => {
-    const adapter = adapterRef.current!;
+    const adapter = requireAdapter();
     await adapter.holdersDelete(id);
     setHolders((prev) => prev.filter((h) => h.id !== id));
   }, []);
