@@ -7,6 +7,7 @@
  */
 
 import jsPDF from 'jspdf';
+import { savePdfDoc } from './tauri/pdfSave';
 
 export type WcsDialect = 'fanuc' | 'haas' | 'mach3' | 'linuxcnc' | 'siemens';
 
@@ -176,11 +177,11 @@ function clampWcsText(doc: jsPDF, text: string, maxW: number): string {
   return t + '\u2026';
 }
 
-export function renderOffsetPdf(
+export async function renderOffsetPdf(
   entries:     WcsEntry[],
   dialect:     WcsDialectInfo,
   machineName: string,
-): void {
+): Promise<void> {
   const filled = entries.filter((e) => e.name || e.x || e.y || e.z || e.a || e.b);
   const hasA   = filled.some((e) => e.a);
   const hasB   = filled.some((e) => e.b);
@@ -318,7 +319,7 @@ export function renderOffsetPdf(
   doc.text('CNC Tool Converter \u2014 Work Offset Reference Sheet', MARGIN, 286);
   doc.text(dateStr, PAGE_W - MARGIN, 286, { align: 'right' });
 
-  doc.save(`work-offsets-${now.toISOString().slice(0, 10)}.pdf`);
+  await savePdfDoc(doc, `work-offsets-${now.toISOString().slice(0, 10)}.pdf`);
 }
 
 // ── localStorage persistence (per-machine) ────────────────────────────────────

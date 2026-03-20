@@ -7,6 +7,7 @@ import { MachineProvider } from './contexts/MachineContext';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import ChangelogModal, { shouldShowChangelog } from './components/ChangelogModal';
+import { scheduleStartupUpdateCheck } from './lib/tauri/updater';
 
 const ConverterPage      = lazy(() => import('./components/pages/ConverterPage'));
 const ToolManagerPage    = lazy(() => import('./components/pages/ToolManagerPage'));
@@ -60,6 +61,8 @@ export default function App() {
   const [showChangelog, setShowChangelog] = useState(() => shouldShowChangelog());
   const closeChangelog = useCallback(() => setShowChangelog(false), []);
   const closeThemes = useCallback(() => setActivePage('converter'), []);
+
+  useEffect(() => { scheduleStartupUpdateCheck(); }, []);
 
   return (
     <SettingsProvider>

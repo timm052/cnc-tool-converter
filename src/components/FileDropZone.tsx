@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { Upload, FileText, X, AlertCircle } from 'lucide-react';
 import type { FormatInfo } from '../types/converter';
+import { isTauri, openFiles } from '../lib/tauri/fs';
 
 interface LoadedFile {
   name: string;
@@ -101,6 +102,39 @@ export default function FileDropZone({
     e.target.value = ''; // allow re-selecting the same file
   };
 
+  /** Click handler for the drop zone — uses native dialog in Tauri */
+  const handleZoneClick = useCallback(async () => {
+    if (!format) return;
+    if (isTauri()) {
+      setError(null);
+      setIsLoading(true);
+      try {
+        const isBinary = format.readAs === 'arraybuffer';
+        const tauriFilters = acceptedExtensions.length
+          ? [{ name: format.name ?? 'Tool files', extensions: acceptedExtensions.map((e) => e.replace(/^\./, '')) }]
+          : undefined;
+        const result = await openFiles({
+          multiple: true,
+          binary:   isBinary,
+          filters:  tauriFilters,
+        });
+        if (!result) return;
+        const loaded: LoadedFile[] = result.map((f) => ({
+          name:    f.name,
+          size:    typeof f.content === 'string' ? f.content.length : f.content.byteLength,
+          content: f.content instanceof Uint8Array ? f.content.buffer as ArrayBuffer : f.content,
+        }));
+        onFilesLoaded(loaded);
+      } catch (err) {
+        setError(`${err}`);
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      inputRef.current?.click();
+    }
+  }, [format, acceptedExtensions, onFilesLoaded]);
+
   // ── Loaded state ──────────────────────────────────────────────────────────
   if (hasFiles) {
     return (
@@ -126,7 +160,7 @@ export default function FileDropZone({
           ))}
         </ul>
         <button
-          onClick={() => inputRef.current?.click()}
+          onClick={() => void handleZoneClick()}
           className="mt-3 w-full text-xs text-slate-400 hover:text-slate-200 border border-dashed border-slate-600 rounded-lg py-2 transition-colors"
         >
           Add more files
@@ -151,7 +185,7 @@ export default function FileDropZone({
         onDrop={onDrop}
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
-        onClick={() => inputRef.current?.click()}
+        onClick={() => void handleZoneClick()}
         className={[
           'border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center gap-3',
           'cursor-pointer transition-all select-none min-h-[180px]',

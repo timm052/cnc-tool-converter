@@ -39,6 +39,7 @@ import WorkOffsetSheetPanel from '../library/WorkOffsetSheetPanel';
 import { downloadGcodeOffsetSheet } from '../../lib/gcodeOffsetSheet';
 import { recordBackup } from '../../lib/backupNudge';
 import { convertToolUnit } from '../../lib/unitConvert';
+import { isTauri, saveTextFile, openFiles } from '../../lib/tauri/fs';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -789,7 +790,7 @@ export default function ToolManagerPage() {
     setEditingTool(null);
   }, []);
 
-  const handleBackup = useCallback(() => {
+  const handleBackup = useCallback(async () => {
     // v2 sync package — includes tools, materials, and holders
     const payload = JSON.stringify({
       version:    2,
@@ -798,40 +799,60 @@ export default function ToolManagerPage() {
       materials,
       holders,
     }, null, 2);
-    const blob = new Blob([payload], { type: 'application/json' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = `tool-library-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const filename = `tool-library-${new Date().toISOString().slice(0, 10)}.json`;
+    if (isTauri()) {
+      await saveTextFile(payload, filename, 'application/json');
+    } else {
+      const blob = new Blob([payload], { type: 'application/json' });
+      const url  = URL.createObjectURL(blob);
+      Object.assign(document.createElement('a'), { href: url, download: filename }).click();
+      URL.revokeObjectURL(url);
+    }
     recordBackup();
   }, [tools, materials, holders]);
+
+  /** Shared restore logic — parses and imports a backup JSON string. */
+  const applyRestoreJson = useCallback(async (text: string) => {
+    const data = JSON.parse(text) as {
+      version?: number;
+      tools?: LibraryTool[];
+      materials?: import('../../types/material').WorkMaterial[];
+      holders?: import('../../types/holder').ToolHolder[];
+    } | LibraryTool[];
+
+    const incomingTools:     LibraryTool[] = Array.isArray(data) ? data : (data.tools ?? []);
+    const incomingMaterials                = Array.isArray(data) ? [] : (data.materials ?? []);
+    const incomingHolders                  = Array.isArray(data) ? [] : (data.holders ?? []);
+
+    await addTools(incomingTools, false);
+    if (incomingMaterials.length) await addMaterials(incomingMaterials);
+    if (incomingHolders.length)   await addHolders(incomingHolders);
+  }, [addTools, addMaterials, addHolders]);
 
   const handleRestore = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const text = await file.text();
-      const data = JSON.parse(text) as {
-        version?: number;
-        tools?: LibraryTool[];
-        materials?: import('../../types/material').WorkMaterial[];
-        holders?: import('../../types/holder').ToolHolder[];
-      } | LibraryTool[];
-
-      const incomingTools:     LibraryTool[] = Array.isArray(data) ? data : (data.tools ?? []);
-      const incomingMaterials                = Array.isArray(data) ? [] : (data.materials ?? []);
-      const incomingHolders                  = Array.isArray(data) ? [] : (data.holders ?? []);
-
-      await addTools(incomingTools, false);
-      if (incomingMaterials.length) await addMaterials(incomingMaterials);
-      if (incomingHolders.length)   await addHolders(incomingHolders);
+      await applyRestoreJson(await file.text());
     } catch (err) {
       console.error('Restore failed:', err);
     }
     e.target.value = '';
-  }, [addTools, addMaterials, addHolders]);
+  }, [applyRestoreJson]);
+
+  /** Restore via native Tauri file dialog — bound to the Restore button in Tauri builds. */
+  const handleRestoreTauri = useCallback(async () => {
+    try {
+      const result = await openFiles({
+        multiple: false,
+        filters:  [{ name: 'JSON backup', extensions: ['json'] }],
+      });
+      if (!result?.length) return;
+      await applyRestoreJson(result[0].content as string);
+    } catch (err) {
+      console.error('Restore failed:', err);
+    }
+  }, [applyRestoreJson]);
 
   const clearFilters = useCallback(() => {
     setSearchQuery('');
@@ -1026,7 +1047,7 @@ export default function ToolManagerPage() {
           {tools.length > 0 && (
             <button
               type="button"
-              onClick={handleBackup}
+              onClick={() => void handleBackup()}
               title="Download all tools as JSON backup"
               className="p-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 bg-slate-700 hover:bg-slate-600 border border-slate-600 transition-colors"
             >
@@ -1035,7 +1056,7 @@ export default function ToolManagerPage() {
           )}
           <button
             type="button"
-            onClick={() => restoreInputRef.current?.click()}
+            onClick={() => isTauri() ? void handleRestoreTauri() : restoreInputRef.current?.click()}
             title="Restore tools from a JSON backup"
             className="p-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 bg-slate-700 hover:bg-slate-600 border border-slate-600 transition-colors"
           >

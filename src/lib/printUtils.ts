@@ -1,6 +1,7 @@
 import QRCode from 'qrcode';
 import JsBarcode from 'jsbarcode';
 import jsPDF from 'jspdf';
+import { savePdfDoc } from './tauri/pdfSave';
 import type { LibraryTool, ToolInstance } from '../types/libraryTool';
 import { TOOL_CONDITION_LABELS } from '../types/libraryTool';
 import { esc } from './stringUtils';
@@ -446,7 +447,7 @@ function drawPageHeader(doc: jsPDF, count: number, date: string, pageW: number, 
   doc.text(date, pageW - margin, margin + 4, { align: 'right' });
 }
 
-export function generateToolSheetPdf(tools: LibraryTool[], opts: SheetOptions): void {
+export async function generateToolSheetPdf(tools: LibraryTool[], opts: SheetOptions): Promise<void> {
   const doc      = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const PAGE_W   = 210;
   const PAGE_H   = 297;
@@ -571,7 +572,7 @@ export function generateToolSheetPdf(tools: LibraryTool[], opts: SheetOptions): 
     y += cardH + GAP_Y;
   }
 
-  doc.save(`tool-sheet-${new Date().toISOString().slice(0, 10)}.pdf`);
+  await savePdfDoc(doc, `tool-sheet-${new Date().toISOString().slice(0, 10)}.pdf`);
 }
 
 

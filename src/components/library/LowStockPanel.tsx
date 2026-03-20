@@ -25,7 +25,7 @@ function exportPoCsv(tools: LibraryTool[]) {
     ].join(','));
   }
   const date = new Date().toISOString().slice(0, 10);
-  triggerDownload(rows.join('\n'), `low-stock-${date}.csv`, 'text/csv');
+  void triggerDownload(rows.join('\n'), 'text/csv', `low-stock-${date}.csv`);
 }
 
 // ── Panel ─────────────────────────────────────────────────────────────────────

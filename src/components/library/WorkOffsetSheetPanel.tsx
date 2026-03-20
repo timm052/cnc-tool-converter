@@ -61,13 +61,13 @@ export default function WorkOffsetSheetPanel({ machineGroups, onClose }: WorkOff
     setEntries((prev) => prev.map((e, i) => i === idx ? { ...e, slotCode: code } : e));
   }, []);
 
-  function handleDownload(format: 'pdf' | 'csv') {
+  async function handleDownload(format: 'pdf' | 'csv') {
     const displayName = machineKey === DEFAULT_MACHINE_KEY ? '' : machineKey;
     const date = new Date().toISOString().slice(0, 10);
     if (format === 'pdf') {
-      renderOffsetPdf(entries, dialect, displayName);
+      await renderOffsetPdf(entries, dialect, displayName);
     } else {
-      triggerDownload(renderOffsetCsv(entries), 'text/csv', `work-offsets-${date}.csv`);
+      await triggerDownload(renderOffsetCsv(entries), 'text/csv', `work-offsets-${date}.csv`);
     }
   }
 
