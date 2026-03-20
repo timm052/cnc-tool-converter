@@ -48,8 +48,8 @@ function sortTools(tools: LibraryTool[], opts: ToolOffsetOptions): LibraryTool[]
 
 function resolveRow(t: LibraryTool, opts: ToolOffsetOptions) {
   const active = getActiveInstance(t);
-  const dp     = t.unit === 'inch' ? 4 : 3;
-  const unitStr = t.unit === 'inch' ? '"' : 'mm';
+  const dp      = t.unit === 'inch' ? 4 : 3;
+  const unitStr = t.unit === 'inch' ? 'in' : 'mm';
 
   const displayDiam = opts.useActualDiameter && active?.actualDiameter != null
     ? active.actualDiameter
@@ -58,8 +58,8 @@ function resolveRow(t: LibraryTool, opts: ToolOffsetOptions) {
   return {
     tnum:    `T${String(t.toolNumber).padStart(3, '0')}`,
     type:    t.type || '—',
-    diam:    displayDiam != null ? `${displayDiam.toFixed(dp)}${unitStr}` : '—',
-    zoff:    t.offsets?.z != null ? `${t.offsets.z.toFixed(dp)}${unitStr}` : `0.${'0'.repeat(dp)}${unitStr}`,
+    diam:    displayDiam != null ? `${displayDiam.toFixed(dp)} ${unitStr}` : '—',
+    zoff:    t.offsets?.z != null ? `${t.offsets.z.toFixed(dp)} ${unitStr}` : `0.${'0'.repeat(dp)} ${unitStr}`,
     flutes:  t.geometry?.numberOfFlutes != null ? String(t.geometry.numberOfFlutes) : '—',
     desc:    t.description || t.type || '—',
     machine: (t.machineGroups?.length ?? 0) > 0 ? t.machineGroups!.join(', ') : '',
