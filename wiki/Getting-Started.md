@@ -65,13 +65,14 @@ The `dist/` folder is a static site — deploy it on GitHub Pages, Netlify, Clou
 
 ## First run
 
-When you first open the app you'll see three pages in the left sidebar:
+When you first open the app you'll see four items in the left sidebar:
 
-| Page | Purpose |
-|------|---------|
-| **Converter** | Convert tool library files between formats |
-| **Tool Library** | Manage a persistent local library of tools |
-| **Settings** | Configure the app |
+| Sidebar button | Page | Purpose |
+|----------------|------|---------|
+| **Converter** | Converter | Convert tool library files between formats |
+| **Tool Manager** | Tool Library | Manage a persistent local library of tools |
+| **Machines** | Machines | Configure machine groups |
+| **Settings** | Settings | Configure the app |
 
 The sidebar is collapsible — click the **◀ / ▶** arrow at the bottom to toggle it.
 
@@ -95,7 +96,7 @@ The sidebar is collapsible — click the **◀ / ▶** arrow at the bottom to to
 
 ## Your first library entry
 
-1. Go to the **Tool Library** page.
+1. Click **Tool Manager** in the sidebar to open the Tool Library.
 2. Click **New Tool** (top right) — the tool editor opens.
 3. Fill in at minimum: **Tool Number**, **Type**, and **Diameter**.
 4. Click **Save** (or press `Ctrl+S`).
@@ -106,10 +107,10 @@ The tool is now saved permanently in your browser's IndexedDB.
 
 ## Importing an existing tool library
 
-1. Go to the **Tool Library** page.
+1. Click **Tool Manager** in the sidebar to open the Tool Library.
 2. Click **Import**.
 3. Drop a tool library file onto the panel.
-4. Review duplicates and click **Import N tools**.
+4. Review any duplicates and click **Add N tools** (or **Import**) to confirm.
 
 See [Importing Tools](Importing-Tools) for full details.
 
@@ -137,9 +138,9 @@ Both builds persist data between sessions automatically.
 | **Import** | Load tools from a file |
 | **Export N** | Export selected (or all) tools |
 | **Low Stock** | Red — appears when tools are at/below reorder point |
-| **Libraries ▾** | Materials, Holders, Templates |
-| **Maintain ▾** | Find Duplicates, Renumber, Issues, Scan QR, F&S Wizard, Snapshots |
-| **Print ▾** | Tool Sheet, Tool Offsets, Work Offsets, Labels |
+| **Libraries ▾** | Materials, Holders, Templates, Jobs, Tool Sets |
+| **Maintain ▾** | Find Duplicates, Renumber, Issues, Scan QR, F&S Wizard, Snapshots, Supplier Invoice |
+| **Print ▾** | Setup Sheet, Tool Sheet, Tool Offsets, Work Offsets, Labels |
 | **?** | Keyboard shortcut help |
 | **☁** | Remote sync (only visible when a URL is configured in Settings) |
 | **New Tool** | Open the editor to create a tool |

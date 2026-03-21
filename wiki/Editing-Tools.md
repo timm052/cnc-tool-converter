@@ -12,14 +12,15 @@
 
 ## Editor layout
 
-The editor is a slide-over panel on the right side of the screen. It has five tabs:
+The editor is a slide-over panel on the right side of the screen. It has six tabs:
 
 | Tab | Contents |
 |-----|---------|
-| **Geometry** | Type, diameter, shaft dia, OAL, flute length, flutes, corner radius, taper angle, tip dia, thread pitch; live SVG profile preview |
-| **Cutting** | Spindle RPM, all feed rates, feed mode, coolant, clockwise direction |
 | **Library** | Tags, machine groups, supplier, location, unit cost, notes, tool image |
-| **Assembly** | Holder assignment, stick-out visualisation, compatibility check |
+| **Geometry** | Type, diameter, shaft dia, OAL, flute length, flutes, corner radius, taper angle, tip dia, thread pitch; live SVG profile preview; holder assignment + stick-out (Assembly section) |
+| **Offsets** | Tool offset registers: X, Y, Z, A, B, C, U, V, W |
+| **Cutting** | Spindle RPM, all feed rates, feed mode, coolant, clockwise direction; per-material F&S entries |
+| **NC** | NC-specific flags: break control, live tool, turret number, manual tool change |
 | **Crib** | Lifecycle (use count, regrind threshold), stock history, change log, custom fields |
 
 ---
@@ -30,7 +31,7 @@ The editor is a slide-over panel on the right side of the screen. It has five ta
 
 The **Geometry** tab shows a cross-section profile of the tool, rendered in real time as you change values. The profile adapts to tool type — flat end mill, ball end mill, bull nose, drill, chamfer, tap, reamer, boring bar, and more.
 
-When a holder is assigned (Assembly tab), the profile extends to show the holder shank and bore with an annotated stick-out measurement.
+When a holder is assigned (Assembly section of the Geometry tab), the profile extends to show the holder shank and bore with an annotated stick-out measurement.
 
 ---
 
@@ -59,11 +60,32 @@ In the **Library** tab:
 
 ---
 
-## Assembly tab
+## Assembly (Geometry tab)
+
+At the bottom of the **Geometry** tab:
 
 1. Search for a holder by name using the search field.
-2. Select one — the SVG preview updates to show the combined assembly.
+2. Select one — the SVG preview updates to show the combined assembly with stick-out annotation.
 3. If the tool's shaft diameter is outside the holder's collet range, an orange warning appears.
+
+---
+
+## Offsets tab
+
+Stores the tool's machine offset registers (X, Y, Z, A, B, C, U, V, W). These are the values written to the machine controller's offset table — distinct from the tool's geometry dimensions.
+
+---
+
+## NC tab
+
+NC-specific flags used by some machine controllers:
+
+| Field | Description |
+|-------|-------------|
+| **Break control** | Whether the machine should check for tool breakage |
+| **Live tool** | Mark as a live (driven) tool (lathe turrets) |
+| **Turret** | Turret number assignment |
+| **Manual tool change** | Flag that this tool requires a manual change cycle |
 
 ---
 

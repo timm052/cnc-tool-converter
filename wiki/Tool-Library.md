@@ -18,7 +18,7 @@ The **Print ▾** dropdown gives access to output options:
 
 ![Print dropdown](screenshots/print-dropdown.png)
 
-The **Libraries ▾** dropdown gives access to Materials, Holders, Templates, and Jobs:
+The **Libraries ▾** dropdown gives access to Materials, Holders, Templates, Jobs, and Tool Sets:
 
 ![Libraries dropdown](screenshots/libraries-dropdown.png)
 
@@ -130,3 +130,41 @@ Total: £1,234.56   ⚠ 3 low stock
 ```
 
 This is `Σ(unitCost × quantity)` across all visible tools. The low-stock count is a link to the Low Stock dashboard.
+
+---
+
+## Libraries ▾ contents
+
+| Item | Description |
+|------|-------------|
+| **Materials** | Work material library (used for per-material F&S data) |
+| **Holders** | Tool holder library (used for assembly / stick-out view) |
+| **Templates** | Saved tool templates — stamp out new tools with one click |
+| **Jobs** | Named job tool lists (BOM sheets); export as PDF or CSV |
+| **Tool Sets** | Saved groups of tools — similar to Jobs but lighter weight; reusable named subsets (e.g. "Roughing set", "Finishing set") that can be exported as CSV |
+
+---
+
+## Maintain ▾ contents
+
+| Item | Description |
+|------|-------------|
+| **Find Duplicates** | Detect tools with duplicate T numbers, descriptions, or diameters |
+| **Renumber** | Resequence T numbers with configurable start and step; live before/after preview |
+| **Issues** | Validation scanner — finds missing descriptions, zero diameters, low stock, etc. |
+| **Scan QR** | Open QR code scanner to look up a tool by its label QR code |
+| **F&S Wizard** | 3-step guided cutting-data entry (tool + material → grade + DOC → apply) |
+| **Snapshots** | Save and restore point-in-time library snapshots |
+| **Supplier Invoice** | Import a supplier delivery note / packing slip CSV to auto-update stock quantities and unit costs |
+
+---
+
+## Print ▾ contents
+
+| Item | Description |
+|------|-------------|
+| **Setup Sheet** | PDF machine setup sheet: tool list with T#, description, diameter, holder, stick-out, and offset for a selected machine group |
+| **Tool Sheet** | Compact multi-column PDF reference card for selected tools |
+| **Tool Offsets** | Plain-text `.txt` offset reference card (T#, diameter, Z-offset, flutes, description) |
+| **Work Offsets** | G54–G59 work offset reference sheet — dialect-aware (Fanuc / HAAS / Mach3 / LinuxCNC / Siemens); export as `.txt` or `.csv` |
+| **Labels** | Printable QR-coded bin labels; configurable size, fields, and QR content |
