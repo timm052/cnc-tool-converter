@@ -122,6 +122,7 @@ Add secrets to GitHub: `TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_P
 | Generic CSV | ✅ | ✅ | `.csv` |
 | Excel | ✅ | ✅ | `.xlsx` |
 | RhinoCAM | ✅ | — | `.vkb` (binary) |
+| Backup JSON v2 | ✅ | ✅ | `.json` |
 
 ---
 

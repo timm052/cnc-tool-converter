@@ -1,0 +1,166 @@
+{
+  "version": 2,
+  "exportedAt": "2026-03-21T00:00:00.000Z",
+  "syncVersion": 1,
+  "tools": [
+    {
+      "id": "t001", "toolNumber": 1, "type": "flat end mill", "description": "6mm 4F End Mill", "unit": "mm",
+      "manufacturer": "Sandvik", "productId": "R216.34-06030-AS08G",
+      "geometry": { "diameter": 6, "shaftDiameter": 6, "overallLength": 57, "fluteLength": 13, "numberOfFlutes": 4, "cornerRadius": 0 },
+      "cutting": { "spindleRpm": 12000, "feedCutting": 1800, "feedPlunge": 600, "coolant": "flood" },
+      "tags": ["roughing", "aluminium"], "starred": true, "machineGroups": ["VMC"],
+      "quantity": 5, "reorderPoint": 2, "unitCost": 18.50, "supplier": "Sandvik", "location": "Drawer A1",
+      "condition": "Good", "useCount": 12, "regrindThreshold": 50,
+      "addedAt": 1742000000000, "updatedAt": 1742000000000
+    },
+    {
+      "id": "t002", "toolNumber": 2, "type": "flat end mill", "description": "10mm 4F End Mill", "unit": "mm",
+      "manufacturer": "Sandvik", "productId": "R216.34-10030-AS08G",
+      "geometry": { "diameter": 10, "shaftDiameter": 10, "overallLength": 72, "fluteLength": 22, "numberOfFlutes": 4, "cornerRadius": 0 },
+      "cutting": { "spindleRpm": 8000, "feedCutting": 2400, "feedPlunge": 800, "coolant": "flood" },
+      "tags": ["roughing", "steel"], "starred": false, "machineGroups": ["VMC"],
+      "quantity": 3, "reorderPoint": 2, "unitCost": 28.00, "supplier": "Sandvik", "location": "Drawer A2",
+      "condition": "Good", "useCount": 8, "regrindThreshold": 50,
+      "addedAt": 1742000100000, "updatedAt": 1742000100000
+    },
+    {
+      "id": "t003", "toolNumber": 3, "type": "ball end mill", "description": "8mm 2F Ball Nose", "unit": "mm",
+      "manufacturer": "Kennametal",
+      "geometry": { "diameter": 8, "shaftDiameter": 8, "overallLength": 63, "fluteLength": 19, "numberOfFlutes": 2, "cornerRadius": 4 },
+      "cutting": { "spindleRpm": 10000, "feedCutting": 1500, "feedPlunge": 500, "coolant": "mist" },
+      "tags": ["finishing", "3d"], "starred": true, "machineGroups": ["VMC"],
+      "quantity": 2, "reorderPoint": 1, "unitCost": 35.00, "supplier": "Kennametal", "location": "Drawer A3",
+      "condition": "New", "useCount": 0, "regrindThreshold": 30,
+      "addedAt": 1742000200000, "updatedAt": 1742000200000
+    },
+    {
+      "id": "t004", "toolNumber": 4, "type": "bull nose end mill", "description": "12mm 4F Bull Nose R1", "unit": "mm",
+      "manufacturer": "Iscar",
+      "geometry": { "diameter": 12, "shaftDiameter": 12, "overallLength": 83, "fluteLength": 26, "numberOfFlutes": 4, "cornerRadius": 1 },
+      "cutting": { "spindleRpm": 6500, "feedCutting": 2000, "feedPlunge": 700, "coolant": "flood" },
+      "tags": ["semifinish"], "starred": false, "machineGroups": ["VMC"],
+      "quantity": 1, "reorderPoint": 1, "unitCost": 42.00, "supplier": "Iscar", "location": "Drawer A4",
+      "condition": "Worn", "useCount": 38, "regrindThreshold": 40,
+      "addedAt": 1742000300000, "updatedAt": 1742000300000
+    },
+    {
+      "id": "t005", "toolNumber": 5, "type": "drill", "description": "8.5mm Carbide Drill", "unit": "mm",
+      "manufacturer": "Guhring",
+      "geometry": { "diameter": 8.5, "shaftDiameter": 8.5, "overallLength": 81, "fluteLength": 43, "numberOfFlutes": 2, "taperAngle": 118 },
+      "cutting": { "spindleRpm": 5500, "feedCutting": 400, "feedPlunge": 400, "coolant": "through" },
+      "tags": ["drilling", "steel"], "starred": false, "machineGroups": ["VMC"],
+      "quantity": 4, "reorderPoint": 2, "unitCost": 22.00, "supplier": "Guhring", "location": "Drawer B1",
+      "condition": "Good", "useCount": 15, "regrindThreshold": 80,
+      "addedAt": 1742000400000, "updatedAt": 1742000400000
+    },
+    {
+      "id": "t006", "toolNumber": 6, "type": "drill", "description": "6.8mm HSS Drill (M8 tapping)", "unit": "mm",
+      "manufacturer": "Dormer",
+      "geometry": { "diameter": 6.8, "shaftDiameter": 6.8, "overallLength": 69, "fluteLength": 35, "numberOfFlutes": 2, "taperAngle": 118 },
+      "cutting": { "spindleRpm": 3200, "feedCutting": 280, "feedPlunge": 280, "coolant": "flood" },
+      "tags": ["drilling", "pre-tap"], "starred": false, "machineGroups": ["VMC", "Manual"],
+      "quantity": 8, "reorderPoint": 4, "unitCost": 6.50, "supplier": "Dormer", "location": "Drawer B2",
+      "condition": "Good", "useCount": 5, "regrindThreshold": 100,
+      "addedAt": 1742000500000, "updatedAt": 1742000500000
+    },
+    {
+      "id": "t007", "toolNumber": 7, "type": "tap", "description": "M8x1.25 Spiral Flute Tap", "unit": "mm",
+      "manufacturer": "OSG",
+      "geometry": { "diameter": 8, "shaftDiameter": 8, "overallLength": 80, "numberOfFlutes": 3, "threadPitch": 1.25 },
+      "cutting": { "spindleRpm": 1200, "feedCutting": 1500, "coolant": "flood" },
+      "tags": ["tapping"], "starred": false, "machineGroups": ["VMC"],
+      "quantity": 3, "reorderPoint": 2, "unitCost": 14.00, "supplier": "OSG", "location": "Drawer C1",
+      "condition": "Good", "useCount": 20, "regrindThreshold": 200,
+      "addedAt": 1742000600000, "updatedAt": 1742000600000
+    },
+    {
+      "id": "t008", "toolNumber": 8, "type": "chamfer mill", "description": "90° Chamfer Mill 16mm", "unit": "mm",
+      "manufacturer": "Kennametal",
+      "geometry": { "diameter": 16, "shaftDiameter": 10, "overallLength": 65, "numberOfFlutes": 4, "taperAngle": 45 },
+      "cutting": { "spindleRpm": 4500, "feedCutting": 900, "feedPlunge": 300, "coolant": "air" },
+      "tags": ["chamfering", "deburr"], "starred": false, "machineGroups": ["VMC"],
+      "quantity": 2, "reorderPoint": 1, "unitCost": 32.00, "supplier": "Kennametal", "location": "Drawer C2",
+      "condition": "New", "useCount": 3, "regrindThreshold": 60,
+      "addedAt": 1742000700000, "updatedAt": 1742000700000
+    },
+    {
+      "id": "t009", "toolNumber": 9, "type": "reamer", "description": "10H7 Carbide Reamer", "unit": "mm",
+      "manufacturer": "Guhring",
+      "geometry": { "diameter": 10, "shaftDiameter": 10, "overallLength": 102, "fluteLength": 35, "numberOfFlutes": 6 },
+      "cutting": { "spindleRpm": 800, "feedCutting": 200, "feedPlunge": 200, "coolant": "flood" },
+      "tags": ["reaming", "finish bore"], "starred": true, "machineGroups": ["VMC"],
+      "quantity": 1, "reorderPoint": 1, "unitCost": 68.00, "supplier": "Guhring", "location": "Drawer D1",
+      "condition": "Good", "useCount": 10, "regrindThreshold": 40,
+      "addedAt": 1742000800000, "updatedAt": 1742000800000
+    },
+    {
+      "id": "t010", "toolNumber": 10, "type": "flat end mill", "description": "3mm 2F Micro End Mill", "unit": "mm",
+      "manufacturer": "Harvey Tool",
+      "geometry": { "diameter": 3, "shaftDiameter": 3, "overallLength": 38, "fluteLength": 6, "numberOfFlutes": 2, "cornerRadius": 0 },
+      "cutting": { "spindleRpm": 24000, "feedCutting": 1200, "feedPlunge": 400, "coolant": "mist" },
+      "tags": ["micro", "finishing"], "starred": false, "machineGroups": ["VMC"],
+      "quantity": 6, "reorderPoint": 3, "unitCost": 12.00, "supplier": "Harvey Tool", "location": "Drawer A5",
+      "condition": "New", "useCount": 0, "regrindThreshold": 20,
+      "addedAt": 1742000900000, "updatedAt": 1742000900000
+    },
+    {
+      "id": "t101", "toolNumber": 101, "type": "turning insert", "description": "CNMG 12 04 08 Turning Insert", "unit": "mm",
+      "manufacturer": "Sandvik", "productId": "CNMG 12 04 08-PM 4325",
+      "geometry": { "diameter": 12.7, "numberOfFlutes": 1, "cornerRadius": 0.8 },
+      "cutting": { "spindleRpm": 1800, "feedCutting": 320, "coolant": "flood" },
+      "tags": ["turning", "steel", "roughing"], "starred": true, "machineGroups": ["Lathe"],
+      "quantity": 10, "reorderPoint": 4, "unitCost": 8.50, "supplier": "Sandvik", "location": "Cabinet L1",
+      "condition": "Good", "useCount": 6, "regrindThreshold": 30,
+      "addedAt": 1742001000000, "updatedAt": 1742001000000
+    },
+    {
+      "id": "t102", "toolNumber": 102, "type": "boring bar", "description": "25mm Boring Bar A25R-SCLCR09", "unit": "mm",
+      "manufacturer": "Sandvik",
+      "geometry": { "diameter": 25, "shaftDiameter": 25, "overallLength": 200, "fluteLength": 40, "numberOfFlutes": 1 },
+      "cutting": { "spindleRpm": 1200, "feedCutting": 150, "feedPlunge": 80, "coolant": "flood" },
+      "tags": ["boring", "internal"], "starred": false, "machineGroups": ["Lathe"],
+      "quantity": 1, "reorderPoint": 1, "unitCost": 145.00, "supplier": "Sandvik", "location": "Cabinet L2",
+      "condition": "Good", "useCount": 22, "regrindThreshold": 100,
+      "addedAt": 1742001100000, "updatedAt": 1742001100000
+    },
+    {
+      "id": "t103", "toolNumber": 103, "type": "drill", "description": "12mm Indexable Drill", "unit": "mm",
+      "manufacturer": "Iscar",
+      "geometry": { "diameter": 12, "shaftDiameter": 12, "overallLength": 110, "fluteLength": 60, "numberOfFlutes": 2, "taperAngle": 140 },
+      "cutting": { "spindleRpm": 2200, "feedCutting": 350, "feedPlunge": 350, "coolant": "through" },
+      "tags": ["drilling"], "starred": false, "machineGroups": ["Lathe", "VMC"],
+      "quantity": 2, "reorderPoint": 1, "unitCost": 55.00, "supplier": "Iscar", "location": "Cabinet L3",
+      "condition": "New", "useCount": 1, "regrindThreshold": 60,
+      "addedAt": 1742001200000, "updatedAt": 1742001200000
+    },
+    {
+      "id": "t201", "toolNumber": 201, "type": "flat end mill", "description": "19mm 2F Upcut Spiral (Wood)", "unit": "mm",
+      "manufacturer": "Amana Tool",
+      "geometry": { "diameter": 19, "shaftDiameter": 19, "overallLength": 76, "fluteLength": 38, "numberOfFlutes": 2 },
+      "cutting": { "spindleRpm": 18000, "feedCutting": 6000, "feedPlunge": 2000, "coolant": "air" },
+      "tags": ["wood", "roughing", "upcut"], "starred": true, "machineGroups": ["Router"],
+      "quantity": 2, "reorderPoint": 1, "unitCost": 45.00, "supplier": "Amana Tool", "location": "Router Rack R1",
+      "condition": "Good", "useCount": 18, "regrindThreshold": 60,
+      "addedAt": 1742001300000, "updatedAt": 1742001300000
+    },
+    {
+      "id": "t202", "toolNumber": 202, "type": "v-carve", "description": "90° V-Bit 25mm", "unit": "mm",
+      "manufacturer": "Whiteside",
+      "geometry": { "diameter": 25, "shaftDiameter": 6.35, "overallLength": 51, "numberOfFlutes": 2, "taperAngle": 45 },
+      "cutting": { "spindleRpm": 16000, "feedCutting": 3000, "feedPlunge": 1000, "coolant": "air" },
+      "tags": ["v-carve", "engraving", "wood"], "starred": false, "machineGroups": ["Router"],
+      "quantity": 3, "reorderPoint": 1, "unitCost": 22.00, "supplier": "Whiteside", "location": "Router Rack R2",
+      "condition": "Good", "useCount": 9, "regrindThreshold": 40,
+      "addedAt": 1742001400000, "updatedAt": 1742001400000
+    }
+  ],
+  "materials": [
+    { "id": "m1", "name": "Aluminium 6061", "sfm": 800, "vc": 244, "hardness": 95, "machinability": 1.5, "notes": "Most common alloy", "addedAt": 1742000000000, "updatedAt": 1742000000000 },
+    { "id": "m2", "name": "Mild Steel 1018", "sfm": 120, "vc": 37, "hardness": 131, "machinability": 0.7, "notes": "General purpose", "addedAt": 1742000000000, "updatedAt": 1742000000000 },
+    { "id": "m3", "name": "Stainless 304", "sfm": 80, "vc": 24, "hardness": 187, "machinability": 0.5, "notes": "Work hardens", "addedAt": 1742000000000, "updatedAt": 1742000000000 }
+  ],
+  "holders": [
+    { "id": "h1", "name": "ER32 Collet Chuck", "type": "ER Collet", "colletDiameterMin": 2, "colletDiameterMax": 20, "stickoutLength": 65, "notes": "Standard ER32", "addedAt": 1742000000000, "updatedAt": 1742000000000 },
+    { "id": "h2", "name": "Hydraulic Chuck 20mm", "type": "Hydraulic", "colletDiameterMin": 20, "colletDiameterMax": 20, "stickoutLength": 80, "notes": "High accuracy", "addedAt": 1742000000000, "updatedAt": 1742000000000 }
+  ]
+}

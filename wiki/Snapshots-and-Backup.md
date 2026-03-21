@@ -14,7 +14,7 @@ Snapshots are point-in-time copies of your entire library stored inside the brow
 
 Enter an optional label (e.g. "Before big import" or "v3 machine group setup") and click **Save**. The snapshot captures all tools, materials, and holders at that instant.
 
-Up to **20 snapshots** are retained. When the limit is reached, the oldest snapshot is automatically removed.
+Up to **10 snapshots** are retained. When the limit is reached, the oldest snapshot is automatically removed.
 
 ### Viewing snapshots
 
