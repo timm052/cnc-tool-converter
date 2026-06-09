@@ -47,6 +47,7 @@ import type { ToolSet } from '../../types/toolSet';
 import type { Job } from '../../types/job';
 import { convertToolUnit } from '../../lib/unitConvert';
 import { isTauri, saveTextFile, openFiles } from '../../lib/tauri/fs';
+import { triggerDownload } from '../../lib/downloadUtils';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -576,6 +577,7 @@ export default function ToolManagerPage() {
   // ── Remote sync ───────────────────────────────────────────────────────────
   const [syncDropdown,   setSyncDropdown]   = useState(false);
   const [syncMergeToast, setSyncMergeToast] = useState<import('../../lib/remoteSync').MergeStats | null>(null);
+  const [restoreError,   setRestoreError]   = useState<string | null>(null);
   const syncDropdownRef = useRef<HTMLDivElement>(null);
 
   /** onApply: atomically write merged data into IndexedDB */
@@ -810,64 +812,57 @@ export default function ToolManagerPage() {
     }, null, 2);
     const filename = `tool-library-${new Date().toISOString().slice(0, 10)}.json`;
     if (isTauri()) {
-      await saveTextFile(payload, filename, 'application/json');
+      // saveTextFile returns null when the user cancels the native dialog,
+      // so only record the backup when the file was actually written.
+      const saved = await saveTextFile(payload, filename, 'application/json');
+      if (saved) recordBackup();
     } else {
-      const blob = new Blob([payload], { type: 'application/json' });
-      const url  = URL.createObjectURL(blob);
-      Object.assign(document.createElement('a'), { href: url, download: filename }).click();
-      URL.revokeObjectURL(url);
+      await triggerDownload(payload, 'application/json', filename);
+      recordBackup();
     }
-    recordBackup();
   }, [tools, materials, holders]);
 
-  /** Shared restore logic — parses and imports a backup JSON string. */
+  /** Shared restore logic — parses and imports a v1/v2/v3 backup JSON string. */
   const applyRestoreJson = useCallback(async (text: string) => {
     const data = JSON.parse(text) as {
       version?: number;
       tools?: LibraryTool[];
       materials?: import('../../types/material').WorkMaterial[];
       holders?: import('../../types/holder').ToolHolder[];
+      toolSets?: ToolSet[];
+      jobs?: Job[];
     } | LibraryTool[];
 
-    const incomingTools:     LibraryTool[] = Array.isArray(data) ? data : (data.tools ?? []);
-    const incomingMaterials                = Array.isArray(data) ? [] : (data.materials ?? []);
-    const incomingHolders                  = Array.isArray(data) ? [] : (data.holders ?? []);
+    const incomingTools     = Array.isArray(data) ? data : (data.tools ?? []);
+    const incomingMaterials = Array.isArray(data) ? [] : (data.materials ?? []);
+    const incomingHolders   = Array.isArray(data) ? [] : (data.holders ?? []);
+    const incomingToolSets  = Array.isArray(data) ? [] : (data.toolSets ?? []);
+    const incomingJobs      = Array.isArray(data) ? [] : (data.jobs ?? []);
 
     await addTools(incomingTools, false);
     if (incomingMaterials.length) await addMaterials(incomingMaterials);
     if (incomingHolders.length)   await addHolders(incomingHolders);
+    if (incomingToolSets.length)  restoreSets(incomingToolSets);
+    if (incomingJobs.length)      restoreJobs(incomingJobs);
   }, [addTools, addMaterials, addHolders]);
+
+  const showRestoreError = useCallback((err: unknown) => {
+    const msg = err instanceof Error ? err.message : String(err);
+    setRestoreError(`Restore failed: ${msg}`);
+    setTimeout(() => setRestoreError(null), 6000);
+  }, []);
 
   const handleRestore = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const text = await file.text();
-      const data = JSON.parse(text) as {
-        version?: number;
-        tools?: LibraryTool[];
-        materials?: import('../../types/material').WorkMaterial[];
-        holders?: import('../../types/holder').ToolHolder[];
-        toolSets?: ToolSet[];
-        jobs?: Job[];
-      } | LibraryTool[];
-
-      const incomingTools     = Array.isArray(data) ? data : (data.tools ?? []);
-      const incomingMaterials = Array.isArray(data) ? [] : (data.materials ?? []);
-      const incomingHolders   = Array.isArray(data) ? [] : (data.holders ?? []);
-      const incomingToolSets  = Array.isArray(data) ? [] : (data.toolSets ?? []);
-      const incomingJobs      = Array.isArray(data) ? [] : (data.jobs ?? []);
-
-      await addTools(incomingTools, false);
-      if (incomingMaterials.length)  await addMaterials(incomingMaterials);
-      if (incomingHolders.length)    await addHolders(incomingHolders);
-      if (incomingToolSets.length)   restoreSets(incomingToolSets);
-      if (incomingJobs.length)       restoreJobs(incomingJobs);
+      await applyRestoreJson(await file.text());
     } catch (err) {
       console.error('Restore failed:', err);
+      showRestoreError(err);
     }
     e.target.value = '';
-  }, [applyRestoreJson]);
+  }, [applyRestoreJson, showRestoreError]);
 
   /** Restore via native Tauri file dialog — bound to the Restore button in Tauri builds. */
   const handleRestoreTauri = useCallback(async () => {
@@ -880,8 +875,9 @@ export default function ToolManagerPage() {
       await applyRestoreJson(result[0].content as string);
     } catch (err) {
       console.error('Restore failed:', err);
+      showRestoreError(err);
     }
-  }, [applyRestoreJson]);
+  }, [applyRestoreJson, showRestoreError]);
 
   const clearFilters = useCallback(() => {
     setSearchQuery('');
@@ -1723,6 +1719,21 @@ export default function ToolManagerPage() {
             {syncMergeToast.conflicts > 0 && <span className="text-amber-300 ml-1">({syncMergeToast.conflicts} conflict{syncMergeToast.conflicts !== 1 ? 's' : ''} — remote won)</span>}
           </span>
           <button type="button" onClick={() => setSyncMergeToast(null)} title="Dismiss" className="p-1 rounded text-slate-500 hover:text-slate-200">
+            <X size={13} />
+          </button>
+        </div>
+      )}
+
+      {/* ── Restore error toast ───────────────────────────────────────────── */}
+      {restoreError && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 bg-red-900/90 border border-red-700 rounded-xl shadow-2xl text-sm text-red-100 animate-in fade-in slide-in-from-bottom-2">
+          <span>{restoreError}</span>
+          <button
+            type="button"
+            onClick={() => setRestoreError(null)}
+            title="Dismiss"
+            className="p-1 rounded text-red-400 hover:text-red-100 transition-colors"
+          >
             <X size={13} />
           </button>
         </div>

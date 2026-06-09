@@ -102,7 +102,7 @@ export default function ToolSetPanel({ onClose }: ToolSetPanelProps) {
       ].join(','));
     }
     const safe = s.name.replace(/[^a-zA-Z0-9_-]/g, '_');
-    triggerDownload(rows.join('\n'), `tool-set-${safe}.csv`, 'text/csv');
+    triggerDownload(rows.join('\n'), 'text/csv', `tool-set-${safe}.csv`);
   }
 
   // ── Filtered tools for picker ────────────────────────────────────────────────
