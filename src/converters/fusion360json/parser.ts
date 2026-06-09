@@ -34,7 +34,7 @@ function mapCoolant(c: string | undefined): CoolantMode {
 function numOr(v: unknown, fallback?: number): number | undefined {
   const n = typeof v === 'number' ? v : parseFloat(String(v));
   if (isNaN(n)) return fallback;
-  return n || fallback;
+  return n;
 }
 
 export async function parseFusion360JSON(

@@ -157,8 +157,8 @@ export class TauriAdapter implements IDbAdapter {
         if (!existing) continue;
         const updated = { ...existing, ...patch, updatedAt: now };
         await db.execute(
-          'UPDATE tools SET data = $1 WHERE id = $2',
-          [JSON.stringify(updated), id],
+          'UPDATE tools SET tool_number = $1, data = $2 WHERE id = $3',
+          [updated.toolNumber, JSON.stringify(updated), id],
         );
       }
       await db.execute('COMMIT');
@@ -187,15 +187,23 @@ export class TauriAdapter implements IDbAdapter {
   }
 
   async materialsUpdate(id: string, data: Partial<WorkMaterial>) {
-    const rows = await (await getDb()).select<{ data: string }[]>(
-      'SELECT data FROM materials WHERE id = $1', [id],
-    );
-    if (!rows.length) return;
-    const updated = { ...parseRow<WorkMaterial>(rows[0]), ...data };
-    await (await getDb()).execute(
-      'UPDATE materials SET name = $1, data = $2 WHERE id = $3',
-      [updated.name, JSON.stringify(updated), id],
-    );
+    const db = await getDb();
+    await db.execute('BEGIN');
+    try {
+      const rows = await db.select<{ data: string }[]>(
+        'SELECT data FROM materials WHERE id = $1', [id],
+      );
+      if (!rows.length) { await db.execute('ROLLBACK'); return; }
+      const updated = { ...parseRow<WorkMaterial>(rows[0]), ...data };
+      await db.execute(
+        'UPDATE materials SET name = $1, data = $2 WHERE id = $3',
+        [updated.name, JSON.stringify(updated), id],
+      );
+      await db.execute('COMMIT');
+    } catch (err) {
+      await db.execute('ROLLBACK');
+      throw err;
+    }
   }
 
   async materialsDelete(id: string) {
@@ -236,15 +244,23 @@ export class TauriAdapter implements IDbAdapter {
   }
 
   async holdersUpdate(id: string, data: Partial<ToolHolder>) {
-    const rows = await (await getDb()).select<{ data: string }[]>(
-      'SELECT data FROM holders WHERE id = $1', [id],
-    );
-    if (!rows.length) return;
-    const updated = { ...parseRow<ToolHolder>(rows[0]), ...data };
-    await (await getDb()).execute(
-      'UPDATE holders SET name = $1, data = $2 WHERE id = $3',
-      [updated.name, JSON.stringify(updated), id],
-    );
+    const db = await getDb();
+    await db.execute('BEGIN');
+    try {
+      const rows = await db.select<{ data: string }[]>(
+        'SELECT data FROM holders WHERE id = $1', [id],
+      );
+      if (!rows.length) { await db.execute('ROLLBACK'); return; }
+      const updated = { ...parseRow<ToolHolder>(rows[0]), ...data };
+      await db.execute(
+        'UPDATE holders SET name = $1, data = $2 WHERE id = $3',
+        [updated.name, JSON.stringify(updated), id],
+      );
+      await db.execute('COMMIT');
+    } catch (err) {
+      await db.execute('ROLLBACK');
+      throw err;
+    }
   }
 
   async holdersDelete(id: string) {
@@ -403,15 +419,23 @@ export class TauriAdapter implements IDbAdapter {
   }
 
   async machinesUpdate(id: string, data: Partial<Machine>) {
-    const rows = await (await getDb()).select<{ data: string }[]>(
-      'SELECT data FROM machines WHERE id = $1', [id],
-    );
-    if (!rows.length) return;
-    const updated = { ...parseRow<Machine>(rows[0]), ...data };
-    await (await getDb()).execute(
-      'UPDATE machines SET name = $1, data = $2 WHERE id = $3',
-      [updated.name, JSON.stringify(updated), id],
-    );
+    const db = await getDb();
+    await db.execute('BEGIN');
+    try {
+      const rows = await db.select<{ data: string }[]>(
+        'SELECT data FROM machines WHERE id = $1', [id],
+      );
+      if (!rows.length) { await db.execute('ROLLBACK'); return; }
+      const updated = { ...parseRow<Machine>(rows[0]), ...data };
+      await db.execute(
+        'UPDATE machines SET name = $1, data = $2 WHERE id = $3',
+        [updated.name, JSON.stringify(updated), id],
+      );
+      await db.execute('COMMIT');
+    } catch (err) {
+      await db.execute('ROLLBACK');
+      throw err;
+    }
   }
 
   async machinesDelete(id: string) {
