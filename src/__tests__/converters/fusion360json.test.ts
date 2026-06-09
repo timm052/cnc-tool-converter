@@ -342,3 +342,54 @@ describe('Fusion360JSON round-trip', () => {
     expect(second.tools[0].material).toBe(first.tools[0].material);
   });
 });
+
+// ── numOr — zero value handling ───────────────────────────────────────────────
+
+describe('numOr — zero value handling', () => {
+  const ZERO_VALUE_ENTRY = {
+    guid: 'f360-zero-test',
+    type: 'flat end mill',
+    description: 'Zero corner radius test',
+    unit: 'millimeters',
+    BMC: 'carbide',
+    geometry: {
+      DC: 10,
+      OAL: 72,
+      LCF: 22,
+      NOF: 4,
+      RE: 0,
+      TA: 0,
+    },
+    'post-process': { number: 1 },
+    'start-values': { presets: [] },
+  };
+
+  it('preserves RE: 0 as cornerRadius === 0, not undefined', async () => {
+    const json = JSON.stringify({ data: [ZERO_VALUE_ENTRY] });
+    const result = await parseFusion360JSON(json, 'zero-test.json');
+    expect(result.errors).toHaveLength(0);
+    expect(result.tools).toHaveLength(1);
+    expect(result.tools[0].geometry.cornerRadius).toBe(0);
+  });
+
+  it('preserves TA: 0 as taperAngle === 0, not undefined', async () => {
+    const json = JSON.stringify({ data: [ZERO_VALUE_ENTRY] });
+    const result = await parseFusion360JSON(json, 'zero-test.json');
+    expect(result.errors).toHaveLength(0);
+    expect(result.tools).toHaveLength(1);
+    expect(result.tools[0].geometry.taperAngle).toBe(0);
+  });
+
+  it('maps normal non-zero RE and TA values correctly', async () => {
+    const entry = {
+      ...ZERO_VALUE_ENTRY,
+      guid: 'f360-nonzero-test',
+      geometry: { ...ZERO_VALUE_ENTRY.geometry, RE: 1.5, TA: 7 },
+    };
+    const json = JSON.stringify({ data: [entry] });
+    const result = await parseFusion360JSON(json, 'nonzero-test.json');
+    expect(result.errors).toHaveLength(0);
+    expect(result.tools[0].geometry.cornerRadius).toBe(1.5);
+    expect(result.tools[0].geometry.taperAngle).toBe(7);
+  });
+});

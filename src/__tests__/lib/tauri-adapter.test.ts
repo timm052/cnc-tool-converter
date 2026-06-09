@@ -570,3 +570,119 @@ describe('TauriAdapter — JSON round-trip fidelity', () => {
     expect(all[0]).toEqual(mat);
   });
 });
+
+// ── toolsBulkPatch — scalar column update ─────────────────────────────────────
+
+describe('TauriAdapter — toolsBulkPatch updates tool_number scalar column', () => {
+  it('updates tool_number scalar column and data blob when patching toolNumber', async () => {
+    const adapter = new TauriAdapter();
+    const tool = makeTool({ toolNumber: 1 });
+    await adapter.toolsAdd(tool);
+
+    await adapter.toolsBulkPatch([{ id: tool.id, patch: { toolNumber: 99 } }], 5000);
+
+    const all = await adapter.toolsGetAll();
+    expect(all).toHaveLength(1);
+    expect(all[0].toolNumber).toBe(99);
+    expect(all[0].updatedAt).toBe(5000);
+  });
+});
+
+// ── holders ───────────────────────────────────────────────────────────────────
+
+describe('TauriAdapter — holdersUpdate', () => {
+  function makeHolder(overrides?: Partial<import('../../types/holder').ToolHolder>): import('../../types/holder').ToolHolder {
+    return {
+      id:          crypto.randomUUID(),
+      name:        'ER32 Collet',
+      type:        'ER-collet',
+      gaugeLength: 80,
+      createdAt:   1000,
+      updatedAt:   1000,
+      ...overrides,
+    };
+  }
+
+  it('adds a holder and retrieves it via holdersGetAll', async () => {
+    const adapter = new TauriAdapter();
+    const h = makeHolder({ name: 'ER32 Collet' });
+    await adapter.holdersAdd(h);
+    const all = await adapter.holdersGetAll();
+    expect(all).toHaveLength(1);
+    expect(all[0].id).toBe(h.id);
+    expect(all[0].name).toBe('ER32 Collet');
+  });
+
+  it('updates a holder name', async () => {
+    const adapter = new TauriAdapter();
+    const h = makeHolder({ name: 'ER32 Collet' });
+    await adapter.holdersAdd(h);
+    await adapter.holdersUpdate(h.id, { name: 'ER40 Collet' });
+    const all = await adapter.holdersGetAll();
+    expect(all).toHaveLength(1);
+    expect(all[0].name).toBe('ER40 Collet');
+  });
+
+  it('holdersUpdate is a no-op for unknown id', async () => {
+    const adapter = new TauriAdapter();
+    await expect(adapter.holdersUpdate('ghost', { name: 'x' })).resolves.toBeUndefined();
+  });
+
+  it('deletes a holder', async () => {
+    const adapter = new TauriAdapter();
+    const h = makeHolder();
+    await adapter.holdersAdd(h);
+    await adapter.holdersDelete(h.id);
+    expect(await adapter.holdersGetAll()).toHaveLength(0);
+  });
+});
+
+// ── machines ──────────────────────────────────────────────────────────────────
+
+describe('TauriAdapter — machinesUpdate', () => {
+  function makeMachine(overrides?: Partial<import('../../types/machine').Machine>): import('../../types/machine').Machine {
+    return {
+      id:        crypto.randomUUID(),
+      name:      'VMC-1',
+      type:      'mill',
+      axes:      3,
+      unit:      'mm',
+      createdAt: 1000,
+      updatedAt: 1000,
+      ...overrides,
+    };
+  }
+
+  it('adds a machine and retrieves it via machinesGetAll', async () => {
+    const adapter = new TauriAdapter();
+    const m = makeMachine({ name: 'VMC-1' });
+    await adapter.machinesAdd(m);
+    const all = await adapter.machinesGetAll();
+    expect(all).toHaveLength(1);
+    expect(all[0].id).toBe(m.id);
+    expect(all[0].name).toBe('VMC-1');
+  });
+
+  it('updates a machine name', async () => {
+    const adapter = new TauriAdapter();
+    const m = makeMachine({ name: 'VMC-1' });
+    await adapter.machinesAdd(m);
+    await adapter.machinesUpdate(m.id, { name: 'VMC-2' });
+    const all = await adapter.machinesGetAll();
+    expect(all).toHaveLength(1);
+    expect(all[0].name).toBe('VMC-2');
+  });
+
+  it('machinesUpdate is a no-op for unknown id', async () => {
+    const adapter = new TauriAdapter();
+    await expect(adapter.machinesUpdate('ghost', { name: 'x' })).resolves.toBeUndefined();
+  });
+
+  it('deletes a machine', async () => {
+    const adapter = new TauriAdapter();
+    const m = makeMachine();
+    await adapter.machinesAdd(m);
+    await adapter.machinesDelete(m.id);
+    expect(await adapter.machinesGetAll()).toHaveLength(0);
+  });
+});

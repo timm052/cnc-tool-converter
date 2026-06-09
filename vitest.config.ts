@@ -12,6 +12,8 @@ export default defineConfig({
       include: [
         'src/converters/**',
         'src/lib/**',
+        'src/contexts/**',
+        'src/components/**',
       ],
     },
   },
