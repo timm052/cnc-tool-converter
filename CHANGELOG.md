@@ -2,6 +2,27 @@
 
 All notable changes to CNC Tool Converter are documented here.
 
+## [1.1.1] — 2026-06-09
+
+### Fixed
+
+- **Backup/restore (Tauri):** tool sets and jobs were silently dropped when restoring a backup via the native file dialog; browser restore was unaffected
+- **Backup:** `recordBackup()` now only fires when the file was actually saved — previously it fired even when the user cancelled the native Save dialog
+- **Restore errors:** failures (e.g. corrupted JSON) now show a dismissible error toast instead of logging silently to the console
+- **ToolSetPanel CSV export:** `mimeType` and `filename` arguments to `triggerDownload` were transposed — every export downloaded a file literally named `text/csv`
+- **Fusion 360 JSON parser:** `numOr()` used a truthiness check that discarded valid `0` values for geometry dimensions (e.g. corner radius on a flat endmill)
+- **Tauri adapter `toolsBulkPatch`:** the indexed `tool_number` column was not updated alongside the JSON blob, leaving it stale after any renumber operation
+- **Tauri adapter update methods:** `materialsUpdate`, `holdersUpdate`, and `machinesUpdate` now wrap their read-modify-write in a `BEGIN`/`COMMIT` transaction to prevent concurrent overwrites
+- **Settings:** `updateSettings()` now deep-merges `tableColumnVisibility` so a partial patch no longer erases unrelated column visibility flags; array-type settings are guaranteed to be arrays when loaded from older stored data
+- **Sidebar:** `localStorage` access is now wrapped in try-catch; private/incognito browsing no longer crashes the sidebar on init
+- **LibraryContext:** `requireAdapter()` now awaits the init Promise instead of throwing "Database not ready" during the startup window
+- **LibraryContext:** `logTransaction` was missing a `broadcast()` call — stock events now refresh other open tabs, consistent with all other mutations
+- **CLI `--version`:** now reads from `package.json` instead of a hardcoded `1.0.0` string
+- **`openFiles` (Tauri):** multiple selected files are now read in parallel (`Promise.all`) instead of sequentially
+- **`db/index.ts`:** removed private duplicate of `isTauri()` — now imports the shared implementation from `lib/tauri/fs`
+
+---
+
 ## [1.1.0] — 2026-03-21
 
 First desktop release — Tauri-packaged `.exe` / `.dmg` / `.AppImage`.
