@@ -13,6 +13,10 @@
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, statSync } from 'node:fs';
 import { extname, basename, dirname, resolve, join } from 'node:path';
+import { createRequire } from 'node:module';
+
+const _require = createRequire(import.meta.url);
+const { version: CLI_VERSION } = _require('../package.json') as { version: string };
 
 // ── DOMParser polyfill (needed by hsmlib XML parser) ─────────────────────────
 // jsdom is already installed as a devDependency.
@@ -327,7 +331,7 @@ Run via npm:  ${c.cyan}npm run cli -- convert tools.hsmlib --to linuxcnc${c.rese
 }
 
 function printVersion() {
-  process.stdout.write('cnc-convert 1.0.0\n');
+  process.stdout.write(`cnc-convert ${CLI_VERSION}\n`);
 }
 
 // ── Entry point ───────────────────────────────────────────────────────────────

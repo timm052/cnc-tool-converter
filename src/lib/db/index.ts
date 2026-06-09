@@ -10,16 +10,7 @@
  */
 
 import type { IDbAdapter } from './adapter';
-
-declare global {
-  interface Window {
-    __TAURI_INTERNALS__?: unknown;
-  }
-}
-
-function isTauri(): boolean {
-  return typeof window !== 'undefined' && !!window.__TAURI_INTERNALS__;
-}
+import { isTauri } from '../tauri/fs';
 
 let _adapter: IDbAdapter | null = null;
 

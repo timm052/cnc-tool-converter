@@ -118,14 +118,10 @@ export async function openFiles(options?: {
     if (!result) return null;
 
     const paths: string[] = Array.isArray(result) ? result : [result];
-    const files: OpenedFile[] = [];
-    for (const p of paths) {
-      const name    = p.split(/[\\/]/).pop() ?? p;
-      const content = options?.binary
-        ? await readFile(p)
-        : await readTextFile(p);
-      files.push({ name, content });
-    }
+    const files = await Promise.all(paths.map(async (p) => ({
+      name:    p.split(/[\\/]/).pop() ?? p,
+      content: options?.binary ? await readFile(p) : await readTextFile(p),
+    })));
     return files;
   }
 
