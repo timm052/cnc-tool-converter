@@ -217,10 +217,17 @@ function loadSettings(): Settings {
       return {
         ...DEFAULT_SETTINGS,
         ...parsed,
+        // Deep-merge so new columns added in future releases get their
+        // default visibility even when loading older stored settings.
         tableColumnVisibility: {
           ...DEFAULT_SETTINGS.tableColumnVisibility,
           ...(parsed.tableColumnVisibility ?? {}),
         },
+        // Guarantee array fields are always arrays (old stored data may
+        // predate these keys entirely).
+        customToolTypes:    Array.isArray(parsed.customToolTypes)    ? parsed.customToolTypes    : DEFAULT_SETTINGS.customToolTypes,
+        customFieldColumns: Array.isArray(parsed.customFieldColumns) ? parsed.customFieldColumns : DEFAULT_SETTINGS.customFieldColumns,
+        fsPresets:          Array.isArray(parsed.fsPresets)          ? parsed.fsPresets          : DEFAULT_SETTINGS.fsPresets,
       };
     }
   } catch {
@@ -267,7 +274,15 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, [settings]);
 
   const updateSettings = useCallback((patch: Partial<Settings>) => {
-    setSettings((prev) => ({ ...prev, ...patch }));
+    setSettings((prev) => ({
+      ...prev,
+      ...patch,
+      // Deep-merge tableColumnVisibility so a partial patch doesn't erase
+      // columns that weren't included in the update.
+      tableColumnVisibility: patch.tableColumnVisibility
+        ? { ...prev.tableColumnVisibility, ...patch.tableColumnVisibility }
+        : prev.tableColumnVisibility,
+    }));
   }, []);
 
   const resetSettings = useCallback(() => {

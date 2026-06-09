@@ -63,13 +63,13 @@ export default function Sidebar({ activePage, onNavigate }: SidebarProps) {
   const visibleItems = NAV_ITEMS.filter(item => !DEV_PAGES.has(item.id) || settings.devMode);
 
   const [collapsed, setCollapsed] = useState(() => {
-    return localStorage.getItem('sidebar-collapsed') === 'true';
+    try { return localStorage.getItem('sidebar-collapsed') === 'true'; } catch { return false; }
   });
 
   const toggle = () => {
     setCollapsed(c => {
       const next = !c;
-      localStorage.setItem('sidebar-collapsed', String(next));
+      try { localStorage.setItem('sidebar-collapsed', String(next)); } catch { /* private browsing */ }
       return next;
     });
   };
