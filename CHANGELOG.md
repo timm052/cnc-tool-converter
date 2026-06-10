@@ -2,6 +2,16 @@
 
 All notable changes to CNC Tool Converter are documented here.
 
+## [1.1.2] — 2026-06-10
+
+### Changed
+
+- **UI unification pass:** new `theme-dark.css` adds shadows, focus rings, and surface depth to the default dark theme
+- **Theme accent colors:** type-accent border colors on the tool table are now theme-appropriate across all themes — Win95 VGA palette for `retro90s`, XP Luna palette for `winxp`, System 9 charcoal palette for `macos9`, and a deep-saturated set for `light` (previously all themes shared the same neon Tailwind defaults, which clashed with light/retro palettes)
+- **Sidebar:** footer text now reads "8 formats supported" instead of a stale, incomplete format list
+- **Header:** GitHub link now points to the project repository
+- Added missing `type="button"` attributes across Sidebar, ConverterPage, and FileDropZone interactive buttons
+
 ## [1.1.1] — 2026-06-09
 
 ### Fixed

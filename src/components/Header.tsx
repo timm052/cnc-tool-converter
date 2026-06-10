@@ -25,7 +25,7 @@ export default function Header() {
           Convert · Manage · Export
         </span>
         <a
-          href="https://github.com"
+          href="https://github.com/timm052/cnc-tool-converter"
           target="_blank"
           rel="noopener noreferrer"
           className="text-slate-400 hover:text-slate-200 transition-colors"

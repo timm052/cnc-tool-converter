@@ -152,6 +152,7 @@ export default function Sidebar({ activePage, onNavigate }: SidebarProps) {
           return (
             <button
               key={id}
+              type="button"
               onClick={() => onNavigate(id)}
               className={[
                 'w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all',
@@ -190,7 +191,7 @@ export default function Sidebar({ activePage, onNavigate }: SidebarProps) {
           </button>
         )}
         <p className="text-xs text-slate-500 text-center">
-          HSMLib · Fusion 360 · LinuxCNC
+          8 formats supported
         </p>
       </div>
     </aside>

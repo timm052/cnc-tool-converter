@@ -445,3 +445,23 @@
 [data-theme="light"] .focus\:ring-blue-500:focus {
   --tw-ring-color: rgba(59, 130, 246, 0.5) !important;
 }
+
+/* ── Type accent border-left — deep saturated on white ───────────────────── */
+[data-theme="light"] td.border-l-blue-400    { border-left-color: #1d4ed8 !important; }
+[data-theme="light"] td.border-l-purple-400  { border-left-color: #7e22ce !important; }
+[data-theme="light"] td.border-l-violet-400  { border-left-color: #6d28d9 !important; }
+[data-theme="light"] td.border-l-orange-400  { border-left-color: #c2410c !important; }
+[data-theme="light"] td.border-l-cyan-400    { border-left-color: #0e7490 !important; }
+[data-theme="light"] td.border-l-pink-400    { border-left-color: #be185d !important; }
+[data-theme="light"] td.border-l-fuchsia-400 { border-left-color: #a21caf !important; }
+[data-theme="light"] td.border-l-sky-400     { border-left-color: #0369a1 !important; }
+[data-theme="light"] td.border-l-lime-400    { border-left-color: #3f6212 !important; }
+[data-theme="light"] td.border-l-indigo-400  { border-left-color: #3730a3 !important; }
+[data-theme="light"] td.border-l-rose-400    { border-left-color: #be123c !important; }
+[data-theme="light"] td.border-l-green-400   { border-left-color: #15803d !important; }
+[data-theme="light"] td.border-l-emerald-400 { border-left-color: #065f46 !important; }
+[data-theme="light"] td.border-l-yellow-400  { border-left-color: #a16207 !important; }
+[data-theme="light"] td.border-l-teal-400    { border-left-color: #0f766e !important; }
+[data-theme="light"] td.border-l-amber-400   { border-left-color: #b45309 !important; }
+[data-theme="light"] td.border-l-red-400     { border-left-color: #b91c1c !important; }
+[data-theme="light"] td.border-l-slate-400   { border-left-color: #475569 !important; }

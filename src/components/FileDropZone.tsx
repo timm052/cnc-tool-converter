@@ -144,6 +144,7 @@ export default function FileDropZone({
             Loaded files ({loadedFileNames.length})
           </span>
           <button
+            type="button"
             onClick={onClear}
             className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-red-400 transition-colors"
           >
@@ -160,6 +161,7 @@ export default function FileDropZone({
           ))}
         </ul>
         <button
+          type="button"
           onClick={() => void handleZoneClick()}
           className="mt-3 w-full text-xs text-slate-400 hover:text-slate-200 border border-dashed border-slate-600 rounded-lg py-2 transition-colors"
         >

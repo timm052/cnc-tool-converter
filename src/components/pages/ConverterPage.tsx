@@ -259,6 +259,7 @@ export default function ConverterPage() {
 
         {/* mt aligns button with the select box (skips the label above) */}
         <button
+          type="button"
           onClick={handleSwap}
           title="Swap source and target"
           className="mt-[22px] p-2 rounded-lg bg-slate-700 border border-slate-600 hover:bg-slate-600 text-slate-300 hover:text-white transition-colors"
@@ -276,6 +277,7 @@ export default function ConverterPage() {
         </div>
 
         <button
+          type="button"
           onClick={handleConvert}
           disabled={tools.length === 0 || isConverting}
           className={[
@@ -296,6 +298,7 @@ export default function ConverterPage() {
           const activeRules = loadMapping(sourceFormatId, targetFormatId).rules.length;
           return (
             <button
+              type="button"
               onClick={() => setShowFieldMapping(true)}
               title="Customize field mapping"
               className={[
@@ -378,6 +381,7 @@ export default function ConverterPage() {
             {/* File / Folder mode toggle */}
             <div className="flex items-center gap-1 mb-3 p-1 rounded-lg bg-slate-800 border border-slate-700 w-fit mx-auto">
               <button
+                type="button"
                 onClick={() => setBatchMode(false)}
                 className={[
                   'flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium transition-colors',
@@ -387,6 +391,7 @@ export default function ConverterPage() {
                 <FileText size={12} /> Files
               </button>
               <button
+                type="button"
                 onClick={() => setBatchMode(true)}
                 className={[
                   'flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium transition-colors',
