@@ -254,9 +254,15 @@ export function saveLastFormatPair(source: string, target: string): void {
   }
 }
 
+/** Patch type for updateSettings — tableColumnVisibility accepts a partial
+ *  object since it is deep-merged with the existing value. */
+type SettingsPatch = Partial<Omit<Settings, 'tableColumnVisibility'>> & {
+  tableColumnVisibility?: Partial<TableColumnVisibility>;
+};
+
 interface SettingsContextValue {
   settings:       Settings;
-  updateSettings: (patch: Partial<Settings>) => void;
+  updateSettings: (patch: SettingsPatch) => void;
   resetSettings:  () => void;
 }
 
@@ -273,7 +279,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     }
   }, [settings]);
 
-  const updateSettings = useCallback((patch: Partial<Settings>) => {
+  const updateSettings = useCallback((patch: SettingsPatch) => {
     setSettings((prev) => ({
       ...prev,
       ...patch,
