@@ -65,16 +65,20 @@ The `dist/` folder is a static site — deploy it on GitHub Pages, Netlify, Clou
 
 ## First run
 
-When you first open the app you'll see four items in the left sidebar:
+When you first open the app you'll see these items in the left sidebar:
 
 | Sidebar button | Page | Purpose |
 |----------------|------|---------|
+| **Dashboard** | Dashboard | At-a-glance overview of your library, stock, machines, and sync status — opens by default |
 | **Converter** | Converter | Convert tool library files between formats |
 | **Tool Manager** | Tool Library | Manage a persistent local library of tools |
-| **Machines** | Machines | Configure machine groups |
+| **Machines** | Machines | Configure machine groups and maintenance |
 | **Settings** | Settings | Configure the app |
+| **Help** | Help | Reference table of supported formats and what they can import/export |
 
-The sidebar is collapsible — click the **◀ / ▶** arrow at the bottom to toggle it.
+The sidebar is collapsible — click the **◀ / ▶** arrow at the bottom to toggle it. To change which page opens on startup, see Settings → Startup → Default page.
+
+Press **`Ctrl+K`** anywhere to open the command palette and jump to any page or search for a tool/machine.
 
 ---
 

@@ -55,6 +55,18 @@ Clicking **Merge** expands a field-diff view showing every field that differs be
 
 ---
 
+## Spreadsheet import mapping wizard
+
+For a CSV or Excel (`.xlsx`) file that doesn't match the app's expected column layout, click **Map columns manually** instead of dropping it normally. This opens a 3-step wizard:
+
+1. **Preview** — shows the file's column headers and the first few rows.
+2. **Map columns** — for each column in your file, choose which tool field it corresponds to (grouped by Identity, Geometry, Cutting, Library) or leave it as **Ignore**. The wizard guesses obvious matches automatically (e.g. a "Diameter" column maps to Diameter).
+3. **Review** — a preview table of the resulting tools built from your mapping.
+
+Click **Import N tools** to send the mapped tools into the normal duplicate-detection flow described above.
+
+---
+
 ## Recent files
 
 The last 5 successfully imported file names are shown at the bottom of the import panel for quick re-import.

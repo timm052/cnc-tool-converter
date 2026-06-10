@@ -2,7 +2,7 @@
 
 A CNC tool library manager and format converter. Available as a **desktop app** (Tauri, ~10 MB) and as a **web app** (no install). Convert tool definitions between formats, maintain a persistent tool library with inventory tracking — everything runs locally, no server required.
 
-**Current version: v1.1.0** (desktop release; Phase 4 complete)
+**Current version: v1.2.0** (desktop release; Phase 4 complete)
 
 ## Desktop App
 
@@ -39,6 +39,12 @@ Add secrets to GitHub: `TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_P
 
 ## Features
 
+### Dashboard & Navigation
+- **Dashboard home page** — at-a-glance cards for library size and top tool types, low-stock count, regrind-due count, machine maintenance due, and remote sync status, plus quick links to convert files, open the Tool Library, or add a tool
+- **Help / Format Reference page** — table of all supported formats showing import/export support and format-specific notes
+- **Command palette (`Ctrl+K`)** — jump to any page or search for a specific tool or machine by name
+- **Default landing page** — choose which page opens on startup (Settings → Startup)
+
 ### Format Conversion
 - **10 formats supported** — parse tool libraries from one format and export to another in one click
 - **Batch / folder mode** — drop an entire folder and convert all matching files at once
@@ -61,6 +67,7 @@ Add secrets to GitHub: `TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_P
 
 ### Import / Export
 - **Import panel** — full duplicate detection with per-tool Skip / Merge / Add-as-new controls; field-level diff for merges; recent files list
+- **Spreadsheet import mapping wizard** — import an arbitrary CSV/XLSX by manually mapping its columns to tool fields, with a live preview before import
 - **Export panel** — single file or split by machine group / material; staggered multi-file downloads
 - **Excel (.xlsx)** — import and export with auto-width columns; all library fields included
 - **JSON sync file** — backup/restore covers tools + materials + holders in one v2 JSON file
@@ -73,6 +80,7 @@ Add secrets to GitHub: `TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_P
 - **Usage tracking** — `useCount` field with `+1` button; regrind threshold with progress bar (amber ≥ 80%, red ≥ 100%)
 - **Tool assembly** — holder library, stick-out visualisation, compatibility check (shaft vs collet diameter)
 - **Periodic backup nudge** — amber warning after 7 days without a backup
+- **Machine maintenance tracking** — log service intervals per machine, record completed maintenance, and get reminders (dashboard + desktop notification) when due
 
 ### Materials & Cutting Data
 - **Material database** — 14 preset materials (aluminium alloys, steels, stainless, titanium, cast iron, brass, Delrin)
@@ -97,6 +105,7 @@ Add secrets to GitHub: `TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_P
   - ETag-based optimistic locking; auto-retries on 412 up to 3×
   - `syncVersion` monotonic counter + `lastModifiedBy` in every payload
   - Auto-sync on change, manual push/pull, test-connection; cloud toolbar icon with status colour
+  - **Conflict resolution panel** — review records changed on both sides since the last pull, with a field-level diff, and choose to keep your local version instead of the remote one
 
 ### Settings & Themes
 - **6 themes** — Dark (default), Light, Retro 90s, Windows XP, Mac OS 9, Auto (follows OS)
@@ -105,6 +114,7 @@ Add secrets to GitHub: `TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_P
 - **Operator name** — recorded in audit log and remote sync payloads (no login required)
 - **LinuxCNC writer options** — decimal places, pocket assignment, header comment
 - **HSMLib writer options** — machine vendor and model defaults
+- **Notifications (desktop)** — configurable reminders for due maintenance, low stock, and overdue backups, checked hourly and shown at most once per day
 - **Dev mode** — exposes a debug tab for raw tool data inspection
 
 ---

@@ -228,7 +228,7 @@ _Goal: Support shops with multiple sites or teams that need a shared, always-in-
 - **Managed sync endpoint** — Optional hosted backend (e.g. Supabase / Firebase) so teams can collaborate without self-hosting a WebDAV/REST server. Free tier for single-machine shops; paid tier for multi-machine.
 - **Real-time push** — WebSocket-based live updates; changes made on one workstation appear instantly on others without a manual sync. Replace polling with server-sent events.
 - **Per-user accounts** — Named user accounts instead of just an operator name string. Role-based access: read-only (operator), edit (programmer), admin (full library management).
-- **Conflict resolution UI** — When two users edit the same tool simultaneously, show a side-by-side diff and let a human decide which value to keep (rather than auto-merging by `updatedAt`).
+- ✅ **Conflict resolution UI** — `SyncConflictPanel` (v1.2): records changed on both sides since the last pull are still auto-merged (remote wins), but are now surfaced with a field-level diff and a "Keep Local" override per record. (`src/components/library/SyncConflictPanel.tsx`, `src/lib/remoteSync.ts`)
 
 ### 5.2 Mobile Companion
 - **Progressive Web App (mobile)** — Responsive layout for phones/tablets. Crib staff can scan a QR code, view tool details, and update use count or stock without going to a desktop.
@@ -249,6 +249,8 @@ _Goal: Support shops with multiple sites or teams that need a shared, always-in-
 | **v0.3** | Phase 2 complete — inventory tracking, assembly view, improved import, material presets, audit log | ✅ Done |
 | **v0.4** | Phase 3 complete — table virtualisation, remote sync (REST + WebDAV), CAM snippets, work offset sheet (per-machine PDF card), snapshots, Jobs/BOM, sticky columns | ✅ Done |
 | **v0.5** | Nice-to-haves — tool instances, machines page, barcode labels, HID scanner, F&S presets, tool checkout, tool life prediction, PWA install, setup sheet PDF, column width memory, settings redesign, format mapping dev page | ✅ Done |
-| **v1.0** | Phase 4 complete — Tauri desktop app, SQLite, native dialogs, auto-updater | Planned |
+| **v1.0** | Phase 4 complete — Tauri desktop app, SQLite, native dialogs, auto-updater | ✅ Done |
+| **v1.1** | Native save/open dialogs, CLI tool, tool offset sheet, print fixes | ✅ Done |
+| **v1.2** | Dashboard home page, Help/Format Reference page, machine maintenance tracking + reminders, sync conflict resolution panel, spreadsheet import mapping wizard, command palette (`Ctrl+K`) | ✅ Done |
 | **v1.x** | Further nice-to-haves: ISO 13399, manufacturer barcode lookup, tool family grouping, tool set/kit grouping | Future |
 | **v2.0** | Phase 5 — Hosted backend, real-time sync, mobile PWA, MES integration | Future |

@@ -2,6 +2,8 @@
 
 **[Home](Home)**
 
+**[Dashboard](Dashboard)**
+
 ---
 
 ### Getting started
@@ -33,6 +35,7 @@
 
 ### Inventory
 - [Inventory and Stock](Inventory-and-Stock)
+- [Machines and Maintenance](Machines-and-Maintenance)
 
 ---
 

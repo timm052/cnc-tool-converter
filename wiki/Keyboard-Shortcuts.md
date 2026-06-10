@@ -9,6 +9,7 @@ Press **`?`** anywhere in the app to open the shortcut help overlay.
 | Key | Action |
 |-----|--------|
 | `?` | Open / close keyboard shortcut help |
+| `Ctrl+K` | Open the command palette — jump to any page or search for a tool/machine |
 
 ---
 

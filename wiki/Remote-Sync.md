@@ -90,6 +90,19 @@ Sync complete — +3 from remote · 1 updated · 2 conflicts
 
 ---
 
+## Conflict resolution
+
+When a sync brings in conflicting records (the "N conflicts" count above), the remote version is kept automatically — but you can review and override this.
+
+If a sync produces conflicts, a **"N Conflicts — Review"** button appears in the toolbar. Clicking it opens the **Sync Conflicts** panel, which lists every record changed on both sides since the last pull:
+
+- Each entry shows the record type (Tool, Material, Holder, Tool Set, Job), its name, and a field-by-field diff of your local value vs. the remote value that was kept.
+- Click **Keep Local** on any entry to restore your local version. It's saved with a fresh `updatedAt`, so it will win the next time you sync.
+
+The panel only shows records still in conflict — once resolved (or left as-is), an entry disappears from the list.
+
+---
+
 ## Multi-user / concurrent editing
 
 The app uses **ETag optimistic locking** to handle simultaneous pushes from multiple users:

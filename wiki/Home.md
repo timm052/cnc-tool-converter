@@ -9,16 +9,19 @@
 | Capability | Summary |
 |---|---|
 | **Desktop app** | Native Windows / macOS / Linux app with SQLite, native dialogs, and auto-updater |
-| **Format conversion** | Convert tool libraries between 10 formats in one click |
+| **Dashboard** | At-a-glance overview of library, low stock, regrind, maintenance, and sync status |
+| **Format conversion** | Convert tool libraries between 8 formats in one click |
 | **Persistent library** | Store, organise, search, and edit tools in a local database |
 | **Inventory tracking** | Quantities, reorder points, low-stock alerts, purchasing CSV |
 | **Tool lifecycle** | Use-count tracking, regrind thresholds, condition states, audit log |
+| **Machine maintenance** | Track service intervals per machine and get reminders when due |
 | **Speeds & feeds** | Built-in calculator, per-material F&S storage, cutting data wizard |
 | **Printing** | PDF tool sheets, QR-coded bin labels, G-code offset reference cards |
 | **Work offsets** | G54–G59 reference sheet (Fanuc / HAAS / Mach3 / LinuxCNC / Siemens) |
 | **CAM snippets** | Generate tool-call G-code blocks for 5 control dialects |
 | **Remote sync** | Push/pull to a REST API or WebDAV server (Nextcloud, ownCloud, etc.) |
-| **Multi-user** | Merge-on-push with ETag locking; change log with operator attribution |
+| **Multi-user** | Merge-on-push with ETag locking, conflict review panel, and change log with operator attribution |
+| **Command palette** | `Ctrl+K` to jump to any page or search for a tool/machine |
 
 ---
 
@@ -26,23 +29,25 @@
 
 ### Using the app
 - [Getting Started](Getting-Started) — install, first run, basic orientation
+- [Dashboard](Dashboard) — home page overview, command palette, Help/Format Reference page
 - [Format Converter](Format-Converter) — converting files between formats
 - [Tool Library](Tool-Library) — the library table, machine groups, filters
-- [Importing Tools](Importing-Tools) — bringing tools in from files
+- [Importing Tools](Importing-Tools) — bringing tools in from files, spreadsheet mapping wizard
 - [Editing Tools](Editing-Tools) — the tool editor, undo/redo, SVG preview
 - [Bulk Operations](Bulk-Operations) — bulk edit, renumber, unit conversion, compare
 - [Exporting Tools](Exporting-Tools) — export panel, split modes, Excel, CAM snippets
 - [Speeds and Feeds](Speeds-and-Feeds) — F&S calculator, per-material data, cutting wizard
 - [Materials and Holders](Materials-and-Holders) — reference libraries, assembly view
 - [Inventory and Stock](Inventory-and-Stock) — quantities, reorder points, low-stock dashboard
+- [Machines and Maintenance](Machines-and-Maintenance) — machine groups, service intervals, reminders
 - [Printing and Labels](Printing-and-Labels) — tool sheets, bin labels, offset reference cards
-- [Remote Sync](Remote-Sync) — REST API and WebDAV sync, multi-user editing
+- [Remote Sync](Remote-Sync) — REST API and WebDAV sync, multi-user editing, conflict resolution
 - [Snapshots and Backup](Snapshots-and-Backup) — local snapshots, JSON backup/restore
 - [Settings](Settings) — all configuration options
 - [Keyboard Shortcuts](Keyboard-Shortcuts) — full shortcut reference
 
 ### Reference
-- [Supported Formats](Supported-Formats) — all 10 formats, field mapping, limitations
+- [Supported Formats](Supported-Formats) — all 8 formats, field mapping, limitations
 
 ---
 

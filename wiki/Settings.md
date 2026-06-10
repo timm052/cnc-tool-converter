@@ -77,6 +77,29 @@ Flute Length, Shaft Diameter, Corner Radius, Taper Angle, Feed Plunge, Coolant, 
 
 ---
 
+## Startup
+
+| Setting | Description |
+|---------|-------------|
+| **Default page** | Page shown when the app opens — Dashboard, Converter, Tool Library, Machines, Help, or Settings |
+
+---
+
+## Notifications
+
+Desktop builds only — these have no effect in the browser.
+
+| Setting | Description |
+|---------|-------------|
+| **Maintenance due** | Notify when a machine reaches its maintenance interval |
+| **Maintenance lead time** | Notify this many days before a machine's maintenance is actually due (0–90) |
+| **Low stock** | Notify when one or more tools reach their reorder point |
+| **Backup reminder** | Notify when the library hasn't been backed up in over 7 days |
+
+Notifications are checked hourly and shown at most once per day per item. See [Machines and Maintenance](Machines-and-Maintenance) for how maintenance reminders work.
+
+---
+
 ## Remote Database
 
 | Setting | Description |
