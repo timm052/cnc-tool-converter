@@ -11,6 +11,9 @@ export const rhinocamConverter: Converter = {
     canImport:      true,
     canExport:      false,
     readAs:         'arraybuffer',
+    notes: [
+      'Import only — .vkb is a proprietary binary format and cannot be written.',
+    ],
   },
   parse: (content, filename) => parseRhinoCamVKB(content, filename),
   write: () => Promise.resolve({

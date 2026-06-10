@@ -32,6 +32,20 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.2.0',
+    date:    'June 2026',
+    items: [
+      'Dashboard home page — library, low stock, regrind, and maintenance at a glance',
+      'Help / Format Reference page — see what each of the 8 formats can import and export',
+      'Machine maintenance tracking — log service intervals and get reminders when due',
+      'Maintenance, low-stock, and backup reminder notifications (desktop)',
+      'Sync conflict resolution — review and keep your local changes when they clash with a remote pull',
+      'Spreadsheet import mapping wizard — map any CSV/XLSX columns to tool fields',
+      'Command palette (Ctrl+K) — jump to pages, tools, or machines instantly',
+      'Settings: choose your default landing page and configure notification preferences',
+    ],
+  },
+  {
     version: '1.1.0',
     date:    'March 2026',
     items: [

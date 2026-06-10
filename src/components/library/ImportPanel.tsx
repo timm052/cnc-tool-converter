@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { X, CheckCircle, AlertCircle, AlertTriangle, ChevronDown, FolderOpen, FileText, Clock, GitMerge } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, AlertTriangle, ChevronDown, FolderOpen, FileText, Clock, GitMerge, Table2 } from 'lucide-react';
 import { registry } from '../../converters';
 import type { LibraryTool } from '../../types/libraryTool';
 import type { Tool } from '../../types/tool';
@@ -10,6 +10,8 @@ import { useLibrary } from '../../contexts/LibraryContext';
 import { validateTool, findDuplicates, type DuplicateMatch } from '../../lib/toolValidation';
 import { csvToTools } from '../../lib/csvLibrary';
 import { importToolsFromXlsx } from '../../lib/xlsxImport';
+import { parseSpreadsheetFile, type ParsedSpreadsheet } from '../../lib/spreadsheetMapping';
+import ImportMappingWizard from './ImportMappingWizard';
 import type { FormatInfo } from '../../types/converter';
 
 interface ImportPanelProps {
@@ -113,6 +115,8 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
   const [showDuplicates, setShowDuplicates] = useState(false);
   const [folderMode,     setFolderMode]     = useState(false);
   const [recentFiles,    setRecentFiles]    = useState<RecentFile[]>(loadRecentFiles);
+  const [fromMappingWizard, setFromMappingWizard] = useState(false);
+  const [mappingData,    setMappingData]    = useState<ParsedSpreadsheet | null>(null);
   /** incomingIndex → Set of field keys to take from the incoming tool */
   const [mergeSelections, setMergeSelections] = useState<Map<number, Set<string>>>(new Map());
   /** incomingIndex of the duplicate currently expanded for field-merge editing */
@@ -230,6 +234,24 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
     setSkipIndices(new Set());
     setMergeSelections(new Map());
     setExpandedMerge(null);
+    setFromMappingWizard(false);
+  }
+
+  function openMappingWizard() {
+    const file = loadedFiles[0];
+    if (!file) return;
+    setMappingData(parseSpreadsheetFile(file.content, file.name));
+  }
+
+  function handleMappingWizardImport(tools: LibraryTool[]) {
+    setMappingData(null);
+    setFromMappingWizard(true);
+    setResult(null);
+    setPreview(tools);
+    setDuplicates(findDuplicates(tools, libraryTools));
+    setSkipIndices(new Set());
+    setMergeSelections(new Map());
+    setExpandedMerge(null);
   }
 
   function toggleSkip(idx: number) {
@@ -302,7 +324,7 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
     }
 
     // 2. Import non-skipped, non-merged tools as new
-    const allLibTools = isCsv
+    const allLibTools = (isCsv || fromMappingWizard)
       ? (preview as LibraryTool[])
       : preview.map(toolToLibraryTool);
     const filtered = allLibTools.filter((_, i) => !skipIndices.has(i) && !mergeIndices.has(i));
@@ -402,6 +424,18 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
               />
             )}
           </div>
+
+          {/* Manual column mapping (CSV/XLSX only) */}
+          {(isCsv || isXlsx) && loadedFiles.length > 0 && (
+            <button
+              type="button"
+              onClick={openMappingWizard}
+              className="flex items-center gap-1.5 text-xs font-medium text-blue-400 hover:text-blue-300"
+            >
+              <Table2 size={12} />
+              Map columns manually
+            </button>
+          )}
 
           {/* Parse error */}
           {parseError && (
@@ -605,6 +639,14 @@ export default function ImportPanel({ onImport, onClose }: ImportPanelProps) {
           })()}
         </div>
       </div>
+
+      {mappingData && (
+        <ImportMappingWizard
+          data={mappingData}
+          onMapped={handleMappingWizardImport}
+          onClose={() => setMappingData(null)}
+        />
+      )}
     </>
   );
 }

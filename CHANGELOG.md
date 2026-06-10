@@ -2,6 +2,24 @@
 
 All notable changes to CNC Tool Converter are documented here.
 
+## [1.2.0] — 2026-06-10
+
+### Added
+
+- **Dashboard / home page:** new landing page with at-a-glance cards for library size and top tool types, low-stock count, regrind-due count, machine maintenance due, and remote sync status, plus quick-action shortcuts to convert files, open the Tool Library, and add a tool
+- **Help / Format Reference page:** table of all 8 supported formats showing file extensions, import/export support, and format-specific notes (e.g. RhinoCAM `.vkb` is parse-only, HSMLib is UTF-16 XML)
+- **Machine maintenance tracking:** machines now have a maintenance interval, last-serviced date, notes, and a log of past maintenance entries; a "Log maintenance now" button records the current date and notes
+- **Maintenance & stock notifications (desktop):** native notifications for machines due for maintenance, low-stock tools, and overdue backups, checked hourly and deduplicated to once per day per item
+- **Settings — Startup:** choose the default landing page (Dashboard, Converter, Tool Library, Machines, Help, or Settings)
+- **Settings — Notifications:** toggle maintenance, low-stock, and backup-reminder notifications independently, and configure how many days in advance maintenance reminders fire
+- **Sync conflict resolution:** remote sync now records details of any tool, material, holder, tool set, or job that was changed on both sides since the last pull; a new conflict panel lists each record with a field-level diff and lets you keep the local version instead of the remote one
+- **Spreadsheet import mapping wizard:** import an arbitrary CSV/XLSX file by manually mapping its columns to tool fields, with a live preview of the resulting tools before import
+- **Command palette (Ctrl+K):** quickly jump to any page, or search for and open a specific tool or machine
+
+### Fixed
+
+- **ImportMappingWizard:** close button was missing `type="button"`
+
 ## [1.1.2] — 2026-06-10
 
 ### Changed

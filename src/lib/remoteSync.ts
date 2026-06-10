@@ -187,6 +187,22 @@ export interface MergeStats {
   updatedFromRemote: number;   // existing records where remote had newer updatedAt
   conflicts:         number;   // both sides modified same record after last pull
   localOnly:         number;   // records kept because they exist only locally
+  conflictRecords:   ConflictRecord[]; // detail for each conflict, for the review UI
+}
+
+/** Kind of record involved in a sync conflict — used to route "Keep Local" resolution. */
+export type ConflictKind = 'tool' | 'material' | 'holder' | 'toolSet' | 'job';
+
+/** A record that was modified on both sides since the last pull. */
+export interface ConflictRecord {
+  kind:   ConflictKind;
+  id:     string;
+  /** Best-effort display name for the conflict review UI. */
+  label:  string;
+  /** The locally-modified version (not applied unless the user chooses "Keep Local"). */
+  local:  unknown;
+  /** The remote version that was applied by the automatic merge (remote wins). */
+  remote: unknown;
 }
 
 interface Timestamped { id: string; updatedAt?: number; createdAt?: number }
@@ -200,12 +216,15 @@ function timestamp<T extends Timestamped>(r: T): number {
  * - Remote-only  → add
  * - Local-only   → keep (treat as locally added, never delete based on remote absence)
  * - Both present → prefer newer `updatedAt`; if both modified after `lastPullAt`, count as conflict
+ *   and record both versions in `stats.conflictRecords` (resolution is unchanged: remote wins).
  */
 function mergeById<T extends Timestamped>(
   local:       T[],
   remote:      T[],
   lastPullAt:  number,
   stats:       MergeStats,
+  kind:        ConflictKind,
+  labelFn:     (record: T) => string,
 ): T[] {
   const localMap  = new Map(local.map((r) => [r.id, r]));
   const remoteMap = new Map(remote.map((r) => [r.id, r]));
@@ -222,10 +241,16 @@ function mergeById<T extends Timestamped>(
       if (rt > lt) {
         merged.push(remoteRec);
         stats.updatedFromRemote++;
-        if (lt > lastPullAt) stats.conflicts++;    // both were modified
+        if (lt > lastPullAt) {
+          stats.conflicts++;    // both were modified
+          stats.conflictRecords.push({ kind, id, label: labelFn(remoteRec), local: localRec, remote: remoteRec });
+        }
       } else {
         merged.push(localRec);
-        if (lt > lastPullAt && rt > lastPullAt && lt !== rt) stats.conflicts++;
+        if (lt > lastPullAt && rt > lastPullAt && lt !== rt) {
+          stats.conflicts++;
+          stats.conflictRecords.push({ kind, id, label: labelFn(localRec), local: localRec, remote: remoteRec });
+        }
       }
     }
   }
@@ -245,15 +270,15 @@ export function mergePayloads(
   remote:     SyncPayload,
   lastPullAt: number,
 ): { tools: LibraryTool[]; materials: WorkMaterial[]; holders: ToolHolder[]; toolSets: ToolSet[]; jobs: Job[]; stats: MergeStats } {
-  const stats: MergeStats = { addedFromRemote: 0, updatedFromRemote: 0, conflicts: 0, localOnly: 0 };
+  const stats: MergeStats = { addedFromRemote: 0, updatedFromRemote: 0, conflicts: 0, localOnly: 0, conflictRecords: [] };
   const localSets  = loadSets();
   const localJobs  = loadJobs() as (Job & Timestamped)[];
   return {
-    tools:     mergeById(local.tools,     remote.tools,     lastPullAt, stats),
-    materials: mergeById(local.materials, remote.materials, lastPullAt, stats),
-    holders:   mergeById(local.holders,   remote.holders,   lastPullAt, stats),
-    toolSets:  mergeById(localSets as (ToolSet & Timestamped)[], (remote.toolSets ?? []) as (ToolSet & Timestamped)[], lastPullAt, stats),
-    jobs:      mergeById(localJobs,       (remote.jobs ?? []) as (Job & Timestamped)[],    lastPullAt, stats),
+    tools:     mergeById(local.tools,     remote.tools,     lastPullAt, stats, 'tool',     (r) => `#${r.toolNumber} ${r.description}`),
+    materials: mergeById(local.materials, remote.materials, lastPullAt, stats, 'material', (r) => r.name),
+    holders:   mergeById(local.holders,   remote.holders,   lastPullAt, stats, 'holder',   (r) => r.name),
+    toolSets:  mergeById(localSets as (ToolSet & Timestamped)[], (remote.toolSets ?? []) as (ToolSet & Timestamped)[], lastPullAt, stats, 'toolSet', (r) => r.name),
+    jobs:      mergeById(localJobs,       (remote.jobs ?? []) as (Job & Timestamped)[],    lastPullAt, stats, 'job',    (r) => r.name),
     stats,
   };
 }

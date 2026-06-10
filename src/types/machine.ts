@@ -53,6 +53,15 @@ export interface Machine {
   coolantThruSpindle?: boolean;
   coolantAir?: boolean;
   notes?: string;
+
+  // Maintenance
+  /** Days between scheduled maintenance; reminders fire when overdue. */
+  maintenanceIntervalDays?: number;
+  /** Epoch ms of the last logged maintenance. */
+  lastMaintenanceAt?: number;
+  maintenanceNotes?: string;
+  maintenanceLog?: { id: string; date: number; notes: string }[];
+
   createdAt: number;
   updatedAt: number;
 }

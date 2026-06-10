@@ -12,6 +12,9 @@ export const fusion360jsonConverter: Converter = {
     canImport:      true,
     canExport:      true,
     readAs:         'text',
+    notes: [
+      'Fusion 360 cloud library export — full geometry and cutting parameters round-trip.',
+    ],
   },
   sample: JSON.stringify({
     data: [

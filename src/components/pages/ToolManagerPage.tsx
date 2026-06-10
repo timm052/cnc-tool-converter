@@ -4,7 +4,7 @@ import {
   ChevronDown, ChevronLeft, ChevronRight, Layers, Tag, RotateCcw, Keyboard, SlidersHorizontal, Columns2, Hash,
   Printer, QrCode, FlaskConical, Wrench, ScanLine, Copy, Package, Clock,
   Calculator, AlertTriangle, FileText, ArrowRightLeft, BookTemplate, Wand2, Code2, Camera, MapPin,
-  Cloud, CloudUpload, CloudDownload, CloudOff, CheckCircle2, RefreshCw, Briefcase,
+  Cloud, CloudUpload, CloudDownload, CloudOff, CheckCircle2, RefreshCw, Briefcase, GitMerge,
 } from 'lucide-react';
 import { useLibrary } from '../../contexts/LibraryContext';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -33,6 +33,7 @@ import JobsPanel from '../library/JobsPanel';
 import ValidationPanel from '../library/ValidationPanel';
 import TemplatePickerPanel from '../library/TemplatePickerPanel';
 import LowStockPanel from '../library/LowStockPanel';
+import SyncConflictPanel from '../library/SyncConflictPanel';
 import CamSnippetPanel from '../library/CamSnippetPanel';
 import SnapshotPanel from '../library/SnapshotPanel';
 import WorkOffsetSheetPanel from '../library/WorkOffsetSheetPanel';
@@ -41,17 +42,33 @@ import ToolSetPanel from '../library/ToolSetPanel';
 import SupplierInvoicePanel from '../library/SupplierInvoicePanel';
 import ToolOffsetSheetPanel from '../library/ToolOffsetSheetPanel';
 import { recordBackup } from '../../lib/backupNudge';
-import { loadSets, restoreSets } from '../../lib/toolSetStore';
-import { loadJobs, restoreJobs } from '../../lib/jobStore';
+import { loadSets, saveSets, updateSet, restoreSets } from '../../lib/toolSetStore';
+import { loadJobs, saveJob, restoreJobs } from '../../lib/jobStore';
 import type { ToolSet } from '../../types/toolSet';
 import type { Job } from '../../types/job';
+import type { ConflictRecord } from '../../lib/remoteSync';
 import { convertToolUnit } from '../../lib/unitConvert';
 import { isTauri, saveTextFile, openFiles } from '../../lib/tauri/fs';
 import { triggerDownload } from '../../lib/downloadUtils';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Panel = 'import' | 'export' | 'edit' | 'bulk-edit' | 'compare' | 'renumber' | 'label-print' | 'sheet-print' | 'tool-offsets' | 'materials' | 'holders' | 'duplicates' | 'qr-scan' | 'feeds' | 'validation' | 'copy-group' | 'templates' | 'low-stock' | 'wizard' | 'cam-snippet' | 'snapshots' | 'work-offsets' | 'jobs' | 'setup-sheet' | 'tool-sets' | 'supplier-invoice' | null;
+type Panel = 'import' | 'export' | 'edit' | 'bulk-edit' | 'compare' | 'renumber' | 'label-print' | 'sheet-print' | 'tool-offsets' | 'materials' | 'holders' | 'duplicates' | 'qr-scan' | 'feeds' | 'validation' | 'copy-group' | 'templates' | 'low-stock' | 'wizard' | 'cam-snippet' | 'snapshots' | 'work-offsets' | 'jobs' | 'setup-sheet' | 'tool-sets' | 'supplier-invoice' | 'sync-conflicts' | null;
+
+/** External navigation request — e.g. from the Dashboard or Command Palette. */
+export interface ToolManagerIntent {
+  /** Open a specific slide-over panel on mount. */
+  panel?: 'low-stock';
+  /** Open the editor for an existing tool by id. */
+  toolId?: string;
+  /** Open the editor for a brand-new tool. */
+  openNew?: boolean;
+}
+
+interface ToolManagerPageProps {
+  intent?: ToolManagerIntent | null;
+  onConsumeIntent?: () => void;
+}
 
 // ── Machine group sidebar ─────────────────────────────────────────────────────
 
@@ -553,7 +570,7 @@ function CopyToGroupModal({
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-export default function ToolManagerPage() {
+export default function ToolManagerPage({ intent, onConsumeIntent }: ToolManagerPageProps = {}) {
   const {
     tools, isLoading,
     allMachineGroups, allTags,
@@ -562,8 +579,8 @@ export default function ToolManagerPage() {
   } = useLibrary();
   const nextToolNumber = useMemo(() => Math.max(0, ...tools.map((t) => t.toolNumber)) + 1, [tools]);
   const { settings, updateSettings } = useSettings();
-  const { holders, addHolders }     = useHolders();
-  const { materials, addMaterials } = useMaterials();
+  const { holders, addHolders, updateHolder }     = useHolders();
+  const { materials, addMaterials, updateMaterial } = useMaterials();
   const { machines }                = useMachines();
 
   // Merge machine groups from library tools and from the Machines page
@@ -578,6 +595,7 @@ export default function ToolManagerPage() {
   const [syncDropdown,   setSyncDropdown]   = useState(false);
   const [syncMergeToast, setSyncMergeToast] = useState<import('../../lib/remoteSync').MergeStats | null>(null);
   const [restoreError,   setRestoreError]   = useState<string | null>(null);
+  const [conflictRecords, setConflictRecords] = useState<ConflictRecord[]>([]);
   const syncDropdownRef = useRef<HTMLDivElement>(null);
 
   /** onApply: atomically write merged data into IndexedDB */
@@ -593,10 +611,35 @@ export default function ToolManagerPage() {
   useEffect(() => {
     if (sync.mergeStats && (sync.mergeStats.addedFromRemote > 0 || sync.mergeStats.updatedFromRemote > 0 || sync.mergeStats.conflicts > 0)) {
       setSyncMergeToast(sync.mergeStats);
+      if (sync.mergeStats.conflictRecords.length) setConflictRecords(sync.mergeStats.conflictRecords);
       const t = setTimeout(() => setSyncMergeToast(null), 7000);
       return () => clearTimeout(t);
     }
   }, [sync.mergeStats]);
+
+  /** "Keep Local" resolution — re-applies the locally-edited version with a fresh
+   *  timestamp so it wins on the next sync push. */
+  const resolveConflict = useCallback((record: ConflictRecord) => {
+    const now = Date.now();
+    switch (record.kind) {
+      case 'tool':
+        void updateTool(record.id, { ...(record.local as LibraryTool), updatedAt: now });
+        break;
+      case 'material':
+        void updateMaterial(record.id, { ...(record.local as import('../../types/material').WorkMaterial), updatedAt: now });
+        break;
+      case 'holder':
+        void updateHolder(record.id, { ...(record.local as import('../../types/holder').ToolHolder), updatedAt: now });
+        break;
+      case 'toolSet':
+        saveSets(updateSet(loadSets(), record.id, { ...(record.local as ToolSet), updatedAt: now }));
+        break;
+      case 'job':
+        saveJob({ ...(record.local as Job), updatedAt: now });
+        break;
+    }
+    setConflictRecords((prev) => prev.filter((c) => !(c.kind === record.kind && c.id === record.id)));
+  }, [updateTool, updateMaterial, updateHolder]);
 
   // Auto-sync: push whenever tools length changes (if configured)
   const prevToolsLenRef = useRef(tools.length);
@@ -798,6 +841,21 @@ export default function ToolManagerPage() {
     setActivePanel(null);
     setEditingTool(null);
   }, []);
+
+  // ── External navigation intent (Dashboard, Command Palette, etc.) ─────────
+  useEffect(() => {
+    if (!intent) return;
+    if (intent.toolId) {
+      const tool = tools.find((t) => t.id === intent.toolId);
+      if (tool) openEdit(tool);
+    } else if (intent.openNew) {
+      openNew();
+    } else if (intent.panel) {
+      setActivePanel(intent.panel);
+    }
+    onConsumeIntent?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [intent]);
 
   const handleBackup = useCallback(async () => {
     // v3 backup — includes tools, materials, holders, toolSets, and jobs
@@ -1046,6 +1104,18 @@ export default function ToolManagerPage() {
           {selectedIds.size > 0 && <div className="w-px h-6 bg-slate-600 shrink-0" />}
 
           {/* ── Always-visible actions ── */}
+
+          {conflictRecords.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setActivePanel('sync-conflicts')}
+              title="Review sync conflicts"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-amber-600/80 hover:bg-amber-600 text-white border border-amber-500/40 transition-colors whitespace-nowrap"
+            >
+              <GitMerge size={14} />
+              {conflictRecords.length} Conflict{conflictRecords.length !== 1 ? 's' : ''}
+            </button>
+          )}
 
           {lowStockCount > 0 && (
             <button
@@ -1704,6 +1774,9 @@ export default function ToolManagerPage() {
       {activePanel === 'supplier-invoice' && (
         <SupplierInvoicePanel onClose={closePanel} />
       )}
+      {activePanel === 'sync-conflicts' && (
+        <SyncConflictPanel conflicts={conflictRecords} onResolve={resolveConflict} onClose={closePanel} />
+      )}
 
       {/* ── Keyboard shortcuts legend ─────────────────────────────────────── */}
 
@@ -1718,6 +1791,15 @@ export default function ToolManagerPage() {
             {syncMergeToast.updatedFromRemote > 0 && <>{syncMergeToast.updatedFromRemote} updated</>}
             {syncMergeToast.conflicts > 0 && <span className="text-amber-300 ml-1">({syncMergeToast.conflicts} conflict{syncMergeToast.conflicts !== 1 ? 's' : ''} — remote won)</span>}
           </span>
+          {syncMergeToast.conflictRecords.length > 0 && (
+            <button
+              type="button"
+              onClick={() => { setActivePanel('sync-conflicts'); setSyncMergeToast(null); }}
+              className="px-2 py-0.5 rounded text-xs font-medium text-amber-300 hover:text-amber-200 hover:bg-amber-500/10 border border-amber-500/30"
+            >
+              Review
+            </button>
+          )}
           <button type="button" onClick={() => setSyncMergeToast(null)} title="Dismiss" className="p-1 rounded text-slate-500 hover:text-slate-200">
             <X size={13} />
           </button>

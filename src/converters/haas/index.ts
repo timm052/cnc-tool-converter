@@ -12,6 +12,9 @@ export const haasConverter: Converter = {
     canImport:      true,
     canExport:      true,
     readAs:         'text',
+    notes: [
+      'G10 offset table — geometry, length/diameter offsets and tool descriptions in comments.',
+    ],
   },
   sample: [
     '%',

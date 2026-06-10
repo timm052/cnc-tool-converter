@@ -2,12 +2,9 @@ import { useMemo } from 'react';
 import { X, Package, Download, AlertTriangle } from 'lucide-react';
 import type { LibraryTool } from '../../types/libraryTool';
 import { triggerDownload } from '../../lib/downloadUtils';
+import { isLowStock } from '../../lib/libraryStats';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function isLowStock(t: LibraryTool): boolean {
-  return t.reorderPoint != null && t.quantity != null && t.quantity <= t.reorderPoint;
-}
 
 function exportPoCsv(tools: LibraryTool[]) {
   const rows: string[] = [

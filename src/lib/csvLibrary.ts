@@ -24,7 +24,7 @@ function csvEscape(val: string): string {
   return val;
 }
 
-function csvParse(raw: string): string[][] {
+export function csvParse(raw: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
   let cur = '';

@@ -25,6 +25,9 @@ export const csvConverter: Converter = {
     canImport:      true,
     canExport:      true,
     readAs:         'text',
+    notes: [
+      'App-native interchange format — preserves all library fields (tags, machine groups, inventory, F&S presets).',
+    ],
   },
 
   sample: [

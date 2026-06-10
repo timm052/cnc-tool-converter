@@ -12,6 +12,9 @@ export const fanucConverter: Converter = {
     canImport:      true,
     canExport:      true,
     readAs:         'text',
+    notes: [
+      'G10 punch format — diameter/length offsets and tool descriptions in comments.',
+    ],
   },
   sample: [
     '%',

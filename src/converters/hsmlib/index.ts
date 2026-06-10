@@ -12,6 +12,9 @@ export const hsmlibConverter: Converter = {
     canImport:      true,
     canExport:      true,
     readAs:         'arraybuffer',
+    notes: [
+      'UTF-16 XML file — full geometry, cutting parameters, holder and coolant data round-trip.',
+    ],
   },
   parse: (content, filename) => parseHSMLib(content, filename),
   write: (tools, options)    => writeHSMLib(tools, options),

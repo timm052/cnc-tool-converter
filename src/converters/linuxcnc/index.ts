@@ -12,6 +12,9 @@ export const linuxcncConverter: Converter = {
     canImport:      true,
     canExport:      true,
     readAs:         'text',
+    notes: [
+      'Plain-text tool table — tool number, axis offsets, diameter and comment.',
+    ],
   },
   sample: [
     ';',

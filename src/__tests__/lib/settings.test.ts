@@ -67,6 +67,14 @@ describe('DEFAULT_SETTINGS', () => {
     expect(DEFAULT_SETTINGS.devMode).toBe(false);
     expect(DEFAULT_SETTINGS.validationWarningsEnabled).toBe(true);
   });
+
+  it('has expected startup and notification defaults', () => {
+    expect(DEFAULT_SETTINGS.defaultPage).toBe('dashboard');
+    expect(DEFAULT_SETTINGS.notifyMaintenanceEnabled).toBe(true);
+    expect(DEFAULT_SETTINGS.notifyLowStockEnabled).toBe(true);
+    expect(DEFAULT_SETTINGS.notifyBackupEnabled).toBe(true);
+    expect(DEFAULT_SETTINGS.maintenanceLeadDays).toBe(0);
+  });
 });
 
 // ── Initial state from empty localStorage ─────────────────────────────────────

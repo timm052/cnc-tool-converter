@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { Cpu, Plus, X, Trash2, ChevronDown } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Cpu, Plus, X, Trash2, ChevronDown, Wrench } from 'lucide-react';
 import { useMachines } from '../../contexts/MachineContext';
 import { useLibrary } from '../../contexts/LibraryContext';
 import type { Machine, MachineType, ControlType, SpindleTaper } from '../../types/machine';
@@ -127,6 +127,10 @@ function blankMachine(): Omit<Machine, 'id' | 'createdAt' | 'updatedAt'> {
     coolantThruSpindle:  false,
     coolantAir:          false,
     notes:       '',
+    maintenanceIntervalDays: undefined,
+    lastMaintenanceAt:       undefined,
+    maintenanceNotes:        '',
+    maintenanceLog:          [],
   };
 }
 
@@ -171,6 +175,10 @@ function MachineEditor({ machine, otherNames, toolCount, assignedTools, onSave, 
       coolantThruSpindle: machine.coolantThruSpindle,
       coolantAir:        machine.coolantAir,
       notes:             machine.notes,
+      maintenanceIntervalDays: machine.maintenanceIntervalDays,
+      lastMaintenanceAt:       machine.lastMaintenanceAt,
+      maintenanceNotes:        machine.maintenanceNotes,
+      maintenanceLog:          machine.maintenanceLog ?? [],
     },
   );
 
@@ -481,6 +489,62 @@ function MachineEditor({ machine, otherNames, toolCount, assignedTools, onSave, 
             />
           </div>
 
+          {/* Maintenance */}
+          <div>
+            <SectionHeader label="Maintenance" />
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                {numInput('maintenanceIntervalDays', 'Interval', { min: 0, step: 1, suffix: 'days' })}
+                <div>
+                  <label className={LABEL_CLS}>Last serviced</label>
+                  <p className="px-2.5 py-1.5 text-sm text-slate-300">
+                    {draft.lastMaintenanceAt
+                      ? new Date(draft.lastMaintenanceAt).toLocaleDateString()
+                      : <span className="text-slate-600">Never</span>}
+                  </p>
+                </div>
+              </div>
+              <textarea
+                value={draft.maintenanceNotes ?? ''}
+                onChange={(e) => set('maintenanceNotes', e.target.value || undefined)}
+                rows={2}
+                placeholder="Maintenance notes (e.g. spindle service, ballscrew lube)…"
+                className={`${INPUT_CLS} resize-none`}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const now = Date.now();
+                  setDraft((prev) => ({
+                    ...prev,
+                    lastMaintenanceAt: now,
+                    maintenanceLog: [
+                      { id: crypto.randomUUID(), date: now, notes: prev.maintenanceNotes ?? '' },
+                      ...(prev.maintenanceLog ?? []),
+                    ],
+                  }));
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 border border-emerald-500/30 transition-colors"
+              >
+                <Wrench size={13} />
+                Log maintenance now
+              </button>
+              {!!draft.maintenanceLog?.length && (
+                <div className="space-y-1">
+                  {draft.maintenanceLog.slice(0, 5).map((entry) => (
+                    <div key={entry.id} className="flex items-start gap-2 text-xs text-slate-400">
+                      <span className="font-mono text-slate-500 shrink-0">{new Date(entry.date).toLocaleDateString()}</span>
+                      {entry.notes && <span className="truncate">{entry.notes}</span>}
+                    </div>
+                  ))}
+                  {draft.maintenanceLog.length > 5 && (
+                    <p className="text-xs text-slate-600">…and {draft.maintenanceLog.length - 5} more</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Assigned tools (read-only) */}
           <div>
             <SectionHeader label="Assigned tools" />
@@ -577,7 +641,18 @@ function MachineEditor({ machine, otherNames, toolCount, assignedTools, onSave, 
 
 // ── Main page ──────────────────────────────────────────────────────────────────
 
-export default function MachinesPage() {
+/** External navigation request — e.g. from the Command Palette. */
+export interface MachinesPageIntent {
+  /** Open the editor for an existing machine by id. */
+  machineId?: string;
+}
+
+interface MachinesPageProps {
+  intent?: MachinesPageIntent | null;
+  onConsumeIntent?: () => void;
+}
+
+export default function MachinesPage({ intent, onConsumeIntent }: MachinesPageProps = {}) {
   const { machines, isLoading, addMachine, updateMachine, deleteMachine } = useMachines();
   const { tools } = useLibrary();
 
@@ -621,6 +696,15 @@ export default function MachinesPage() {
     setEditorOpen(false);
     setEditingMachine(null);
   }
+
+  // ── External navigation intent (Command Palette, etc.) ─────────────────────
+  useEffect(() => {
+    if (!intent?.machineId) return;
+    const machine = machines.find((m) => m.id === intent.machineId);
+    if (machine) openEdit(machine);
+    onConsumeIntent?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [intent, machines]);
 
   async function handleSave(m: Machine) {
     if (machines.some((x) => x.id === m.id)) {

@@ -51,3 +51,10 @@ export function notifyBackupDue(): void {
     body:  'You haven\'t backed up your tool library in over 7 days. Open the library to back up now.',
   }).catch(() => {});
 }
+
+export function notifyMaintenanceDue(machineName: string): void {
+  sendNotification({
+    title: 'Maintenance Due',
+    body:  `${machineName} is due for scheduled maintenance.`,
+  }).catch(() => {});
+}

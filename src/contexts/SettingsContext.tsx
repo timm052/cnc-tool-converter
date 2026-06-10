@@ -121,6 +121,16 @@ export interface Settings {
   // F&S presets
   fsPresets: FSPreset[];
 
+  // General — startup
+  defaultPage: 'dashboard' | 'converter' | 'tools' | 'machines' | 'help' | 'settings';
+
+  // Notifications (desktop only — no-op in the browser)
+  notifyMaintenanceEnabled: boolean;
+  notifyLowStockEnabled:    boolean;
+  notifyBackupEnabled:      boolean;
+  /** Notify this many days before a machine's maintenance interval elapses. */
+  maintenanceLeadDays: number;
+
   // Developer
   devMode: boolean;
 }
@@ -202,6 +212,13 @@ export const DEFAULT_SETTINGS: Settings = {
   remoteDbAutoSync: false,
 
   fsPresets: [],
+
+  defaultPage: 'dashboard',
+
+  notifyMaintenanceEnabled: true,
+  notifyLowStockEnabled:    true,
+  notifyBackupEnabled:      true,
+  maintenanceLeadDays:      0,
 
   devMode: false,
 };

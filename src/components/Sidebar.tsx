@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeftRight, Library, Settings, ChevronRight, Bug, Download, PanelLeftClose, PanelLeftOpen, Palette, Cpu, GitBranch, type LucideIcon } from 'lucide-react';
+import { ArrowLeftRight, Library, Settings, ChevronRight, Bug, Download, PanelLeftClose, PanelLeftOpen, Palette, Cpu, GitBranch, HelpCircle, LayoutDashboard, type LucideIcon } from 'lucide-react';
 import type { Page } from '../App';
 import { useSettings } from '../contexts/SettingsContext';
 import { daysSinceBackup } from '../lib/backupNudge';
@@ -17,6 +17,11 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
+  {
+    id:    'dashboard',
+    label: 'Dashboard',
+    icon:  LayoutDashboard,
+  },
   {
     id:    'converter',
     label: 'Converter',
@@ -36,6 +41,11 @@ const NAV_ITEMS: NavItem[] = [
     id:    'settings',
     label: 'Settings',
     icon:  Settings,
+  },
+  {
+    id:    'help',
+    label: 'Help',
+    icon:  HelpCircle,
   },
   {
     id:    'debug',
@@ -190,8 +200,9 @@ export default function Sidebar({ activePage, onNavigate }: SidebarProps) {
             <span className="truncate">{nudgeLabel}</span>
           </button>
         )}
-        <p className="text-xs text-slate-500 text-center">
-          8 formats supported
+        <p className="flex items-center justify-center gap-1.5 text-xs text-slate-500">
+          <kbd className="text-[10px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-400 border border-slate-600">Ctrl+K</kbd>
+          to search
         </p>
       </div>
     </aside>

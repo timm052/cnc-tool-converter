@@ -21,6 +21,8 @@ export interface FormatInfo {
    * 'arraybuffer' is needed for binary or non-UTF-8 encoded files.
    */
   readAs: 'text' | 'arraybuffer';
+  /** Short caveats/usage notes shown on the Help / Format Reference page. */
+  notes?: string[];
 }
 
 /** Result returned by a converter's parse() method */

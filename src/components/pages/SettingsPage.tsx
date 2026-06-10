@@ -530,6 +530,51 @@ export default function SettingsPage() {
                     />
                   </Row>
                 </Section>
+
+                {/* Startup */}
+                <Section title="Startup">
+                  <Row label="Default page" description="Page shown when the app opens.">
+                    <Sel
+                      value={settings.defaultPage}
+                      options={[
+                        { value: 'dashboard', label: 'Dashboard' },
+                        { value: 'converter', label: 'Converter' },
+                        { value: 'tools',     label: 'Tool Library' },
+                        { value: 'machines',  label: 'Machines' },
+                        { value: 'help',      label: 'Help' },
+                        { value: 'settings',  label: 'Settings' },
+                      ]}
+                      onChange={(v) => set('defaultPage', v)}
+                    />
+                  </Row>
+                </Section>
+
+                {/* Notifications */}
+                <Section title="Notifications">
+                  <Row label="Maintenance due" description="Notify when a machine reaches its maintenance interval.">
+                    <Toggle value={settings.notifyMaintenanceEnabled} onChange={(v) => set('notifyMaintenanceEnabled', v)} />
+                  </Row>
+                  <Row label="Maintenance lead time" description="Notify this many days before a machine's maintenance is actually due.">
+                    <div className="flex items-center gap-2">
+                      <NumInput
+                        value={settings.maintenanceLeadDays}
+                        min={0}
+                        max={90}
+                        onChange={(v) => set('maintenanceLeadDays', Math.max(0, Math.min(90, v)))}
+                      />
+                      <span className="text-sm text-slate-400">days</span>
+                    </div>
+                  </Row>
+                  <Row label="Low stock" description="Notify when one or more tools reach their reorder point.">
+                    <Toggle value={settings.notifyLowStockEnabled} onChange={(v) => set('notifyLowStockEnabled', v)} />
+                  </Row>
+                  <Row label="Backup reminder" description="Notify when the library hasn't been backed up in over 7 days.">
+                    <Toggle value={settings.notifyBackupEnabled} onChange={(v) => set('notifyBackupEnabled', v)} />
+                  </Row>
+                  <p className="px-4 py-2.5 text-xs text-slate-500 border-t border-slate-700/50">
+                    Notifications appear as native OS alerts in the desktop app and have no effect in the browser.
+                  </p>
+                </Section>
               </>
             )}
 

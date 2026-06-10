@@ -12,6 +12,9 @@ export const mach3Converter: Converter = {
     canImport:      true,
     canExport:      true,
     readAs:         'text',
+    notes: [
+      'Mach3/Mach4 tool table CSV — number, description, diameter, length and feed/RPM.',
+    ],
   },
   sample: [
     '1,"1/2 End Mill",0.5000,0.0000,4.2500,0.0000',
